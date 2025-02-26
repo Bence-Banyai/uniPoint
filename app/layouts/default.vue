@@ -5,7 +5,6 @@
 
 <template>
     <div>
-        <RegistrationForm />
         <slot />
     </div>
 </template>
