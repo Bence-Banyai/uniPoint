@@ -77,6 +77,13 @@ namespace uniPoint_backend.Controllers
             return Ok(new { Token = token, Message = "Login successful", UserId = user.Id });
         }
 
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            await _signInManager.SignOutAsync();
+            return Ok(new { Message = "Logout successful." });
+        }
+
         private async Task<string> GenerateJwtToken(User user)
         {
             var jwtSettings = _configuration.GetSection("JwtSettings");

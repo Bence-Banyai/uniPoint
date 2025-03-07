@@ -177,13 +177,11 @@ namespace uniPoint_backend.Controllers
             var role = User.FindFirstValue(ClaimTypes.Role);
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            // Providers can only update their own appointments
             if (role == "Provider" && appointment.Service.UserId != userId)
             {
                 return Forbid();
             }
 
-            // Admins can update everything
             appointment.ScheduledAt = updatedAppointment.ScheduledAt;
             appointment.Status = updatedAppointment.Status;
 
