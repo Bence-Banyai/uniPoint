@@ -2,6 +2,12 @@
 export default defineNuxtConfig({
 	compatibilityDate: "2025-02-23",
 
+	runtimeConfig: {
+		public: {
+			apiBaseUrl: process.env.API_BASE_URL || "http://localhost:5001", // Your backend URL
+		},
+	},
+
 	future: {
 		compatibilityVersion: 4,
 	},

@@ -1,0 +1,143 @@
+UniPoint backend dokumentáció
+Adatbázis felépítése
+
+Az adatbázis elkészítését az EntityFramework kezeli, tehát a model osztályokból készíti a táblákat és a kapcsolatokat. Az adatbázis MySQL alapú, ezt a Pomelo.EntityFrameworkCore.MySql NuGet package valósítja meg.
+user tábla
+
+    Id: PK, VARCHAR(255), not null, unique
+    UserName: LONGTEXT, not null, 1-30 hosszú
+    Email: VARCHAR(255), email validáció
+    PhoneNumber: LONGTEXT, telefonszám validáció
+    ProfilePictureUrl: VARCHAR(255), not null, default: “default.png”
+    CreatedAt: DATETIME(6), not null, timestamp validáció, default: létrehozás dátuma UTC
+    PasswordHash: LONGTEXT, not null, automatikus titkosítás
+
+IdentityUser által létrehozott, közvetlenül nem használt
+
+    AccessFailedCount: INT(11), not null
+    ConcurrencyStamp: LONGTEXT
+    EmailConfirmed: TINYINT(1), not null
+    LockoutEnabled: TINYINT(1), not null
+    LockoutEnd: DATETIME(6)
+    NormalizedEmail: LONGTEXT
+    NormalizedUserName: LONGTEXT
+    PhoneNumberConfirmed: TINYINT(1), not null
+    SecurityStamp: LONGTEXT
+    TwoFactorEnabled: TINYINT(1), not null
+
+services tábla
+
+    ServiceId: PK, INT(11), not null, unique
+    UserId: VARCHAR(255), not null, FK: user.Id, (Szolgáltató Id)
+    ServiceName: VARCHAR(255), not null
+    Price: INT(11), not null
+    Description: VARHCHAR(2000), not null
+    Address: VARCHAR(255), not null
+    Duration: INT(11), not null
+
+appointments tábla
+
+    Id: PK, INT(11), not null, unique
+    UserId: VARCHAR(255), FK: user.Id, (Foglaló Id)
+    ServiceId: INT(11), not null, FK: services.ServiceId
+    ScheduledAt: DATETIME(6), not null, timestamp validáció
+    Status: INT(11), not null
+        az EF kezeli, igazából enum
+        lehetséges értékei: OPEN, SCHEDULED, DONE, CANCELLED_BY_USER, CANCELLED_BY_SERVICE
+        default: OPEN
+
+reviews tábla
+
+    ReviewId: PK, INT(11), not null, unique
+    UserId: VARCHAR(255), FK: user.Id, (Értékelő Id)
+    ServiceId: INT(11), not null, FK: services.ServiceId
+    Score: INT(11), not null, értéke 1-5
+    Description: VARHCHAR(2000), not null
+    CreatedAt: DATETIME(6), not null, timestamp validáció, default: létrehozás dátuma UTC
+
+EntityFramework és IdentityUser által létrehozott táblák
+
+    roleclaims
+        Id: PK, INT(11), not null, unique
+        RoleId: LONGTEXT
+        ClaimType: LONGTEXT
+        ClaimValue: LONGTEXT
+    roles
+        Id: PK, VARCHAR(255), not null, unique
+        Name: LONGTEXT
+        NormailzedName: LONGTEXT
+        ConcurrencyStamp: LONGTEXT
+    userclaims
+        Id: PK, INT(11), not null, unique
+        UserId: LONGTEXT
+        ClaimType: LONGTEXT
+        ClaimValue: LONGTEXT
+    userlogins
+        LoginProvider: PK, VARCHAR(255), not null, unique
+        ProviderKey: PK, VARCHAR(255), not null, unique
+        ProviderDisplayName: LONGTEXT
+        UserId: LONGTEXT
+    userroles
+        UserId: PK, VARCHAR(255), not null, unique
+        RoleId: PK, VARCHAR(255), not null, unique
+    usertokens
+        UserId: PK, VARCHAR(255), not null, unique
+        LoginProvider: PK, VARCHAR(255), not null, unique
+        Name: PK, VARCHAR(255), not null, unique
+        Value: LONGTEXT
+    __efmigrationhistory
+        MigrationId: PK, VARCHAR(150), not null, unique
+        ProductVersion: VARCHAR(32), not null
+
+Végpontok
+Auth
+Register
+
+    url: /api/Auth/register
+    POST request:
+
+{
+  "userName": "jeno",
+  "email": "jeno@example.com",
+  "phoneNumber": "06701323454",
+  "password": "Jeno123",
+  "role": "User"
+}
+
+    Response:
+        StatusCode: 200
+
+{
+  "message": "User registered successfully!"
+}
+
+Login
+
+    url: /api/Auth/login
+    POST request:
+
+Headers: 'Content-Type: application/json'
+{
+  "userNameOrEmail": "jeno",
+  "password": "Jeno123"
+}
+
+    Response:
+        StatusCode: 200
+
+{
+  "token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiZjhjYjNhMC00MWVjLTRmYjctOGVhYi1lOWZkYTFiMzVkMjQiLCJlbWFpbCI6Implbm9AZXhhbXBsZS5jb20iLCJ1bmlxdWVfbmFtZSI6Implbm8iLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJVc2VyIiwiZXhwIjoxNzQxMzQ5MTgxLCJpc3MiOiJodHRwczovL2xvY2FsaG9zdDo1MDAxIiwiYXVkIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NTAwMSJ9.rc1SfKdnQCIqoZpdTbDq-hj7xLPmzmKtbfql92G_1wE",
+  "message": "Login successful",
+  "userId": "bf8cb3a0-41ec-4fb7-8eab-e9fda1b35d24"
+}
+
+Logout
+
+    url: /api/Auth/logout
+    POST request
+    Response:
+        StatusCode: 200
+
+{
+  "message": "Logout successful."
+}
