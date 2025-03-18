@@ -1,24 +1,38 @@
-# Nuxt dev/build outputs
-.output
-.data
-.nuxt
-.nitro
-.cache
-dist
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# Node dependencies
-node_modules
+# dependencies
+node_modules/
 
-# Logs
-logs
-*.log
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
 
-# Misc
+# Native
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
 .DS_Store
-.fleet
-.idea
+*.pem
 
-# Local env files
-.env
-.env.*
-!.env.example
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+app-example
