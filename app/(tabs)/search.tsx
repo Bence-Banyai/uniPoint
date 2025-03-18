@@ -19,7 +19,6 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 
-// Add responsive font size utility
 const responsiveFontSize = (size: number, minSize: number, maxSize: number) => {
   const { width, height } = Dimensions.get('window');
   const screenWidth = Math.min(width, height);
@@ -28,7 +27,6 @@ const responsiveFontSize = (size: number, minSize: number, maxSize: number) => {
   return Math.max(minSize, Math.min(responsiveSize, maxSize));
 };
 
-// Font family definitions
 const fontFamilies = {
   title: Platform.select({ ios: "Menlo", android: "monospace" }),
   subtitle: Platform.select({ ios: "Avenir-Medium", android: "sans-serif-medium" }),
@@ -36,13 +34,11 @@ const fontFamilies = {
   button: Platform.select({ ios: "Avenir-Heavy", android: "sans-serif-medium" }),
 };
 
-// Sample data for popular searches
 const popularSearches = [
   'Dentist', 'Hair Salon', 'Massage', 'Gym Trainer', 'Doctor', 'Spa'
 ];
 
-// Sample data for providers
-const providers = [
+const providers: Provider[] = [
   {
     id: '1',
     name: 'Grand Medical Center',
@@ -95,7 +91,6 @@ const providers = [
   },
 ];
 
-// Category mapping
 const categories = {
   doctor: { name: 'Doctor', color: '#4CAF50' },
   dentist: { name: 'Dentist', color: '#2196F3' },
@@ -104,8 +99,18 @@ const categories = {
   trainer: { name: 'Trainer', color: '#9C27B0' },
 };
 
-// Provider card component
-function ProviderCard({ provider, onPress }) {
+interface Provider {
+  id: string;
+  name: string;
+  category: keyof typeof categories;
+  rating: number;
+  reviews: number;
+  distance: string;
+  image: any;
+  color: string;
+}
+
+function ProviderCard({ provider, onPress }: { provider: Provider; onPress: () => void }) {
   return (
     <TouchableOpacity 
       style={styles.providerCard}
@@ -193,28 +198,25 @@ export default function ExploreScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState(['Haircut', 'Dental Cleaning']);
   
-  // Calculate responsive sizes
   const screenWidth = Dimensions.get('window').width;
   const isSmallDevice = screenWidth < 380;
   const isLargeDevice = screenWidth >= 768;
   
   const handleSearch = () => {
     if (searchQuery.trim()) {
-      // Add to recent searches if not already included
       if (!recentSearches.includes(searchQuery.trim())) {
         setRecentSearches(prev => [searchQuery.trim(), ...prev.slice(0, 4)]);
       }
       console.log(`Searching for: ${searchQuery}`);
-      // Actual search functionality would go here
     }
   };
   
-  const handlePopularSearch = (term) => {
+  const handlePopularSearch = (term: string) => {
     setSearchQuery(term);
     handleSearch();
   };
   
-  const handleProviderPress = (provider) => {
+  const handleProviderPress = (provider: Provider) => {
     console.log(`Selected provider: ${provider.name}`);
     router.push('/appointments');
   };
@@ -226,7 +228,6 @@ export default function ExploreScreen() {
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
     >
-      {/* Background effects */}
       <View style={[
         styles.glowCircle,
         { top: -Dimensions.get("window").height * 0.2, left: -Dimensions.get("window").width * 0.4 },
@@ -248,7 +249,6 @@ export default function ExploreScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header with title */}
         <View style={styles.header}>
           <ThemedText 
             style={styles.headerTitle}
@@ -259,7 +259,6 @@ export default function ExploreScreen() {
           </ThemedText>
         </View>
         
-        {/* Search bar */}
         <View style={styles.searchContainer}>
           <View style={styles.searchInputContainer}>
             <IconSymbol name="chevron.right" size={20} color="#EBD3F8" style={styles.searchIcon} />
@@ -284,7 +283,6 @@ export default function ExploreScreen() {
           </View>
         </View>
         
-        {/* Recent searches */}
         {recentSearches.length > 0 && (
           <View style={styles.recentSearchesContainer}>
             <View style={styles.sectionHeader}>
@@ -331,7 +329,6 @@ export default function ExploreScreen() {
           </View>
         )}
         
-        {/* Popular searches */}
         <View style={styles.popularSearchesContainer}>
           <ThemedText 
             style={styles.sectionTitle}
@@ -360,7 +357,6 @@ export default function ExploreScreen() {
           </View>
         </View>
         
-        {/* Top providers */}
         <View style={styles.providersContainer}>
           <ThemedText 
             style={styles.sectionTitle}

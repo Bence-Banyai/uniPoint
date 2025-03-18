@@ -4,14 +4,14 @@ import { View, StyleSheet, TouchableOpacity, Dimensions, Platform } from 'react-
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { ThemedText } from '@/components/ThemedText';
 import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { useColorScheme } from 'react-native';
 
-// Custom tab bar component
-function CustomTabBar({ state, descriptors, navigation }) {
+function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const colorScheme = useColorScheme() ?? 'light';
   const insets = useSafeAreaInsets();
   
@@ -26,17 +26,14 @@ function CustomTabBar({ state, descriptors, navigation }) {
         style={StyleSheet.absoluteFill}
       />
       
-      {/* Background overlay */}
       <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(46, 2, 73, 0.85)' }]} />
       
-      {/* Tab buttons */}
       <View style={styles.tabBar}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
           const label = options.title;
           const isFocused = state.index === index;
           
-          // Get tab icon based on route name
           const getIcon = () => {
             switch (route.name) {
               case 'index':
@@ -60,7 +57,7 @@ function CustomTabBar({ state, descriptors, navigation }) {
             });
             
             if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate({ name: route.name, merge: true });
+              navigation.navigate(route.name);
             }
           };
           
@@ -75,7 +72,6 @@ function CustomTabBar({ state, descriptors, navigation }) {
             >
               <View style={styles.tabContent}>
                 <View style={styles.tabIconContainer}>
-                  {/* Glowing background for the active tab */}
                   {isFocused && (
                     <View style={[
                       styles.activeIconBackground,
@@ -98,7 +94,6 @@ function CustomTabBar({ state, descriptors, navigation }) {
                   {label}
                 </ThemedText>
                 
-                {/* Bottom Bar Indicator */}
                 {isFocused && (
                   <LinearGradient
                     colors={getGradientColors(index)}
@@ -116,8 +111,7 @@ function CustomTabBar({ state, descriptors, navigation }) {
   );
 }
 
-// Helper function to get gradient colors based on tab index
-const getGradientColors = (index) => {
+const getGradientColors = (index: number): [string, string] => {
   switch (index) {
     case 0: // Home
       return ['#31E1F7', '#2979FF'];
@@ -196,13 +190,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center', 
     alignItems: 'center',
     height: '100%',
-    // Increase paddingTop to push content down further
     ...Platform.select({
       ios: {
-        paddingTop: 20, // Increased from 15
+        paddingTop: 20,
       },
       android: {
-        paddingTop: 20, // Increased from 15
+        paddingTop: 20,
       },
       default: {}
     }),
@@ -214,8 +207,7 @@ const styles = StyleSheet.create({
     height: Platform.select({
       ios: 46,
       android: 46,
-      default: '100%'
-    }),
+    }) || 46,
     position: 'relative',
   },
   tabIconContainer: {
@@ -224,10 +216,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
-    // Increase marginTop to push icons down more
     marginTop: Platform.select({
-      ios: 4, // Increased from 2
-      android: 4, // Increased from 2
+      ios: 4,
+      android: 4,
       default: 0
     })
   },
@@ -260,11 +251,11 @@ const styles = StyleSheet.create({
   },
   activeTabUnderline: {
     position: 'absolute',
-    // Move the underline down further to ensure it's visible
     bottom: Platform.select({
-      ios: -12, // Adjusted from -10
-      android: -12, // Adjusted from -10
-      default: 0
+      ios: -12,
+      android: -12,
+      web: -18,
+      default: -14
     }),
     height: 3,
     width: 30,

@@ -18,7 +18,6 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 
-// Add responsive font size utility
 const responsiveFontSize = (size: number, minSize: number, maxSize: number) => {
   const { width, height } = Dimensions.get('window');
   const screenWidth = Math.min(width, height);
@@ -27,7 +26,6 @@ const responsiveFontSize = (size: number, minSize: number, maxSize: number) => {
   return Math.max(minSize, Math.min(responsiveSize, maxSize));
 };
 
-// Font family definitions
 const fontFamilies = {
   title: Platform.select({ ios: "Menlo", android: "monospace" }),
   subtitle: Platform.select({ ios: "Avenir-Medium", android: "sans-serif-medium" }),
@@ -35,7 +33,6 @@ const fontFamilies = {
   button: Platform.select({ ios: "Avenir-Heavy", android: "sans-serif-medium" }),
 };
 
-// Sample data for upcoming appointments
 const upcomingAppointments = [
   {
     id: '1',
@@ -69,7 +66,6 @@ const upcomingAppointments = [
   },
 ];
 
-// Sample data for past appointments
 const pastAppointments = [
   {
     id: 'p1',
@@ -113,22 +109,30 @@ const pastAppointments = [
   },
 ];
 
-// Sample categories for booking
 const categories = [
-  { id: 'doctor', title: 'Doctor', icon: 'chevron.right', color: '#4CAF50' },
-  { id: 'dentist', title: 'Dentist', icon: 'chevron.right', color: '#2196F3' },
-  { id: 'barber', title: 'Barber', icon: 'chevron.right', color: '#FF9800' },
-  { id: 'trainer', title: 'Trainer', icon: 'chevron.right', color: '#9C27B0' },
-  { id: 'massage', title: 'Massage', icon: 'chevron.right', color: '#E91E63' },
+  { id: 'doctor', title: 'Doctor', icon: 'chevron.right' as const, color: '#4CAF50' },
+  { id: 'dentist', title: 'Dentist', icon: 'chevron.right' as const, color: '#2196F3' },
+  { id: 'barber', title: 'Barber', icon: 'chevron.right' as const, color: '#FF9800' },
+  { id: 'trainer', title: 'Trainer', icon: 'chevron.right' as const, color: '#9C27B0' },
+  { id: 'massage', title: 'Massage', icon: 'chevron.right' as const, color: '#E91E63' },
 ];
 
-// Category card component
-function CategoryCard({ category, onPress }) {
+type CategoryProps = {
+  category: {
+    id: string;
+    title: string;
+    icon: 'chevron.right';
+    color: string;
+  };
+  onPress: (id: string) => void;
+};
+
+function CategoryCard({ category, onPress }: CategoryProps) {
   return (
     <TouchableOpacity 
       style={[styles.categoryCard, { borderColor: category.color }]}
       activeOpacity={0.7}
-      onPress={onPress}
+      onPress={() => onPress(category.id)}
     >
       <View style={[styles.categoryIconContainer, { backgroundColor: `${category.color}20` }]}>
         <IconSymbol name={category.icon} size={20} color={category.color} />
@@ -144,12 +148,27 @@ function CategoryCard({ category, onPress }) {
   );
 }
 
-// Appointment card component
-function AppointmentCard({ appointment, onReschedule, onCancel, isPast = false }) {
-  const getStatusColor = (status) => {
+type AppointmentProps = {
+  appointment: {
+    id: string;
+    title: string;
+    provider: string;
+    time: string;
+    date: string;
+    location: string;
+    status: string;
+    category: string;
+  };
+  onReschedule: (id: string) => void;
+  onCancel: (id: string) => void;
+  isPast?: boolean;
+};
+
+function AppointmentCard({ appointment, onReschedule, onCancel, isPast = false }: AppointmentProps) {
+  const getStatusColor = (status: string): string => {
     switch(status) {
       case 'confirmed': return '#4CAF50';
-      case 'completed': return '#8E44AD'; // Purple for completed appointments
+      case 'completed': return '#8E44AD';
       case 'pending': return '#FF9800';
       case 'cancelled': return '#F44336';
       default: return '#808080';
@@ -212,7 +231,6 @@ function AppointmentCard({ appointment, onReschedule, onCancel, isPast = false }
         </View>
       </View>
       
-      {/* Show buttons only for upcoming non-cancelled appointments */}
       {!isPast && appointment.status !== 'cancelled' && (
         <View style={styles.appointmentActions}>
           <TouchableOpacity 
@@ -245,7 +263,6 @@ function AppointmentCard({ appointment, onReschedule, onCancel, isPast = false }
         </View>
       )}
       
-      {/* For past completed appointments, show a "Book Again" button */}
       {isPast && appointment.status === 'completed' && (
         <View style={styles.appointmentActions}>
           <TouchableOpacity 
@@ -264,7 +281,6 @@ function AppointmentCard({ appointment, onReschedule, onCancel, isPast = false }
         </View>
       )}
       
-      {/* For past cancelled appointments, show badge */}
       {isPast && appointment.status === 'cancelled' && (
         <View style={styles.statusBadgeContainer}>
           <View style={styles.statusBadge}>
@@ -282,43 +298,33 @@ function AppointmentCard({ appointment, onReschedule, onCancel, isPast = false }
   );
 }
 
-export default function AppointmentsScreen() { // Renamed function to match the file purpose
+export default function AppointmentsScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const [activeTab, setActiveTab] = useState('upcoming'); 
   
-  // Calculate responsive sizes
   const screenWidth = Dimensions.get('window').width;
   const isSmallDevice = screenWidth < 380;
   const isLargeDevice = screenWidth >= 768;
   
-  // Handle appointment actions
-  const handleReschedule = (id) => {
+  const handleReschedule = (id: string) => {
     console.log(`Reschedule appointment ${id}`);
-    // Navigation would happen here
   };
   
-  const handleCancel = (id) => {
+  const handleCancel = (id: string) => {
     console.log(`Cancel appointment ${id}`);
-    // Show confirmation dialog and cancel appointment
   };
   
-  const handleCategoryPress = (categoryId) => {
+  const handleCategoryPress = (categoryId: string) => {
     console.log(`Selected category: ${categoryId}`);
-    // Navigate to category booking screen
-    // router.push(`/booking/${categoryId}`);
   };
   
   const handleBookNew = () => {
     console.log('Book new appointment');
-    // Navigate to booking screen
-    // router.push('/booking');
   };
   
-  // Get the appropriate appointments based on the active tab
   const displayedAppointments = activeTab === 'upcoming' ? upcomingAppointments : pastAppointments;
   
-  // Check if there are appointments to display
   const hasAppointments = displayedAppointments.length > 0;
 
   return (
@@ -328,7 +334,6 @@ export default function AppointmentsScreen() { // Renamed function to match the 
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
     >
-      {/* Background effects */}
       <View style={[
         styles.glowCircle,
         { top: -Dimensions.get("window").height * 0.2, left: -Dimensions.get("window").width * 0.4 },
@@ -350,7 +355,6 @@ export default function AppointmentsScreen() { // Renamed function to match the 
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header with profile and notification */}
         <View style={styles.header}>
           <View style={styles.profileContainer}>
             <Image 
@@ -384,7 +388,6 @@ export default function AppointmentsScreen() { // Renamed function to match the 
           </TouchableOpacity>
         </View>
         
-        {/* Category selection section */}
         <View style={styles.categoriesContainer}>
           <ThemedText 
             style={styles.sectionTitle}
@@ -410,7 +413,6 @@ export default function AppointmentsScreen() { // Renamed function to match the 
           />
         </View>
         
-        {/* Appointments section */}
         <View style={styles.appointmentsContainer}>
           <View style={styles.appointmentsHeader}>
             <ThemedText 
@@ -431,7 +433,6 @@ export default function AppointmentsScreen() { // Renamed function to match the 
             </TouchableOpacity>
           </View>
           
-          {/* Appointment tabs */}
           <View style={styles.tabContainer}>
             <TouchableOpacity 
               style={[
@@ -471,7 +472,6 @@ export default function AppointmentsScreen() { // Renamed function to match the 
             </TouchableOpacity>
           </View>
           
-          {/* Appointment cards */}
           {hasAppointments ? (
             <View style={styles.appointmentsList}>
               {displayedAppointments.map((appointment) => (
@@ -502,7 +502,6 @@ export default function AppointmentsScreen() { // Renamed function to match the 
           )}
         </View>
         
-        {/* Book appointment button */}
         <TouchableOpacity
           style={[styles.bookButton, { marginBottom: 10 }]}
           activeOpacity={0.8}

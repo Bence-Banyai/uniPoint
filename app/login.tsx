@@ -20,18 +20,16 @@ import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 
-// Add this utility function at the top of your file (after imports)
 const responsiveFontSize = (size: number, minSize: number, maxSize: number) => {
   const { width, height } = Dimensions.get('window');
   const screenWidth = Math.min(width, height);
-  const percent = screenWidth / 375; // Base size for design (iPhone X width)
+  const percent = screenWidth / 375;
   const responsiveSize = size * percent;
   return Math.max(minSize, Math.min(responsiveSize, maxSize));
 };
 
-// Add this after responsiveFontSize function in all three files
 const fontFamilies = {
-  title: Platform.select({ ios: "Menlo", android: "monospace" }), // Changed from "SpaceMono" to "Menlo"
+  title: Platform.select({ ios: "Menlo", android: "monospace" }),
   subtitle: Platform.select({ ios: "Avenir-Medium", android: "sans-serif-medium" }),
   text: Platform.select({ ios: "Avenir", android: "sans-serif" }),
   button: Platform.select({ ios: "Avenir-Heavy", android: "sans-serif-medium" }),
@@ -45,18 +43,15 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   
-  // Device size detection for responsive layout
   const isSmallDevice = screenWidth < 380;
   const isMediumDevice = screenWidth >= 380 && screenWidth < 768;
   const isLargeDevice = screenWidth >= 768;
   
-  // Calculate responsive dimensions
   const buttonHeight = isLargeDevice ? 66 : isSmallDevice ? 50 : 56;
   const inputHeight = isLargeDevice ? 66 : isSmallDevice ? 50 : 56;
   const contentPadding = isLargeDevice ? 60 : isSmallDevice ? 20 : 30;
   const titleMargin = isLargeDevice ? 50 : isSmallDevice ? 30 : 40;
   
-  // Calculate responsive font sizes
   const titleFontSize = responsiveFontSize(24, 22, 42);
   const labelFontSize = responsiveFontSize(16, 14, 18);
   const inputFontSize = responsiveFontSize(16, 14, 18);
@@ -68,13 +63,10 @@ export default function LoginScreen() {
   const handleSignIn = () => {
     setIsLoading(true);
 
-    // Simplify the login process
     setTimeout(() => {
       try {
-        // We'll skip the SecureStore for now to eliminate potential issues
         setIsLoading(false);
 
-        // Use a direct navigation approach
         router.replace("/(tabs)");
       } catch (error) {
         console.error("Login failed:", error);
@@ -84,7 +76,7 @@ export default function LoginScreen() {
   };
 
   const handleBack = () => {
-    router.replace("/welcome"); // This will go back to welcome screen
+    router.replace("/welcome");
   };
 
   return (
@@ -98,7 +90,6 @@ export default function LoginScreen() {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        {/* Background elements with responsive positioning */}
         <View
           style={[
             styles.glowCircle,
@@ -154,7 +145,7 @@ export default function LoginScreen() {
                 styles.title, 
                 { 
                   fontSize: titleFontSize,
-                  marginBottom: titleMargin / 2 // Reduced to make room for subtitle
+                  marginBottom: titleMargin / 2
                 }
               ]} 
               darkColor="#fff" 
@@ -299,7 +290,6 @@ export default function LoginScreen() {
   );
 }
 
-// Update the styles to remove hardcoded dimensions that we're now setting dynamically
 const styles = StyleSheet.create({
   container: {
     flex: 1,

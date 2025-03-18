@@ -3,44 +3,64 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { SymbolWeight } from 'expo-symbols';
 import React from 'react';
-import { OpaqueColorValue, StyleProp, ViewStyle } from 'react-native';
+import { OpaqueColorValue, StyleProp, TextStyle, Text, StyleSheet, Platform } from 'react-native';
 
-// Add your SFSymbol to MaterialIcons mappings here.
 const MAPPING = {
-  // See MaterialIcons here: https://icons.expo.fyi
-  // See SF Symbols in the SF Symbols app on Mac.
   'house.fill': 'home',
-  'paperplane.fill': 'send',
-  'chevron.left.forwardslash.chevron.right': 'code',
+  'magnifyingglass': 'search',
+  'calendar': 'calendar-today',
+  'person.fill': 'person',
+  'bell.fill': 'notifications',
+  'lock.fill': 'lock',
+  'questionmark.circle': 'help',
   'chevron.right': 'chevron-right',
-  'calendar': 'calendar-today', // Added mapping for calendar icon
-  'magnifyingglass': 'search', // Added mapping for search icon
-  'person.fill': 'person', // Added mapping for person icon
-} as Partial<
-  Record<
-    import('expo-symbols').SymbolViewProps['name'],
-    React.ComponentProps<typeof MaterialIcons>['name']
-  >
->;
+  'envelope.fill': 'email',
+  'camera.fill': 'camera-alt',
+  'checkmark.circle.fill': 'check-circle',
+  'location': 'location-on',
+};
 
-export type IconSymbolName = keyof typeof MAPPING;
+export type SFSymbols6_0 = 
+  | 'house.fill' 
+  | 'magnifyingglass'
+  | 'calendar'
+  | 'person.fill'
+  | 'bell.fill'
+  | 'lock.fill'
+  | 'questionmark.circle'
+  | 'chevron.right'
+  | 'envelope.fill'
+  | 'camera.fill'
+  | 'checkmark.circle.fill'
+  | 'location';
 
-/**
- * An icon component that uses native SFSymbols on iOS, and MaterialIcons on Android and web. This ensures a consistent look across platforms, and optimal resource usage.
- *
- * Icon `name`s are based on SFSymbols and require manual mapping to MaterialIcons.
- */
+interface IconSymbolProps {
+  name: SFSymbols6_0;
+  size?: number;
+  color?: string;
+  style?: any;
+}
+
 export function IconSymbol({
   name,
   size = 24,
-  color,
+  color = 'black',
   style,
-}: {
-  name: IconSymbolName;
-  size?: number;
-  color: string | OpaqueColorValue;
-  style?: StyleProp<ViewStyle>;
-  weight?: SymbolWeight;
-}) {
-  return <MaterialIcons color={color} size={size} name={MAPPING[name]} style={style} />;
+}: IconSymbolProps) {
+  if (Platform.OS === 'android' || Platform.OS === 'web') {
+    const materialName = MAPPING[name] || 'circle';
+    return <MaterialIcons name={materialName as keyof typeof MaterialIcons.glyphMap} size={size} color={color} style={style} />;
+  }
+  
+  return (
+    <Text style={[styles.icon, { fontSize: size, color }, style]}>
+      {name === 'chevron.right' ? '›' : '•'}
+    </Text>
+  );
 }
+
+const styles = StyleSheet.create({
+  icon: {
+    fontWeight: 'bold',
+  },
+});

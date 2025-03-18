@@ -20,11 +20,10 @@ import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 
-// Add this utility function for responsive font sizes
 const responsiveFontSize = (size: number, minSize: number, maxSize: number) => {
   const { width, height } = Dimensions.get("window");
   const screenWidth = Math.min(width, height);
-  const percent = screenWidth / 375; // Base size for design (iPhone X width)
+  const percent = screenWidth / 375;
   const responsiveSize = size * percent;
   return Math.max(minSize, Math.min(responsiveSize, maxSize));
 };
@@ -35,29 +34,24 @@ export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  // Detect if running on web platform
   const isWeb = Platform.OS === "web";
 
-  // Responsive sizing calculations
   const isSmallDevice = screenWidth < 380;
   const isLargeDevice = screenWidth >= 768;
   const logoSize = isLargeDevice ? 0.4 : isSmallDevice ? 0.6 : 0.7;
 
-  // Calculate responsive font sizes
   const titleFontSize = responsiveFontSize(24, 22, 42);
   const subtitleFontSize = responsiveFontSize(18, 16, 22);
   const buttonFontSize = responsiveFontSize(18, 16, 20);
   const orTextFontSize = responsiveFontSize(14, 12, 16);
   const footerFontSize = responsiveFontSize(12, 10, 14);
 
-  // Check if user is already logged in when welcome screen loads
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
         const token = await SecureStore.getItemAsync("userToken");
 
         if (token) {
-          // User is already logged in, go directly to the main app
           router.replace("/(tabs)");
         }
       } catch (e) {
@@ -67,7 +61,6 @@ export default function WelcomeScreen() {
       }
     };
 
-    // Short delay to ensure proper navigation
     const timer = setTimeout(checkAuthStatus, 100);
     return () => clearTimeout(timer);
   }, []);
@@ -80,7 +73,6 @@ export default function WelcomeScreen() {
     router.replace("/register");
   };
 
-  // Show loading indicator while checking authentication
   if (isCheckingAuth) {
     return (
       <LinearGradient
@@ -102,7 +94,6 @@ export default function WelcomeScreen() {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        {/* Background elements */}
         <View
           style={[
             styles.glowCircle,
@@ -116,9 +107,7 @@ export default function WelcomeScreen() {
           ]}
         />
 
-        {/* Content container with flex layout */}
         <View style={styles.contentWrapper}>
-          {/* Logo section - responsive sizing */}
           <View
             style={[
               styles.logoContainer,
@@ -126,8 +115,8 @@ export default function WelcomeScreen() {
                 marginTop: isWeb
                   ? isLargeDevice
                     ? 160
-                    : 120 // Increased from 40/30 to 80/60
-                  : insets.top, // Use safe area insets on mobile
+                    : 120
+                  : insets.top,
                 ...(isSmallDevice &&
                   !isWeb && {
                     marginTop: Math.max(10, insets.top - 15),
@@ -147,7 +136,6 @@ export default function WelcomeScreen() {
             />
           </View>
 
-          {/* Main content */}
           <View style={styles.contentContainer}>
             <View style={styles.titleContainer}>
               <ThemedText
@@ -222,7 +210,6 @@ export default function WelcomeScreen() {
             </View>
           </View>
 
-          {/* Footer */}
           <View
             style={[
               styles.footerContainer,

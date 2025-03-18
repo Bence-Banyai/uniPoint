@@ -8,28 +8,28 @@ import {
   Dimensions,
   View,
   Text,
+  Alert,
 } from "react-native";
 import { Stack, router } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Location from 'expo-location';
 
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { ThemedText } from "@/components/ThemedText";
 import { useColorScheme } from '@/hooks/useColorScheme';
 
-// Add responsive font size utility
 const responsiveFontSize = (size: number, minSize: number, maxSize: number) => {
   const { width, height } = Dimensions.get('window');
   const screenWidth = Math.min(width, height);
-  const percent = screenWidth / 375; // Base size for design (iPhone X width)
+  const percent = screenWidth / 375;
   const responsiveSize = size * percent;
   return Math.max(minSize, Math.min(responsiveSize, maxSize));
 };
 
-// Font family definitions to use consistently across all pages
 const fontFamilies = {
-  title: Platform.select({ ios: "Menlo", android: "monospace" }), // Changed from "SpaceMono" to "Menlo"
+  title: Platform.select({ ios: "Menlo", android: "monospace" }),
   subtitle: Platform.select({ ios: "Avenir-Medium", android: "sans-serif-medium" }),
   text: Platform.select({ ios: "Avenir", android: "sans-serif" }),
   button: Platform.select({ ios: "Avenir-Heavy", android: "sans-serif-medium" }),
@@ -43,19 +43,17 @@ export default function RegisterScreen() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [location, setLocation] = useState("");
+  const [locationStatus, setLocationStatus] = useState("Not requested");
+  const [locationDetails, setLocationDetails] = useState("");
   
-  // Device size detection for responsive layout
   const isSmallDevice = screenWidth < 380;
   const isLargeDevice = screenWidth >= 768;
   
-  // Calculate responsive dimensions
   const buttonHeight = isLargeDevice ? 66 : isSmallDevice ? 50 : 56;
   const inputHeight = isLargeDevice ? 66 : isSmallDevice ? 50 : 56;
   const contentPadding = isLargeDevice ? 60 : isSmallDevice ? 20 : 30;
   const titleMargin = isLargeDevice ? 50 : isSmallDevice ? 30 : 40;
   
-  // Calculate responsive font sizes
   const titleFontSize = responsiveFontSize(24, 22, 42);
   const subtitleFontSize = responsiveFontSize(16, 14, 20);
   const labelFontSize = responsiveFontSize(16, 14, 18);
@@ -66,7 +64,6 @@ export default function RegisterScreen() {
   const handleRegister = () => {
     setIsLoading(true);
     
-    // Simplify the registration process
     setTimeout(() => {
       try {
         setIsLoading(false);
@@ -82,6 +79,45 @@ export default function RegisterScreen() {
     router.replace('/welcome');
   };
 
+  const requestLocationPermission = async () => {
+    setIsLoading(true);
+
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+
+      if (status === 'granted') {
+        setLocationStatus('Granted');
+        const location = await Location.getCurrentPositionAsync({});
+
+        const geocode = await Location.reverseGeocodeAsync({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+
+        if (geocode && geocode.length > 0) {
+          const address = geocode[0];
+          const formattedAddress = `${address.postalCode || ''} ${address.city || ''}, ${address.street || ''} ${address.name || ''}`.trim();
+          setLocationDetails(formattedAddress);
+        } else {
+          setLocationDetails(`Location found (${location.coords.latitude.toFixed(4)}, ${location.coords.longitude.toFixed(4)})`);
+        }
+      } else {
+        setLocationStatus('Denied');
+        Alert.alert(
+          "Location Access Denied",
+          "You can manually enter your location below.",
+          [{ text: "OK" }]
+        );
+      }
+    } catch (error) {
+      console.error('Error getting location:', error);
+      setLocationStatus('Error');
+      Alert.alert("Error", "Could not access location services.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -95,7 +131,6 @@ export default function RegisterScreen() {
       >
         <Stack.Screen options={{ headerShown: false }} />
         
-        {/* Background elements with responsive positioning */}
         <View
           style={[
             styles.glowCircle,
@@ -264,20 +299,52 @@ export default function RegisterScreen() {
                 >
                   Location
                 </ThemedText>
+
                 <TextInput
                   placeholder="Enter your location"
                   placeholderTextColor="rgba(235, 211, 248, 0.5)"
-                  value={location}
-                  onChangeText={setLocation}
+                  value={locationDetails}
+                  onChangeText={setLocationDetails}
                   selectionColor="#31E1F7"
+                  onFocus={Platform.OS === 'web' ? undefined : async () => {
+                    const { status } = await Location.requestForegroundPermissionsAsync();
+
+                    if (status === 'granted') {
+                      setLocationStatus('Granted');
+                      try {
+                        const location = await Location.getCurrentPositionAsync({});
+                        const geocode = await Location.reverseGeocodeAsync({
+                          latitude: location.coords.latitude,
+                          longitude: location.coords.longitude,
+                        });
+
+                        if (geocode && geocode.length > 0) {
+                          const address = geocode[0];
+                          const formattedAddress = `${address.postalCode || ''} ${address.city || ''}, ${address.street || ''} ${address.name || ''}`.trim();
+                          setLocationDetails(formattedAddress);
+                        } else {
+                          setLocationDetails(`Lat: ${location.coords.latitude.toFixed(4)}, Lon: ${location.coords.longitude.toFixed(4)}`);
+                        }
+                      } catch (error) {
+                        console.error("Error getting location:", error);
+                        Alert.alert("Error", "Unable to retrieve location details.");
+                      }
+                    } else {
+                      setLocationStatus('Denied');
+                      Alert.alert(
+                        "Permission Denied",
+                        "You can manually enter your location below."
+                      );
+                    }
+                  }}
                   style={[
-                    styles.input, 
-                    { 
+                    styles.input,
+                    {
                       color: "#EBD3F8",
                       fontSize: inputFontSize,
                       height: inputHeight,
-                      paddingHorizontal: isSmallDevice ? 15 : 20
-                    }
+                      paddingHorizontal: isSmallDevice ? 15 : 20,
+                    },
                   ]}
                 />
               </View>
@@ -464,5 +531,23 @@ const styles = StyleSheet.create({
   footerText: {
     opacity: 0.6,
     fontFamily: fontFamilies.text,
+  },
+  locationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  locationButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  locationText: {
+    fontFamily: fontFamilies.text,
+    flex: 1,
+  },
+  locationButtonText: {
+    fontFamily: fontFamilies.text,
+    flex: 1,
   },
 });

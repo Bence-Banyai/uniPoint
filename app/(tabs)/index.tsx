@@ -18,7 +18,6 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 
-// Add responsive font size utility
 const responsiveFontSize = (size: number, minSize: number, maxSize: number) => {
   const { width, height } = Dimensions.get('window');
   const screenWidth = Math.min(width, height);
@@ -27,7 +26,6 @@ const responsiveFontSize = (size: number, minSize: number, maxSize: number) => {
   return Math.max(minSize, Math.min(responsiveSize, maxSize));
 };
 
-// Font family definitions
 const fontFamilies = {
   title: Platform.select({ ios: "Menlo", android: "monospace" }),
   subtitle: Platform.select({ ios: "Avenir-Medium", android: "sans-serif-medium" }),
@@ -35,16 +33,15 @@ const fontFamilies = {
   button: Platform.select({ ios: "Avenir-Heavy", android: "sans-serif-medium" }),
 };
 
-// Featured banners data
-const featuredBanners = [
+const featuredBanners: BannerItem[] = [
   {
     id: 'banner1',
     title: 'Special Offer',
     description: '20% off on all haircuts this week',
     action: 'Book Now',
     image: require('@/assets/images/adaptive-icon.png'),
-    colors: ['#F806CC', '#8E05C2'],
-    route: '/appointments'
+    colors: ['#F806CC', '#8E05C2'] as [string, string],
+    route: '/appointments' as const
   },
   {
     id: 'banner2',
@@ -52,8 +49,8 @@ const featuredBanners = [
     description: 'Try our premium massage therapy',
     action: 'Explore',
     image: require('@/assets/images/adaptive-icon.png'),
-    colors: ['#31E1F7', '#2979FF'],
-    route: '/appointments'
+    colors: ['#31E1F7', '#2979FF'] as [string, string],
+    route: '/appointments' as const
   },
   {
     id: 'banner3',
@@ -61,12 +58,11 @@ const featuredBanners = [
     description: 'Book your annual checkup today',
     action: 'Schedule',
     image: require('@/assets/images/adaptive-icon.png'),
-    colors: ['#4CAF50', '#8BC34A'],
-    route: '/appointments'
+    colors: ['#4CAF50', '#8BC34A'] as [string, string],
+    route: '/appointments' as const
   },
 ];
 
-// Quick access categories
 const quickAccessItems = [
   { id: 'book', title: 'Book', icon: 'chevron.right', color: '#31E1F7', action: 'book' },
   { id: 'upcoming', title: 'Upcoming', icon: 'chevron.right', color: '#4CAF50', action: 'upcoming' },
@@ -74,7 +70,6 @@ const quickAccessItems = [
   { id: 'profile', title: 'Profile', icon: 'chevron.right', color: '#FF9800', action: 'profile' },
 ];
 
-// Recommended services
 const recommendedServices = [
   { 
     id: '1',
@@ -110,7 +105,6 @@ const recommendedServices = [
   },
 ];
 
-// Next appointment data (could be fetched from your database)
 const nextAppointment = {
   id: '1',
   title: 'General Checkup',
@@ -123,34 +117,73 @@ const nextAppointment = {
   color: '#4CAF50'
 };
 
-// Banner carousel component
-function BannerCarousel({ data, onBannerPress }) {
+interface BannerItem {
+  id: string;
+  title: string;
+  description: string;
+  action: string;
+  image: any;
+  colors: [string, string];
+  route: '/appointments' | '/profile' | '/' | '/login' | '/register';
+}
+
+interface BannerCarouselProps {
+  data: BannerItem[];
+  onBannerPress: (item: BannerItem) => void;
+}
+
+interface QuickAccessItem {
+  id: string;
+  title: string;
+  icon: string;
+  color: string;
+  action: string;
+}
+
+interface QuickAccessCardProps {
+  item: QuickAccessItem;
+  onPress: () => void;
+}
+
+interface ServiceItem {
+  id: string;
+  title: string;
+  provider: string;
+  category: string;
+  image: any;
+  color: string;
+}
+
+interface ServiceCardProps {
+  service: ServiceItem;
+  onPress: () => void;
+}
+
+function BannerCarousel({ data, onBannerPress }: BannerCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const flatListRef = useRef(null);
+  const flatListRef = useRef<FlatList<BannerItem>>(null);
   const screenWidth = Dimensions.get('window').width;
   const bannerWidth = screenWidth - 40; // Account for padding
   const [isAutoScrolling, setIsAutoScrolling] = useState(true);
   
-  // Auto scroll with manual approach instead of scrollToIndex
   useEffect(() => {
-    if (data.length <= 1 || !isAutoScrolling) return; // Don't auto-scroll if only one banner
+    if (data.length <= 1 || !isAutoScrolling) return;
     
     const interval = setInterval(() => {
       if (flatListRef.current) {
         const nextIndex = (activeIndex + 1) % data.length;
-        // Use scrollTo with calculated offset instead of scrollToIndex
         flatListRef.current.scrollToOffset({
           animated: true,
           offset: nextIndex * bannerWidth,
         });
         setActiveIndex(nextIndex);
       }
-    }, 5000); // Change banner every 5 seconds
+    }, 5000);
     
     return () => clearInterval(interval);
-  }, [activeIndex, bannerWidth, isAutoScrolling]);
+  }, [activeIndex, bannerWidth, data.length, isAutoScrolling]);
   
-  const handleScroll = (event) => {
+  const handleScroll = (event: { nativeEvent: { contentOffset: { x: number } } }) => {
     if (!isAutoScrolling) return;
     
     const contentOffsetX = event.nativeEvent.contentOffset.x;
@@ -160,27 +193,16 @@ function BannerCarousel({ data, onBannerPress }) {
     }
   };
 
-  // Calculate item layout for better performance
-  const getItemLayout = (_, index) => ({
+  const getItemLayout = (_: any, index: number) => ({
     length: bannerWidth,
     offset: bannerWidth * index,
     index,
   });
   
-  const handleBannerPress = (item) => {
-    // Temporarily pause auto-scrolling
-    setIsAutoScrolling(false);
-    
-    // Handle the press event
-    onBannerPress(item);
-    
-    // Resume auto-scrolling after a delay
-    setTimeout(() => {
-      setIsAutoScrolling(true);
-    }, 500);
+  const handleBannerPress = (item: BannerItem) => {
   };
   
-  const renderBanner = ({ item }) => (
+  const renderBanner = ({ item }: { item: BannerItem }) => (
     <TouchableOpacity 
       style={[styles.bannerContainer, { width: bannerWidth }]}
       activeOpacity={0.8}
@@ -229,8 +251,11 @@ function BannerCarousel({ data, onBannerPress }) {
     </TouchableOpacity>
   );
   
-  // Handle scroll failures gracefully
-  const handleScrollToIndexFailed = (info) => {
+  const handleScrollToIndexFailed = (info: { 
+    index: number;
+    highestMeasuredFrameIndex: number;
+    averageItemLength: number;
+  }) => {
     const wait = new Promise(resolve => setTimeout(resolve, 500));
     wait.then(() => {
       if (flatListRef.current) {
@@ -244,7 +269,7 @@ function BannerCarousel({ data, onBannerPress }) {
 
   return (
     <View style={styles.carouselContainer}>
-      <FlatList
+      <FlatList<BannerItem>
         ref={flatListRef}
         data={data}
         horizontal
@@ -261,7 +286,6 @@ function BannerCarousel({ data, onBannerPress }) {
         contentContainerStyle={{ paddingRight: 20 }}
       />
       
-      {/* Pagination dots */}
       {data.length > 1 && (
         <View style={styles.paginationContainer}>
           {data.map((_, index) => (
@@ -279,7 +303,7 @@ function BannerCarousel({ data, onBannerPress }) {
   );
 }
 
-function QuickAccessCard({ item, onPress }) {
+function QuickAccessCard({ item, onPress }: QuickAccessCardProps) {
   return (
     <TouchableOpacity 
       style={[styles.quickAccessCard, { backgroundColor: `${item.color}20` }]}
@@ -300,7 +324,7 @@ function QuickAccessCard({ item, onPress }) {
   );
 }
 
-function ServiceCard({ service, onPress }) {
+function ServiceCard({ service, onPress }: ServiceCardProps) {
   return (
     <TouchableOpacity 
       style={styles.serviceCard}
@@ -337,12 +361,11 @@ export default function HomeScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const [isWeb] = useState(Platform.OS === 'web');
   
-  // Calculate responsive sizes
   const screenWidth = Dimensions.get('window').width;
   const isSmallDevice = screenWidth < 380;
   const isLargeDevice = screenWidth >= 768;
   
-  const handleQuickAccess = (action) => {
+  const handleQuickAccess = (action: string) => {
     switch(action) {
       case 'book':
         router.push('/appointments');
@@ -361,23 +384,20 @@ export default function HomeScreen() {
     }
   };
   
-  const handleServicePress = (service) => {
+  const handleServicePress = (service: ServiceItem) => {
     console.log(`Selected service: ${service.title}`);
-    // Navigate to booking for this specific service
   };
   
   const handleSeeAllServices = () => {
     router.push('/appointments');
   };
 
-  const handleBannerPress = (banner) => {
-    // On web, add a small delay before navigation to allow the tap/click animation to show
+  const handleBannerPress = (banner: BannerItem) => {
     if (isWeb) {
       setTimeout(() => {
         router.push(banner.route);
       }, 300);
     } else {
-      // On native, navigate immediately
       router.push(banner.route);
     }
   };
@@ -389,7 +409,6 @@ export default function HomeScreen() {
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
     >
-      {/* Background elements */}
       <View style={[
         styles.glowCircle,
         { top: -Dimensions.get("window").height * 0.2, left: -Dimensions.get("window").width * 0.4 },
@@ -411,7 +430,6 @@ export default function HomeScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header with profile and notification */}
         <View style={styles.header}>
           <View style={styles.profileContainer}>
             <Image 
@@ -445,13 +463,11 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
         
-        {/* Featured banners carousel (replaces quick access grid) */}
         <BannerCarousel 
           data={featuredBanners} 
           onBannerPress={handleBannerPress}
         />
         
-        {/* Next appointment section */}
         <View style={styles.nextAppointmentContainer}>
           <ThemedText 
             style={styles.sectionTitle}
@@ -517,7 +533,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
         
-        {/* Categories section */}
         <View style={styles.categoriesContainer}>
           <ThemedText 
             style={styles.sectionTitle}
@@ -656,7 +671,6 @@ export default function HomeScreen() {
           </View>
         </View>
         
-        {/* Recommended services section */}
         <View style={styles.servicesContainer}>
           <View style={styles.sectionHeader}>
             <ThemedText 
@@ -677,7 +691,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
           
-          <FlatList
+          <FlatList<ServiceItem>
             data={recommendedServices}
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -693,7 +707,6 @@ export default function HomeScreen() {
           />
         </View>
         
-        {/* Book appointment button */}
         <TouchableOpacity
           style={[styles.bookButton, { marginBottom: 10, marginTop: 20 }]}
           activeOpacity={0.8}
@@ -720,9 +733,27 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Keep existing styles...
+  quickAccessCard: {
+    backgroundColor: 'rgba(174, 0, 255, 0.1)',
+    borderRadius: 16,
+    padding: 16,
+    width: '48%',
+    marginBottom: 16,
+  },
+  quickAccessIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  quickAccessTitle: {
+    fontSize: responsiveFontSize(16, 14, 18),
+    fontWeight: '500',
+    fontFamily: fontFamilies.subtitle,
+  },
   
-  // New styles for the banner carousel
   carouselContainer: {
     marginBottom: 24,
     height: 160,
@@ -791,7 +822,6 @@ const styles = StyleSheet.create({
     width: 16,
   },
   
-  // New styles for categories
   categoriesContainer: {
     marginBottom: 24,
   },
@@ -819,7 +849,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   
-  // Keep all other styles...
   container: {
     flex: 1,
   },

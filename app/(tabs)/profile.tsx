@@ -17,11 +17,10 @@ import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
+import { IconSymbol, SFSymbols6_0 } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
-// Add responsive font size utility
 const responsiveFontSize = (size: number, minSize: number, maxSize: number) => {
   const { width, height } = Dimensions.get('window');
   const screenWidth = Math.min(width, height);
@@ -30,7 +29,6 @@ const responsiveFontSize = (size: number, minSize: number, maxSize: number) => {
   return Math.max(minSize, Math.min(responsiveSize, maxSize));
 };
 
-// Font family definitions
 const fontFamilies = {
   title: Platform.select({ ios: "Menlo", android: "monospace" }),
   subtitle: Platform.select({ ios: "Avenir-Medium", android: "sans-serif-medium" }),
@@ -38,7 +36,6 @@ const fontFamilies = {
   button: Platform.select({ ios: "Avenir-Heavy", android: "sans-serif-medium" }),
 };
 
-// User data (placeholder)
 const userProfile = {
   name: "John Doe",
   email: "john.doe@example.com",
@@ -47,38 +44,53 @@ const userProfile = {
   memberSince: "March 2023"
 };
 
-// Settings data - removed dark mode and payment methods
 const settingsData = [
   {
     id: 'notifications',
     title: 'Push Notifications',
-    icon: 'chevron.right',
-    type: 'toggle',
+    icon: 'bell.fill' as const,
+    type: 'toggle' as const,
     value: true
   },
   {
     id: 'privacy',
     title: 'Privacy Settings',
-    icon: 'chevron.right',
-    type: 'navigate',
+    icon: 'lock.fill' as const,
+    type: 'navigate' as const,
     route: '/privacy'
   },
   {
     id: 'help',
     title: 'Help & Support',
-    icon: 'chevron.right',
-    type: 'navigate',
+    icon: 'questionmark.circle' as const,
+    type: 'navigate' as const,
     route: '/help'
   }
 ];
 
-// Setting card component
-function SettingCard({ setting, onToggle, onPress }) {
+type SettingType = {
+  id: string;
+  title: string;
+  icon: SFSymbols6_0;
+  type: 'toggle' | 'navigate';
+  value?: boolean;
+  route?: string;
+};
+
+function SettingCard({ 
+  setting, 
+  onToggle, 
+  onPress 
+}: { 
+  setting: SettingType; 
+  onToggle: (id: string) => void; 
+  onPress: () => void;
+}) {
   return (
     <TouchableOpacity
       style={styles.settingCard}
       activeOpacity={setting.type === 'navigate' ? 0.7 : 1}
-      onPress={setting.type === 'navigate' ? onPress : null}
+      onPress={setting.type === 'navigate' ? onPress : undefined}
     >
       <View style={styles.settingContent}>
         <IconSymbol name={setting.icon} size={20} color="#31E1F7" />
@@ -96,8 +108,6 @@ function SettingCard({ setting, onToggle, onPress }) {
           trackColor={{ false: 'rgba(174, 0, 255, 0.2)', true: 'rgba(49, 225, 247, 0.5)' }}
           thumbColor={setting.value ? '#31E1F7' : '#EBD3F8'}
           onValueChange={() => onToggle(setting.id)}
-          value={setting.value}
-          style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
         />
       ) : (
         <IconSymbol name="chevron.right" size={18} color="#EBD3F8" />
@@ -114,33 +124,28 @@ export default function ProfileScreen() {
   const [settings, setSettings] = useState(settingsData);
   const [profileData, setProfileData] = useState(userProfile);
 
-  // Calculate responsive sizes
   const screenWidth = Dimensions.get('window').width;
   const isSmallDevice = screenWidth < 380;
   const isLargeDevice = screenWidth >= 768;
   
-  // Handle logout
   const handleLogout = () => {
-    // Show confirmation alert
     router.replace('/welcome');
   };
 
-  // Handle toggle settings
-  const handleToggleSetting = (id) => {
-    setSettings(settings.map(setting => 
-      setting.id === id 
-        ? {...setting, value: !setting.value} 
-        : setting
-    ));
+    const handleToggleSetting = (id: string) => {
+      setSettings(prev => prev.map(setting => 
+        setting.id === id 
+          ? {...setting, value: !setting.value} as typeof setting
+          : setting
+      ));
+    };
+
+  const handleSettingPress = (route: string | undefined) => {
+    if (route) {
+      console.log(`Navigate to: ${route}`);
+    }
   };
 
-  // Handle navigation to setting screens
-  const handleSettingPress = (route) => {
-    console.log(`Navigate to: ${route}`);
-    // router.push(route);
-  };
-
-  // Handle edit profile
   const handleEditProfile = () => {
     setIsEditMode(!isEditMode);
   };
@@ -152,7 +157,6 @@ export default function ProfileScreen() {
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
     >
-      {/* Background effects */}
       <View style={[
         styles.glowCircle,
         { top: -Dimensions.get("window").height * 0.2, left: -Dimensions.get("window").width * 0.4 },
@@ -174,7 +178,6 @@ export default function ProfileScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
         <View style={styles.header}>
           <ThemedText
             style={styles.headerTitle}
@@ -197,7 +200,6 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
         
-        {/* Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.profileHeader}>
             <View style={styles.profileImageContainer}>
@@ -207,7 +209,7 @@ export default function ProfileScreen() {
               />
               {isEditMode && (
                 <TouchableOpacity style={styles.changePhotoButton}>
-                  <IconSymbol name="chevron.right" size={18} color="#fff" />
+                  <IconSymbol name="camera.fill" size={18} color="#fff" />
                 </TouchableOpacity>
               )}
             </View>
@@ -237,11 +239,10 @@ export default function ProfileScreen() {
               </ThemedText>
             </View>
           </View>
-          
+
           <View style={styles.profileDetailsList}>
-            {/* Email */}
             <View style={styles.profileDetailItem}>
-              <IconSymbol name="chevron.right" size={20} color="#31E1F7" />
+              <IconSymbol name="envelope.fill" size={20} color="#31E1F7" />
               <View style={styles.detailContent}>
                 <ThemedText
                   style={styles.detailLabel}
@@ -269,10 +270,9 @@ export default function ProfileScreen() {
                 )}
               </View>
             </View>
-            
-            {/* Address */}
+
             <View style={styles.profileDetailItem}>
-              <IconSymbol name="chevron.right" size={20} color="#31E1F7" />
+              <IconSymbol name="house.fill" size={20} color="#31E1F7" />
               <View style={styles.detailContent}>
                 <ThemedText
                   style={styles.detailLabel}
@@ -303,7 +303,6 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* History stats */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <ThemedText
@@ -357,7 +356,6 @@ export default function ProfileScreen() {
           </View>
         </View>
         
-        {/* Settings section */}
         <View style={styles.settingsSection}>
           <ThemedText
             style={styles.sectionTitle}
@@ -379,7 +377,6 @@ export default function ProfileScreen() {
           </View>
         </View>
         
-        {/* Logout button */}
         <TouchableOpacity
           style={styles.logoutButton}
           onPress={handleLogout}
@@ -401,7 +398,6 @@ export default function ProfileScreen() {
           </LinearGradient>
         </TouchableOpacity>
         
-        {/* App version */}
         <View style={styles.versionContainer}>
           <ThemedText
             style={styles.versionText}
