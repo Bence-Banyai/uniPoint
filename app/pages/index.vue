@@ -73,9 +73,10 @@
     </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 definePageMeta({
+    layout: 'default',
     title: 'Home | UniPoint',
     description: 'Transforming Education Through Innovation'
-})
+});
 </script>
