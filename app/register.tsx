@@ -54,7 +54,7 @@ export default function RegisterScreen() {
   const contentPadding = isLargeDevice ? 60 : isSmallDevice ? 20 : 30;
   const titleMargin = isLargeDevice ? 50 : isSmallDevice ? 30 : 40;
   
-  const titleFontSize = responsiveFontSize(24, 22, 42);
+  const titleFontSize = responsiveFontSize(22, 22, 42);
   const subtitleFontSize = responsiveFontSize(16, 14, 20);
   const labelFontSize = responsiveFontSize(16, 14, 18);
   const inputFontSize = responsiveFontSize(16, 14, 18);
