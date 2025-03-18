@@ -7,13 +7,15 @@ import {
   Platform,
   View,
   Switch,
-  TextInput
+  TextInput,
+  Alert
 } from 'react-native';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import * as ImagePicker from 'expo-image-picker';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -150,6 +152,45 @@ export default function ProfileScreen() {
     setIsEditMode(!isEditMode);
   };
 
+  const handleChangePhoto = async () => {
+    try {
+      if (Platform.OS !== 'web') {
+        // Request permission on mobile platforms only
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        
+        if (status !== 'granted') {
+          Alert.alert(
+            'Permission Required', 
+            'Please allow access to your photo library to change your profile picture.'
+          );
+          return;
+        }
+      }
+      
+      // Launch the image picker (works on both mobile and web)
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+      
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        // Update profile with the selected image
+        setProfileData(prev => ({
+          ...prev,
+          profileImage: { uri: result.assets[0].uri }
+        }));
+      }
+    } catch (error) {
+      console.error('Error selecting image:', error);
+      Alert.alert(
+        'Error',
+        'There was an error selecting your image. Please try again.'
+      );
+    }
+  };
+
   return (
     <LinearGradient
       colors={["#2E0249", "#570A57", "#A91079"]}
@@ -208,7 +249,10 @@ export default function ProfileScreen() {
                 style={styles.profileImage}
               />
               {isEditMode && (
-                <TouchableOpacity style={styles.changePhotoButton}>
+                <TouchableOpacity 
+                  style={styles.changePhotoButton}
+                  onPress={handleChangePhoto}  // Add this onPress handler
+                >
                   <IconSymbol name="camera.fill" size={18} color="#fff" />
                 </TouchableOpacity>
               )}
