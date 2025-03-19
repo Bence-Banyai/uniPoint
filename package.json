@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@nuxt/icon": "^1.11.0",
-    "@nuxt/image": "^1.9.0",
+    "@nuxt/image": "^1.10.0",
     "@nuxtjs/google-fonts": "^3.2.0",
     "@nuxtjs/tailwindcss": "^6.13.2",
     "@sidebase/nuxt-auth": "^0.10.1",
