@@ -1,0 +1,6 @@
+@uniPoint_backend_HostAddress = http://localhost:5273
+
+GET {{uniPoint_backend_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
