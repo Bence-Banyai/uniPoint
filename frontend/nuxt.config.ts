@@ -8,6 +8,16 @@ export default defineNuxtConfig({
 		},
 	},
 
+	auth: {
+		provider: {
+			type: "local", // Use a custom auth provider instead of Auth.js
+		},
+		globalAppMiddleware: {
+			isEnabled: false, // Enable this later when auth is working
+		},
+		baseURL: process.env.API_BASE_URL || "http://localhost:5001", // Set the base URL for auth requests
+	},
+
 	future: {
 		compatibilityVersion: 4,
 	},
