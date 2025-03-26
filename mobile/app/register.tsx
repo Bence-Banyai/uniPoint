@@ -15,6 +15,7 @@ import { useState, useEffect } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Location from 'expo-location';
+import { useAuth } from './context/AuthContext';
 
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { ThemedText } from "@/components/ThemedText";
@@ -45,6 +46,10 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState("");
   const [locationStatus, setLocationStatus] = useState("Not requested");
   const [locationDetails, setLocationDetails] = useState("");
+  const [username, setUsername] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  
+  const { register, isLoading: authLoading } = useAuth();
   
   const isSmallDevice = screenWidth < 380;
   const isLargeDevice = screenWidth >= 768;
@@ -61,18 +66,25 @@ export default function RegisterScreen() {
   const buttonFontSize = responsiveFontSize(18, 16, 20);
   const footerFontSize = responsiveFontSize(14, 12, 16);
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     setIsLoading(true);
     
-    setTimeout(() => {
-      try {
-        setIsLoading(false);
-        router.replace('/(tabs)');
-      } catch (error) {
-        console.error('Register failed:', error);
-        setIsLoading(false);
-      }
-    }, 1000);
+    try {
+      await register({
+        userName: username,
+        email: email,
+        phoneNumber: phoneNumber,
+        password: password,
+        role: 'User' // Default role for new users
+      });
+      
+      router.replace('/(tabs)');
+    } catch (error) {
+      console.error('Registration failed:', error);
+      Alert.alert('Registration Failed', 'Please check your information and try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   const handleBack = () => {
@@ -242,6 +254,32 @@ export default function RegisterScreen() {
                   darkColor="#EBD3F8"
                   lightColor="#EBD3F8"
                 >
+                  Username
+                </ThemedText>
+                <TextInput
+                  placeholder="Enter your username"
+                  placeholderTextColor="rgba(235, 211, 248, 0.5)"
+                  value={username}
+                  onChangeText={setUsername}
+                  selectionColor="#31E1F7"
+                  style={[
+                    styles.input, 
+                    { 
+                      color: "#EBD3F8",
+                      fontSize: inputFontSize,
+                      height: inputHeight,
+                      paddingHorizontal: isSmallDevice ? 15 : 20
+                    }
+                  ]}
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <ThemedText
+                  style={[styles.label, { fontSize: labelFontSize }]}
+                  darkColor="#EBD3F8"
+                  lightColor="#EBD3F8"
+                >
                   Email
                 </ThemedText>
                 <TextInput
@@ -278,6 +316,33 @@ export default function RegisterScreen() {
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
+                  selectionColor="#31E1F7"
+                  style={[
+                    styles.input, 
+                    { 
+                      color: "#EBD3F8",
+                      fontSize: inputFontSize,
+                      height: inputHeight,
+                      paddingHorizontal: isSmallDevice ? 15 : 20
+                    }
+                  ]}
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <ThemedText
+                  style={[styles.label, { fontSize: labelFontSize }]}
+                  darkColor="#EBD3F8"
+                  lightColor="#EBD3F8"
+                >
+                  Phone Number
+                </ThemedText>
+                <TextInput
+                  placeholder="Enter your phone number"
+                  placeholderTextColor="rgba(235, 211, 248, 0.5)"
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                  keyboardType="phone-pad"
                   selectionColor="#31E1F7"
                   style={[
                     styles.input, 
