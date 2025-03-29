@@ -31,7 +31,7 @@ namespace uniPoint_backend.Models
 
         [Required]
         [Timestamp]
-        public DateTime ScheduledAt { get; set; }
+        public DateTime appointmentDate { get; set; }
 
         [Required]
         [EnumDataType(typeof(AppointmentStatus))]

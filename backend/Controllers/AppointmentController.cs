@@ -182,7 +182,7 @@ namespace uniPoint_backend.Controllers
                 return Forbid();
             }
 
-            appointment.ScheduledAt = updatedAppointment.ScheduledAt;
+            appointment.appointmentDate = updatedAppointment.appointmentDate;
             appointment.Status = updatedAppointment.Status;
 
             _uniPointContext.Entry(appointment).State = EntityState.Modified;

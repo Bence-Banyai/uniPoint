@@ -31,5 +31,12 @@ namespace uniPoint_backend.Models
 
         [Required]
         public int Duration { get; set; }
+
+        [Required]
+        public string Category { get; set; }
+
+        public string? CategoryIconUrl { get; set; } // todo
+
+        public List<string>? ImageUrls { get; set; }
     }
 }
