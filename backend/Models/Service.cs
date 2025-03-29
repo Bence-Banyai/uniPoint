@@ -32,6 +32,8 @@ namespace uniPoint_backend.Models
         [Required]
         public int Duration { get; set; }
 
+        public int OpeningHours { get; set; } // todo
+
         [Required]
         public string Category { get; set; }
 

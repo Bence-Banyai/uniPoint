@@ -12,6 +12,9 @@ Az adatbázis elkészítését az EntityFramework kezeli, tehát a model osztál
 - ProfilePictureUrl: VARCHAR(255), not null, default: "default.png"
 - CreatedAt: DATETIME(6), not null, timestamp validáció, default: létrehozás dátuma UTC
 - PasswordHash: LONGTEXT, not null, automatikus titkosítás
+- Location: VARCHAR(255)
+- IsPushNotificationsEnabled: TINYINT(1), (Entityframework bool)
+- UserSelectedLanguage: LONGTEXT, Lehetséges értékek: "magyar", "angol"
 
 IdentityUser által létrehozott, közvetlenül nem használt
 - AccessFailedCount: INT(11), not null
@@ -33,6 +36,10 @@ IdentityUser által létrehozott, közvetlenül nem használt
 - Description: VARHCHAR(2000), not null
 - Address: VARCHAR(255), not null
 - Duration: INT(11), not null
+- Category: LONGTEXT, not null
+- CategoryIconUrl: LONGTEXT
+- ImageUrls: LONGTEXT (Entityframework string list)
+- OpeningHours: INT(11)
 
 ** appointments tábla
 - Id:  PK, INT(11), not null, unique
@@ -111,7 +118,6 @@ IdentityUser által létrehozott, közvetlenül nem használt
 - url: /api/Auth/login
 - POST request:
 #+begin_src json
-Headers: 'Content-Type: application/json'
 {
   "userNameOrEmail": "jeno",
   "password": "Jeno123"
