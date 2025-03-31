@@ -62,6 +62,7 @@ export default function useApiClient() {
 				const response = await fetch(`${baseURL}${endpoint}`, {
 					method: "GET",
 					headers: getHeaders(),
+					credentials: "include",
 				});
 
 				if (!response.ok) {
@@ -70,7 +71,7 @@ export default function useApiClient() {
 
 				return await response.json();
 			} catch (error) {
-				console.error(`Error fetching ${endpoint}:`, error);
+				console.error(`Error getting from ${endpoint}:`, error);
 				throw error;
 			}
 		},

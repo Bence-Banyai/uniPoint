@@ -1,4 +1,3 @@
-
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -59,8 +58,24 @@ namespace uniPoint_backend
                 options.Password.RequireLowercase = true;
             });
 
-            // Add services to the container.
+            // Add CORS services with combined policy for both Nuxt and mobile
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll", builder =>
+                {
+                    builder
+                        .WithOrigins(
+                            "http://localhost:3000",    // Nuxt dev server
+                            "http://localhost:8081",    // Mobile - Expo
+                            "http://localhost:19006"    // Mobile - Expo web
+                        )
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+                });
+            });
 
+            // Add services to the container.
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
@@ -81,16 +96,23 @@ namespace uniPoint_backend
                 app.UseSwaggerUI();
             }
 
-            app.UseHttpsRedirection();
+            // For development, comment out HTTPS redirection to allow HTTP requests
+            if (!app.Environment.IsDevelopment())
+            {
+                app.UseHttpsRedirection();
+            }
+
+            // Apply the combined CORS policy
+            app.UseCors("AllowAll");
 
             app.UseAuthentication();
             app.UseAuthorization();
-
 
             app.MapControllers();
 
             await app.RunAsync();
         }
+        
         static async Task SeedRolesAsync(IServiceProvider serviceProvider)
         {
             var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();

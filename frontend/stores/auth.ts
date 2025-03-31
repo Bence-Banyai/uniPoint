@@ -35,6 +35,15 @@ export const useAuthStore = defineStore("auth", {
 					this.setUserId(response.userId);
 					this.setIsAuthenticated(true);
 
+					// Store user information from the response
+					if (response.userName || response.email || response.role) {
+						this.setUser({
+							userName: response.userName || null,
+							email: response.email || null,
+							role: response.role || null,
+						});
+					}
+
 					// Store token in a secure cookie
 					const cookie = useCookie("auth-token", {
 						maxAge: 60 * 60 * 24, // 1 day
@@ -109,6 +118,44 @@ export const useAuthStore = defineStore("auth", {
 			}
 		},
 
+		// Add this to the actions section of useAuthStore
+		async getUserInfo() {
+			try {
+				if (!this.token || !this.userId) {
+					return {
+						success: false,
+						message: "Not authenticated",
+					};
+				}
+
+				const authApi = useAuthApi();
+				const userData = await authApi.getUserInfo();
+
+				if (userData) {
+					this.setUser({
+						userName: userData.userName || null,
+						email: userData.email || null,
+						role: userData.role || null,
+						// Store additional user data if needed
+						// if (userData.phoneNumber) {
+						// You might need to add phoneNumber to your user state
+						// this.user.phoneNumber = userData.phoneNumber;
+						// }
+					});
+				}
+
+				return {
+					success: true,
+				};
+			} catch (error) {
+				console.error("Error fetching user info:", error);
+				return {
+					success: false,
+					message: error instanceof Error ? error.message : "Unknown error occurred",
+				};
+			}
+		},
+
 		// Helper methods for state management
 		setToken(token: string) {
 			this.token = token;
@@ -137,14 +184,52 @@ export const useAuthStore = defineStore("auth", {
 			};
 		},
 
-		// Method to initialize auth state from cookies on app startup
 		init() {
 			const token = useCookie("auth-token").value as string | null;
 
 			if (token) {
 				this.setToken(token);
 				this.setIsAuthenticated(true);
-				// You might want to fetch user details here
+
+				try {
+					const tokenParts = token.split(".");
+					const payload = tokenParts[1] ? JSON.parse(atob(tokenParts[1])) : {};
+
+					const userId =
+						payload.sub ||
+						payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+					if (userId) {
+						this.setUserId(userId);
+					}
+
+					this.setUser({
+						userName:
+							payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"] ||
+							payload.unique_name ||
+							null,
+						email:
+							payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"] ||
+							payload.email ||
+							null,
+						role:
+							payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
+							payload.role ||
+							null,
+					});
+				} catch (error) {
+					console.error("Error parsing token:", error);
+					// Fall back to placeholder
+					this.setUser({
+						userName: "User",
+						email: "",
+						role: "User",
+					});
+				}
+
+				// You can also try to fetch fresh user data if needed
+				this.getUserInfo().catch((err) => {
+					console.error("Failed to refresh user data:", err);
+				});
 			}
 		},
 	},
