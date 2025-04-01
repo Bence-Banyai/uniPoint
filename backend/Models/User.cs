@@ -7,7 +7,7 @@ namespace uniPoint_backend.Models
     public class User : IdentityUser
     {
         [MaxLength(255)]
-        public string ProfilePictureUrl { get; set; } = "default.png";
+        public string ProfilePictureUrl { get; set; } = "https://tiszolczijacint.blob.core.windows.net/img/63cf316b-35a1-432e-92fe-0f2d0b2029c3.jpg";
 
         [MaxLength(255)]
         public string? Location { get; set; }

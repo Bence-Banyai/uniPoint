@@ -1,3 +1,4 @@
+using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -48,6 +49,8 @@ namespace uniPoint_backend
             builder.Services.AddIdentity<User, IdentityRole>()
                 .AddEntityFrameworkStores<uniPointContext>()
                 .AddDefaultTokenProviders();
+
+            builder.Services.AddScoped<BlobService>();
 
             builder.Services.Configure<IdentityOptions>(options =>
             {

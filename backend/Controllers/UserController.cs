@@ -17,11 +17,14 @@ namespace uniPoint_backend.Controllers
     {
         private readonly UserManager<User> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly BlobService _blobService;
 
-        public UserController(UserManager<User> userManager, RoleManager<IdentityRole> roleManager)
+
+        public UserController(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, BlobService blobService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
+            _blobService = blobService;
         }
 
         // GET: api/<UserController>
@@ -102,6 +105,51 @@ namespace uniPoint_backend.Controllers
             }
 
             return Ok("User deleted successfully.");
+        }
+
+        // POST api/<UserController>/5/upload-profile-picture
+        [HttpPost("{id}/upload-profile-picture")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadProfilePicture(string id, IFormFile file)
+        {
+            if (file == null)
+                return BadRequest();
+
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+            var extension = Path.GetExtension(file.FileName).ToLower();
+            if (!allowedExtensions.Contains(extension))
+                return BadRequest("Unsupported filetype (must be: jpg, jpeg, png).");
+
+            const long maxFileSize = 15 * 1024 * 1024;
+            if (file.Length > maxFileSize)
+            {
+                return BadRequest("File size must be under 15MB.");
+            }
+
+            string imageUrl = await _blobService.UploadImageAsync(file);
+
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (id != currentUserId)
+            {
+                return Forbid();
+            }
+
+            user.ProfilePictureUrl = imageUrl;
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                return BadRequest(result.Errors);
+            }
+
+            return Ok(user);
         }
     }
 }

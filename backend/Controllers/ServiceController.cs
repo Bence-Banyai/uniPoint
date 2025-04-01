@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
@@ -15,10 +16,13 @@ namespace uniPoint_backend.Controllers
     public class ServiceController : ControllerBase
     {
         private readonly uniPointContext _uniPointContext;
+        private readonly BlobService _blobService;
 
-        public ServiceController(uniPointContext uniPointContext)
+
+        public ServiceController(uniPointContext uniPointContext, BlobService blobService)
         {
             _uniPointContext = uniPointContext;
+            _blobService = blobService;
         }
 
         // GET: api/<ServiceController>
@@ -120,6 +124,59 @@ namespace uniPoint_backend.Controllers
             _uniPointContext.Services.Remove(service);
             await _uniPointContext.SaveChangesAsync();
             return Ok();
+        }
+
+        // POST api/<ServiceController>/5/upload-service-picture
+        [Authorize(Roles = "Provider,Admin")]
+        [Consumes("multipart/form-data")]
+        [HttpPost("{id}/upload-service-picture")]
+        public async Task<IActionResult> UploadProfilePicture(int id, IFormFileCollection files)
+        {
+            var existingService = await _uniPointContext.Services.FindAsync(id);
+            if (existingService == null)
+            {
+                return NotFound();
+            }
+
+            var role = User.FindFirstValue(ClaimTypes.Role);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (role != "Admin" && existingService.UserId != userId)
+            {
+                return Forbid();
+            }
+
+            if (files == null)
+                return BadRequest();
+
+            if (files.Count > 10)
+                return BadRequest("Max number of images: 10");
+
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+            List<string> imageUrls = new List<string>();
+            foreach (var file in files)
+            {
+                var extension = Path.GetExtension(file.FileName).ToLower();
+                if (!allowedExtensions.Contains(extension))
+                    return BadRequest("Unsupported filetype (must be: jpg, jpeg, png).");            
+
+                const long maxFileSize = 15 * 1024 * 1024;
+
+                if (file.Length > maxFileSize)
+                {
+                    return BadRequest("File size must be under 15MB.");
+                }
+
+                string imageUrl = await _blobService.UploadImageAsync(file);
+                imageUrls.Add(imageUrl);
+            }
+
+            existingService.ImageUrls = imageUrls;
+
+            _uniPointContext.Entry(existingService).State = EntityState.Modified;
+            await _uniPointContext.SaveChangesAsync();
+
+            return Ok(existingService);
         }
     }
 }
