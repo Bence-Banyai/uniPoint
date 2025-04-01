@@ -12,8 +12,8 @@ using uniPoint_backend;
 namespace uniPoint_backend.Migrations
 {
     [DbContext(typeof(uniPointContext))]
-    [Migration("20250401091840_pfp_url")]
-    partial class pfp_url
+    [Migration("20250401110103_category")]
+    partial class category
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -170,6 +170,28 @@ namespace uniPoint_backend.Migrations
                     b.ToTable("Appointments");
                 });
 
+            modelBuilder.Entity("uniPoint_backend.Models.Category", b =>
+                {
+                    b.Property<int>("CategoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("CategoryId"));
+
+                    b.Property<string>("IconUrl")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("CategoryId");
+
+                    b.ToTable("Categories");
+                });
+
             modelBuilder.Entity("uniPoint_backend.Models.Review", b =>
                 {
                     b.Property<int>("ReviewId")
@@ -219,12 +241,8 @@ namespace uniPoint_backend.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
 
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("CategoryIconUrl")
-                        .HasColumnType("longtext");
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -253,6 +271,8 @@ namespace uniPoint_backend.Migrations
                         .HasColumnType("varchar(255)");
 
                     b.HasKey("ServiceId");
+
+                    b.HasIndex("CategoryId");
 
                     b.HasIndex("UserId");
 
@@ -372,11 +392,19 @@ namespace uniPoint_backend.Migrations
 
             modelBuilder.Entity("uniPoint_backend.Models.Service", b =>
                 {
+                    b.HasOne("uniPoint_backend.Models.Category", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("uniPoint_backend.Models.User", "Provider")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Category");
 
                     b.Navigation("Provider");
                 });

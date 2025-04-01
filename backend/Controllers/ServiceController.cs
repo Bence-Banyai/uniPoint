@@ -130,7 +130,7 @@ namespace uniPoint_backend.Controllers
         [Authorize(Roles = "Provider,Admin")]
         [Consumes("multipart/form-data")]
         [HttpPost("{id}/upload-service-picture")]
-        public async Task<IActionResult> UploadProfilePicture(int id, IFormFileCollection files)
+        public async Task<IActionResult> UploadServicePicture(int id, IFormFileCollection files)
         {
             var existingService = await _uniPointContext.Services.FindAsync(id);
             if (existingService == null)

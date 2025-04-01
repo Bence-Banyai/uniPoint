@@ -12,6 +12,7 @@ namespace uniPoint_backend
         public DbSet<Service> Services { get; set; } = null!;
         public DbSet<Appointment> Appointments { get; set; } = null!;
         public DbSet<Review> Reviews { get; set; } = null!;
+        public DbSet<Category> Categories { get; set; } = null!;
 
         public uniPointContext(DbContextOptions<uniPointContext> options) : base(options)
         {

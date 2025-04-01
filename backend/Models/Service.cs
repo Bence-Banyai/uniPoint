@@ -14,6 +14,10 @@ namespace uniPoint_backend.Models
         [ForeignKey("UserId")]
         public virtual User? Provider { get; set; }
 
+        [ForeignKey("CategoryId")]
+        public virtual Category? Category { get; set; }
+        public int CategoryId { get; set; }
+
         [Required]
         [MaxLength(255)]
         public string ServiceName { get; set; }
@@ -33,11 +37,6 @@ namespace uniPoint_backend.Models
         public int Duration { get; set; }
 
         public int OpeningHours { get; set; } // todo
-
-        [Required]
-        public string Category { get; set; }
-
-        public string? CategoryIconUrl { get; set; } // todo
 
         public List<string>? ImageUrls { get; set; }
     }
