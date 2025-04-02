@@ -6,13 +6,15 @@ import {
   Image,
   Dimensions,
   Platform,
-  FlatList
+  FlatList,
+  Text
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useAuth } from '../context/AuthContext';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -298,10 +300,12 @@ function AppointmentCard({ appointment, onReschedule, onCancel, isPast = false }
   );
 }
 
+
 export default function AppointmentsScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const [activeTab, setActiveTab] = useState('upcoming'); 
+  const { userName, email } = useAuth();
   
   const screenWidth = Dimensions.get('window').width;
   const isSmallDevice = screenWidth < 380;
@@ -374,7 +378,7 @@ export default function AppointmentsScreen() {
                 darkColor="#fff" 
                 lightColor="#fff"
               >
-                John Doe
+                {userName || 'User'}
               </ThemedText>
             </View>
           </View>

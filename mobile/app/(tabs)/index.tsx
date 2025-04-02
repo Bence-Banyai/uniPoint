@@ -6,13 +6,15 @@ import {
   Image,
   Dimensions,
   Platform,
-  FlatList
+  FlatList,
+  Text
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useState, useRef, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -356,9 +358,21 @@ function ServiceCard({ service, onPress }: ServiceCardProps) {
   );
 }
 
+function MyComponent() {
+  const { userName, email } = useAuth();
+  
+  return (
+    <View>
+      <Text>Welcome, {userName || 'User'}!</Text>
+      <Text>Email: {email || 'N/A'}</Text>
+    </View>
+  );
+}
+
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
+  const { userName } = useAuth();
   const [isWeb] = useState(Platform.OS === 'web');
   
   const screenWidth = Dimensions.get('window').width;
@@ -449,7 +463,7 @@ export default function HomeScreen() {
                 darkColor="#fff" 
                 lightColor="#fff"
               >
-                John Doe
+                {userName || 'User'}
               </ThemedText>
             </View>
           </View>

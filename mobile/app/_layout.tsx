@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { AuthProvider } from './context/AuthContext';
+import { Platform } from 'react-native';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -24,6 +25,17 @@ export default function RootLayout() {
   useEffect(() => {
     if (error) throw error;
   }, [error]);
+
+  useEffect(() => {
+    const checkSecureStore = async () => {
+      if (Platform.OS === 'web') {
+        // SecureStore not available on web, make sure fallbacks are used
+        console.log('Running on web platform - using localStorage fallbacks');
+      }
+    };
+    
+    checkSecureStore();
+  }, []);
 
   if (!loaded) {
     return null;
