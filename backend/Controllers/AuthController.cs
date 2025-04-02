@@ -56,7 +56,8 @@ namespace uniPoint_backend.Controllers
 
             await _userManager.AddToRoleAsync(user, model.Role);
 
-            return Ok(new { Message = "User registered successfully!" });
+            var token = await GenerateJwtToken(user);
+            return Ok(new { Token = token, Message = "User registered successfully!", UserId = user.Id, userName = user.UserName, email = user.Email });
         }
 
         [HttpPost("login")]
@@ -74,7 +75,7 @@ namespace uniPoint_backend.Controllers
                 return Unauthorized("Invalid email or password.");
 
             var token = await GenerateJwtToken(user);
-            return Ok(new { Token = token, Message = "Login successful", UserId = user.Id });
+            return Ok(new { Token = token, Message = "Login successful", UserId = user.Id, userName = user.UserName, email = user.Email });
         }
 
         [HttpPost("logout")]
