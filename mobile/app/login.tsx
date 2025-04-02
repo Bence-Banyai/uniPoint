@@ -1,24 +1,23 @@
+import { useState, useCallback } from "react";
 import {
   StyleSheet,
-  TouchableOpacity,
   TextInput,
+  TouchableOpacity,
+  Alert,
+  View,
+  Text,
+  Dimensions,
+  ScrollView,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
-  View,
-  Dimensions,
 } from "react-native";
-import { useState } from "react";
-import { router } from "expo-router";
-import * as SecureStore from "expo-secure-store";
+import { Stack, router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
-import { Colors } from "@/constants/Colors";
-import { useColorScheme } from "@/hooks/useColorScheme";
-import { IconSymbol } from "@/components/ui/IconSymbol";
+import { useAuth } from './context/AuthContext';
+import { ThemedText } from '@/components/ThemedText';
+import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
 const responsiveFontSize = (size: number, minSize: number, maxSize: number) => {
   const { width, height } = Dimensions.get('window');
@@ -36,15 +35,17 @@ const fontFamilies = {
 };
 
 export default function LoginScreen() {
-  const colorScheme = useColorScheme() ?? "light";
+  const colorScheme = useColorScheme() ?? 'light';
   const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
   const insets = useSafeAreaInsets();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  
   const [isLoading, setIsLoading] = useState(false);
+  const [userNameOrEmail, setUserNameOrEmail] = useState("");
+  const [password, setPassword] = useState("");
+  
+  const { login } = useAuth();
   
   const isSmallDevice = screenWidth < 380;
-  const isMediumDevice = screenWidth >= 380 && screenWidth < 768;
   const isLargeDevice = screenWidth >= 768;
   
   const buttonHeight = isLargeDevice ? 66 : isSmallDevice ? 50 : 56;
@@ -53,31 +54,58 @@ export default function LoginScreen() {
   const titleMargin = isLargeDevice ? 50 : isSmallDevice ? 30 : 40;
   
   const titleFontSize = responsiveFontSize(22, 22, 42);
+  const subtitleFontSize = responsiveFontSize(16, 14, 20);
   const labelFontSize = responsiveFontSize(16, 14, 18);
   const inputFontSize = responsiveFontSize(16, 14, 18);
   const buttonFontSize = responsiveFontSize(18, 16, 20);
-  const forgotPasswordFontSize = responsiveFontSize(14, 12, 16);
-  const footerFontSize = responsiveFontSize(12, 10, 14);
-  const subtitleFontSize = responsiveFontSize(18, 16, 20);
+  const footerFontSize = responsiveFontSize(14, 12, 16);
 
-  const handleSignIn = () => {
+  const handleBack = useCallback(() => {
+    console.log('Attempting to navigate to:', '/welcome');
+    try {
+      router.replace('/welcome');
+      console.log('Navigation successful');
+    } catch (navError) {
+      console.error('Navigation error:', navError);
+    }
+  }, []);
+
+  const handleLogin = useCallback(async () => {
+    if (!userNameOrEmail || !password) {
+      Alert.alert('Missing Information', 'Please enter your username/email and password.');
+      return;
+    }
+
     setIsLoading(true);
-
-    setTimeout(() => {
+    
+    try {
+      console.log('Attempting to login with:', userNameOrEmail);
+      
+      const result = await login({ userNameOrEmail, password });
+      console.log('Login successful, result:', result);
+      
+      console.log('Attempting to navigate to:', '/(tabs)');
       try {
-        setIsLoading(false);
-
-        router.replace("/(tabs)");
-      } catch (error) {
-        console.error("Login failed:", error);
-        setIsLoading(false);
+        // First try replacing the route
+        router.replace('/(tabs)');
+        console.log('Navigation successful');
+      } catch (navError) {
+        console.error('Navigation error:', navError);
+                
       }
-    }, 1000);
-  };
-
-  const handleBack = () => {
-    router.replace("/welcome");
-  };
+    } catch (error: any) {
+      console.error('Login failed:', error);
+      
+      let errorMessage = 'Invalid credentials. Please check your username/email and password.';
+      if (error instanceof Error) {
+        errorMessage = error.message || errorMessage;
+      }
+      
+      Alert.alert('Login Failed', errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [userNameOrEmail, password, login]);
 
   return (
     <KeyboardAvoidingView
@@ -90,6 +118,8 @@ export default function LoginScreen() {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
+        <Stack.Screen options={{ headerShown: false }} />
+        
         <View
           style={[
             styles.glowCircle,
@@ -108,7 +138,7 @@ export default function LoginScreen() {
             },
           ]}
         />
-
+        
         <ScrollView
           contentContainerStyle={[
             styles.scrollContainer,
@@ -151,26 +181,23 @@ export default function LoginScreen() {
               darkColor="#fff" 
               lightColor="#fff"
             >
-              Sign In
+              Welcome Back
             </ThemedText>
-
+            
             <ThemedText
               style={[
                 styles.subtitle,
-                { 
-                  fontSize: subtitleFontSize, 
-                  marginBottom: titleMargin / 1.5 
-                }
+                { fontSize: subtitleFontSize, marginBottom: titleMargin / 1.5 }
               ]}
               darkColor="#EBD3F8"
               lightColor="#EBD3F8"
             >
-              Access your connected world
+              Log in to your UniPoint account
             </ThemedText>
 
             <View style={[
               styles.formContainer,
-              { gap: isSmallDevice ? 20 : 24 }
+              { gap: isSmallDevice ? 16 : 20 }
             ]}>
               <View style={styles.inputContainer}>
                 <ThemedText
@@ -178,15 +205,14 @@ export default function LoginScreen() {
                   darkColor="#EBD3F8"
                   lightColor="#EBD3F8"
                 >
-                  Email
+                  Username or Email
                 </ThemedText>
                 <TextInput
-                  placeholder="Enter your email"
+                  placeholder="Enter your username or email"
                   placeholderTextColor="rgba(235, 211, 248, 0.5)"
-                  value={email}
-                  onChangeText={setEmail}
+                  value={userNameOrEmail}
+                  onChangeText={setUserNameOrEmail}
                   autoCapitalize="none"
-                  keyboardType="email-address"
                   selectionColor="#31E1F7"
                   style={[
                     styles.input, 
@@ -209,6 +235,12 @@ export default function LoginScreen() {
                   Password
                 </ThemedText>
                 <TextInput
+                  placeholder="Enter your password"
+                  placeholderTextColor="rgba(235, 211, 248, 0.5)"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  selectionColor="#31E1F7"
                   style={[
                     styles.input, 
                     { 
@@ -218,38 +250,19 @@ export default function LoginScreen() {
                       paddingHorizontal: isSmallDevice ? 15 : 20
                     }
                   ]}
-                  placeholder="Enter your password"
-                  placeholderTextColor="rgba(235, 211, 248, 0.5)"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                  selectionColor="#31E1F7"
                 />
               </View>
-
-              <TouchableOpacity style={styles.forgotPassword}>
-                <ThemedText
-                  style={[
-                    styles.forgotPasswordText,
-                    { fontSize: forgotPasswordFontSize }
-                  ]}
-                  darkColor="#31E1F7"
-                  lightColor="#31E1F7"
-                >
-                  Forgot Password?
-                </ThemedText>
-              </TouchableOpacity>
 
               <TouchableOpacity
                 style={[
                   styles.primaryButton,
                   { 
                     height: buttonHeight,
-                    marginTop: isSmallDevice ? 30 : 40 
+                    marginTop: isSmallDevice ? 25 : 35 
                   }
                 ]}
-                onPress={handleSignIn}
-                disabled={isLoading}
+                onPress={handleLogin}
+                disabled={isLoading || !userNameOrEmail || !password}
                 activeOpacity={0.8}
               >
                 <LinearGradient
@@ -263,9 +276,30 @@ export default function LoginScreen() {
                     lightColor="#400D51"
                     darkColor="#400D51"
                   >
-                    {isLoading ? "Signing in..." : "Sign In"}
+                    {isLoading ? "Logging in..." : "Log In"}
                   </ThemedText>
                 </LinearGradient>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.signInContainer}
+                onPress={() => {
+                  console.log('Attempting to navigate to:', '/register');
+                  try {
+                    router.replace('/register');
+                    console.log('Navigation successful');
+                  } catch (navError) {
+                    console.error('Navigation error:', navError);
+                  }
+                }}
+              >
+                <ThemedText
+                  style={[styles.signInText, { fontSize: footerFontSize }]}
+                  darkColor="#EBD3F8"
+                  lightColor="#EBD3F8"
+                >
+                  Don't have an account? <Text style={styles.signInLink}>Sign Up</Text>
+                </ThemedText>
               </TouchableOpacity>
             </View>
           </View>
@@ -277,11 +311,11 @@ export default function LoginScreen() {
             ]}
           >
             <ThemedText
-              style={[styles.footerText, { fontSize: footerFontSize }]}
+              style={[styles.footerText, { fontSize: footerFontSize - 2 }]}
               darkColor="#E5B8F4"
               lightColor="#E5B8F4"
             >
-              v1.0.0 • Secure Connection
+              v1.0.0 • UniPoint
             </ThemedText>
           </View>
         </ScrollView>
@@ -367,13 +401,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(174, 0, 255, 0.1)",
     fontFamily: fontFamilies.text,
   },
-  forgotPassword: {
-    alignSelf: "flex-end",
-    marginTop: 8,
-  },
-  forgotPasswordText: {
-    fontFamily: fontFamilies.text,
-  },
   primaryButton: {
     width: "100%",
     borderRadius: 28,
@@ -394,6 +421,18 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     letterSpacing: 1,
     fontFamily: fontFamilies.button,
+  },
+  signInContainer: {
+    marginTop: 24,
+    alignItems: "center",
+  },
+  signInText: {
+    textAlign: "center",
+    fontFamily: fontFamilies.text,
+  },
+  signInLink: {
+    color: "#31E1F7",
+    fontWeight: "600",
   },
   footerContainer: {
     width: "100%",

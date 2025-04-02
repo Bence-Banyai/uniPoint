@@ -8,14 +8,17 @@ import {
   View,
   Switch,
   TextInput,
-  Alert
+  Alert,
+  Text
 } from 'react-native';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import * as ImagePicker from 'expo-image-picker';
+import { useAuth } from '../context/AuthContext';
+
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -118,29 +121,86 @@ function SettingCard({
   );
 }
 
+function MyComponent() {
+  const { userName, email } = useAuth();
+  
+  return (
+    <View>
+      <Text>Welcome, {userName || 'User'}!</Text>
+      <Text>Email: {email || 'User'}</Text>
+    </View>
+  );
+}
+
 export default function ProfileScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const [isEditMode, setIsEditMode] = useState(false);
   const [settings, setSettings] = useState(settingsData);
-  const [profileData, setProfileData] = useState(userProfile);
+  const { logout, userId, isAuthenticated, getUserInfo } = useAuth();
+  const [profileData, setProfileData] = useState({
+    name: "Loading...",
+    email: "loading@example.com",
+    phone: "",
+    address: "",
+    memberSince: new Date().toLocaleDateString(),
+    profileImage: require("@/assets/images/adaptive-icon.png")  // Use existing image
+  });
+  
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!userId || !isAuthenticated) return;
+      
+      try {
+        const userInfo = await getUserInfo();
+        console.log('User Info:', userInfo);
+        
+        setProfileData({
+          name: userInfo.userName || `User ${userId.substring(0, 5)}`,
+          email: userInfo.email || `User${userId.substring(0, 5)}@example.com`,
+          phone: userInfo.phoneNumber || "+1234567890",
+          address: userInfo.address || "123 University Ave",
+          memberSince: userInfo.createdAt || new Date().toLocaleDateString(),
+          profileImage: require("@/assets/images/adaptive-icon.png")
+        });
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        setProfileData({
+          name: `User ${userId.substring(0, 5)}`,
+          email: `user${userId.substring(0, 5)}@example.com`,
+          phone: "+1234567890",
+          address: "123 University Ave",
+          memberSince: new Date().toLocaleDateString(),
+          profileImage: require("@/assets/images/adaptive-icon.png")
+        });
+      }
+    };
+    
+    fetchUserData();
+  }, [userId, isAuthenticated, getUserInfo]);
 
   const screenWidth = Dimensions.get('window').width;
   const isSmallDevice = screenWidth < 380;
   const isLargeDevice = screenWidth >= 768;
   
-  const handleLogout = () => {
-    router.replace('/welcome');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.replace('/welcome');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      Alert.alert('Logout Failed', 'An error occurred while trying to log out.');
+    }
   };
 
-    const handleToggleSetting = (id: string) => {
-      setSettings(prev => prev.map(setting => 
-        setting.id === id 
-          ? {...setting, value: !setting.value} as typeof setting
-          : setting
-      ));
-    };
+  const handleToggleSetting = (id: string) => {
+    setSettings(prev => prev.map(setting => 
+      setting.id === id 
+        ? {...setting, value: !setting.value} as typeof setting
+        : setting
+    ));
+  };
 
   const handleSettingPress = (route: string | undefined) => {
     if (route) {
@@ -155,7 +215,6 @@ export default function ProfileScreen() {
   const handleChangePhoto = async () => {
     try {
       if (Platform.OS !== 'web') {
-        // Request permission on mobile platforms only
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         
         if (status !== 'granted') {
@@ -167,7 +226,6 @@ export default function ProfileScreen() {
         }
       }
       
-      // Launch the image picker (works on both mobile and web)
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -176,7 +234,6 @@ export default function ProfileScreen() {
       });
       
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        // Update profile with the selected image
         setProfileData(prev => ({
           ...prev,
           profileImage: { uri: result.assets[0].uri }
@@ -251,7 +308,7 @@ export default function ProfileScreen() {
               {isEditMode && (
                 <TouchableOpacity 
                   style={styles.changePhotoButton}
-                  onPress={handleChangePhoto}  // Add this onPress handler
+                  onPress={handleChangePhoto}
                 >
                   <IconSymbol name="camera.fill" size={18} color="#fff" />
                 </TouchableOpacity>
