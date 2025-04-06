@@ -8,46 +8,53 @@
                     <Icon name="entypo:magnifying-glass" class="h-5 w-5" />
                 </button>
             </div>
-            <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">
+            <button @click="toggleSortByPopularity" class="px-4 py-2 rounded-md transition-colors"
+                :class="{ 'bg-purple-600 text-white': sortByPopularity, 'bg-gray-200 text-gray-700': !sortByPopularity }">
                 Most Popular
             </button>
         </div>
 
-        <div class="flex">
+        <div v-if="loading" class="flex justify-center items-center h-40">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+        </div>
+
+        <div v-else-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <p>{{ error }}</p>
+            <button @click="fetchServices" class="mt-2 bg-red-500 text-white px-4 py-2 rounded">Retry</button>
+        </div>
+
+        <div v-else class="flex">
             <aside class="w-1/4 pr-8">
                 <div class="bg-white p-4 rounded-lg shadow-md">
                     <h3 class="text-xl font-bold mb-4">Filters</h3>
                     <ul class="space-y-2">
                         <li>
-                            <a href="#" class="block text-purple-600 font-medium">All</a>
+                            <button @click="activeCategory = null" class="block w-full text-left"
+                                :class="activeCategory === null ? 'text-purple-600 font-medium' : 'text-gray-700 hover:text-purple-600'">
+                                All
+                            </button>
                         </li>
-                        <li>
-                            <a href="#" class="block text-gray-700 hover:text-purple-600">Business</a>
-                        </li>
-                        <li>
-                            <a href="#" class="block text-gray-700 hover:text-purple-600">Technology</a>
-                        </li>
-                        <li>
-                            <a href="#" class="block text-gray-700 hover:text-purple-600">Education</a>
-                        </li>
-                        <li>
-                            <a href="#" class="block text-gray-700 hover:text-purple-600">Marketing</a>
-                        </li>
-                        <li>
-                            <a href="#" class="block text-gray-700 hover:text-purple-600">Development</a>
+                        <li v-for="category in categories" :key="category.categoryId">
+                            <button @click="setActiveCategory(category.categoryId)" class="block w-full text-left"
+                                :class="activeCategory === category.categoryId ? 'text-purple-600 font-medium' : 'text-gray-700 hover:text-purple-600'">
+                                {{ category.name }}
+                            </button>
                         </li>
                     </ul>
                 </div>
             </aside>
 
             <main class="w-3/4">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <!-- Mock services data for demonstration -->
-                    <ServiceCard v-for="service in services" :key="service.id" :id="service.id" />
+                <div v-if="displayedServices.length === 0" class="text-center py-10">
+                    <p class="text-gray-500">No services found matching your criteria.</p>
+                </div>
+                <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <ServiceCard v-for="service in displayedServices" :key="service.serviceId" :service="service" />
                 </div>
 
                 <div class="flex justify-center mt-8">
-                    <Pagination />
+                    <Pagination v-if="totalPages > 1" :currentPage="currentPage" :totalPages="totalPages"
+                        @page-change="handlePageChange" />
                 </div>
             </main>
         </div>
@@ -55,48 +62,105 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue';
+import { serviceApi, type Service, type Category } from '~/services/serviceApi';
+
 definePageMeta({
     layout: "default",
     title: "Services | UniPoint",
     description: "Browse and book services on UniPoint",
 });
 
-// Mock data for demonstration
-// In a real application, this would come from an API
-const services = ref([
-    {
-        id: 1,
-        name: "Web Development",
-        description: "Professional web development services",
-    },
-    {
-        id: 2,
-        name: "Mobile App Development",
-        description: "Android and iOS app development",
-    },
-    {
-        id: 3,
-        name: "UI/UX Design",
-        description: "User interface and experience design",
-    },
-    { id: 4, name: "SEO Services", description: "Search engine optimization" },
-    {
-        id: 5,
-        name: "Content Writing",
-        description: "Professional content creation",
-    },
-    {
-        id: 6,
-        name: "Digital Marketing",
-        description: "Comprehensive marketing solutions",
-    },
-]);
-
+// State
+const services = ref<Service[]>([]);
+const categories = ref<Category[]>([]);
+const loading = ref(true);
+const error = ref<string | null>(null);
 const searchQuery = ref("");
+const activeCategory = ref<number | null>(null);
+const sortByPopularity = ref(false);
+const currentPage = ref(1);
+const itemsPerPage = 9;
 
-// In a real application, you might implement search and filtering logic here
-// For example:
-// watch(searchQuery, (newQuery) => {
-//   // Filter services based on the search query
-// });
+// Fetch data
+const fetchServices = async () => {
+    loading.value = true;
+    error.value = null;
+
+    try {
+        const [servicesData, categoriesData] = await Promise.all([
+            serviceApi.getAllServices(),
+            serviceApi.getAllCategories()
+        ]);
+
+        services.value = servicesData;
+        categories.value = categoriesData;
+    } catch (err) {
+        error.value = "Failed to load services. Please try again later.";
+        console.error("Error fetching services:", err);
+    } finally {
+        loading.value = false;
+    }
+};
+
+// Filter and sort services
+const filteredServices = computed(() => {
+    let result = [...services.value];
+
+    // Filter by search query
+    if (searchQuery.value) {
+        const query = searchQuery.value.toLowerCase();
+        result = result.filter(service =>
+            service.serviceName.toLowerCase().includes(query) ||
+            service.description.toLowerCase().includes(query) ||
+            service.address.toLowerCase().includes(query)
+        );
+    }
+
+    // Filter by category
+    if (activeCategory.value !== null) {
+        result = result.filter(service => service.categoryId === activeCategory.value);
+    }
+
+    // Sort by popularity (simulated with price for now - you could use ratings in the future)
+    if (sortByPopularity.value) {
+        result.sort((a, b) => b.price - a.price);
+    }
+
+    return result;
+});
+
+// Pagination
+const totalPages = computed(() => Math.ceil(filteredServices.value.length / itemsPerPage));
+
+const displayedServices = computed(() => {
+    const startIndex = (currentPage.value - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredServices.value.slice(startIndex, endIndex);
+});
+
+// Methods
+const toggleSortByPopularity = () => {
+    sortByPopularity.value = !sortByPopularity.value;
+};
+
+const setActiveCategory = (categoryId: number) => {
+    activeCategory.value = categoryId;
+    currentPage.value = 1; // Reset to first page when changing category
+};
+
+const handlePageChange = (page: number) => {
+    currentPage.value = page;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+// Reset page when filters change
+watch([searchQuery, activeCategory], () => {
+    currentPage.value = 1;
+});
+
+// Fetch data on component mount
+onMounted(() => {
+    fetchServices();
+});
 </script>
