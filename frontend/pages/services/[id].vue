@@ -101,7 +101,10 @@ const fetchServiceDetails = async () => {
     error.value = null;
 
     try {
-        const data = await serviceApi.getServiceById(serviceId.value);
+        if (!serviceId.value) {
+            throw new Error("Service ID is undefined.");
+        }
+        const data = await serviceApi.getServiceById(serviceId.value as string | string[]);
         service.value = data;
     } catch (err) {
         error.value = "Failed to load service details. Please try again later.";
