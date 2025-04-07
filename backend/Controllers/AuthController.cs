@@ -44,7 +44,7 @@ namespace uniPoint_backend.Controllers
             {
                 UserName = model.UserName,
                 Email = model.Email,
-                PhoneNumber = model.PhoneNumber
+                Location = model.Location
             };
 
             var result = await _userManager.CreateAsync(user, model.Password);

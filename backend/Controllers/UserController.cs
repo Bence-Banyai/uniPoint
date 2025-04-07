@@ -68,7 +68,7 @@ namespace uniPoint_backend.Controllers
 
             user.UserName = model.Name;
             user.Email = model.Email;
-            user.PhoneNumber = model.PhoneNumber;
+            user.Location = model.Location;
             user.ProfilePictureUrl = model.ProfilePictureUrl;
 
             var result = await _userManager.UpdateAsync(user);

@@ -12,8 +12,8 @@ namespace uniPoint_backend.Models
         [EmailAddress]
         public string Email { get; set; }
 
-        [Phone]
-        public string? PhoneNumber { get; set; }
+        [Required]
+        public string? Location { get; set; }
 
         [Required]
         public string Password { get; set; }
