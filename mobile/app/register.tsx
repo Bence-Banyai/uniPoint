@@ -10,6 +10,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { Stack, router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -18,6 +19,8 @@ import { useAuth } from './context/AuthContext';
 import { ThemedText } from '@/components/ThemedText';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import * as Location from 'expo-location';
+import * as SecureStore from 'expo-secure-store';
 
 const responsiveFontSize = (size: number, minSize: number, maxSize: number) => {
   const { width, height } = Dimensions.get('window');
@@ -42,8 +45,9 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
   const [role, setRole] = useState("User"); // Default role
+  const [location, setLocation] = useState("");
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
   
   const { register, login, isLoading: authLoading } = useAuth();
   
@@ -66,11 +70,81 @@ export default function RegisterScreen() {
     router.replace('/welcome');
   }, []);
 
+  const requestLocationPermission = async () => {
+    if (Platform.OS === 'web') return;
+    
+    setIsGettingLocation(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Denied',
+          'Please allow access to your location or enter your location manually.',
+          [{ text: 'OK' }]
+        );
+        setIsGettingLocation(false);
+        return;
+      }
+      
+      const location = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = location.coords;
+      
+      // Get readable address using reverse geocoding
+      try {
+        const [address] = await Location.reverseGeocodeAsync({
+          latitude,
+          longitude
+        });
+        
+        if (address) {
+          // Format the location as requested: {city}, {postalCode}. {houseNumber}
+          const { city, postalCode, streetNumber, street } = address;
+          
+          // Combine street and street number for house number if available
+          const houseNumber = streetNumber ? 
+            (street ? `${street} ${streetNumber}` : streetNumber) : 
+            "";
+          
+          // Build the location string in the requested format
+          const locationParts = [];
+          if (city) locationParts.push(city);
+          if (postalCode) locationParts.push(postalCode);
+          
+          let locationString = locationParts.join(', ');
+          if (houseNumber) {
+            locationString += `. ${houseNumber}.`;
+          }
+          
+          // If we couldn't get enough address details, fall back to coordinates
+          if (!locationString) {
+            locationString = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
+          }
+          
+          setLocation(locationString);
+        } else {
+          // Fallback to coordinates if reverse geocoding fails
+          setLocation(`${latitude.toFixed(2)}, ${longitude.toFixed(2)}`);
+        }
+      } catch (geocodeError) {
+        console.error('Error with geocoding:', geocodeError);
+        // Fallback to coordinates
+        setLocation(`${latitude.toFixed(2)}, ${longitude.toFixed(2)}`);
+      }
+      
+    } catch (err) {
+      console.error('Error getting location:', err);
+      Alert.alert('Error', 'Unable to get your location. Please enter it manually.');
+    } finally {
+      setIsGettingLocation(false);
+    }
+  };
+
   const handleRegister = useCallback(async () => {
     setIsLoading(true);
 
     // Input validation
-    if (!username || !email || !password || !phoneNumber) {
+    if (!username || !email || !password || !location) {
       Alert.alert('Missing Information', 'Please fill in all required fields.');
       setIsLoading(false);
       return;
@@ -84,116 +158,115 @@ export default function RegisterScreen() {
       return;
     }
 
-    // Phone number validation
-    const phoneRegex = /^\+?[0-9]{6,15}$/;
-    if (!phoneRegex.test(phoneNumber.replace(/\s+/g, ''))) {
-      Alert.alert('Invalid Phone Number', 'Please enter a valid phone number.');
+    // Location validation
+    if (!location) {
+      Alert.alert('Missing Location', 'Please enter your location or use the Get Location button.');
       setIsLoading(false);
       return;
     }
 
     try {
-      console.log('Attempting to register user with data:', { username, email, phoneNumber });
-
-      // Create user payload according to your backend requirements
+      console.log('Sending registration data with location:', location);
+      
       const userData = {
         userName: username,
         email: email,
-        phoneNumber: phoneNumber,
+        location: location, // Map to phoneNumber for backend compatibility
         password: password,
-        role: role, // Using the default 'User' role
+        role: role,
       };
 
+      // Store location in SecureStore immediately to ensure it's saved
+      if (Platform.OS === 'web') {
+        localStorage.setItem('userLocation', location);
+        console.log('Web: Saved location during registration:', location);
+      } else {
+        await SecureStore.setItemAsync('userLocation', location);
+        console.log('Native: Saved location during registration:', location);
+      }
+
       // Call the register function from AuthContext
-      console.log('Sending registration data:', userData);
+      const result = await register(userData);
 
+      // After successful registration, automatically log in
       try {
-        const result = await register(userData);
-        console.log('Registration successful, result:', result);
-
-        // After successful registration, automatically log in
-        try {
-          console.log('Attempting automatic login after registration');
-          const loginResult = await login({ 
-            userNameOrEmail: username, 
-            password: password 
-          });
+        console.log('Attempting automatic login after registration');
+        const loginResult = await login({ 
+          userNameOrEmail: username, 
+          password: password 
+        });
+        
+        // Update the navigation path after successful login
+        if (loginResult) {
+          console.log('Login successful, navigating directly');
           
-          // Update the navigation path after successful login
-          if (loginResult) {
-            console.log('Login successful, navigating directly');
+          try {
+            // Skip the alert entirely for now, just to confirm navigation works
+            router.replace('/(tabs)');
+            console.log('Navigation executed');
+          } catch (navError) {
+            console.error('Direct navigation error:', navError);
             
+            // Try alternative navigation method
             try {
-              // Skip the alert entirely for now, just to confirm navigation works
-              router.replace('/(tabs)');
-              console.log('Navigation executed');
-            } catch (navError) {
-              console.error('Direct navigation error:', navError);
-              
-              // Try alternative navigation method
-              try {
-                console.log('Trying alternative navigation method');
-                router.navigate('/(tabs)');
-              } catch (altError) {
-                console.error('Alternative navigation error:', altError);
-              }
+              console.log('Trying alternative navigation method');
+              router.navigate('/(tabs)');
+            } catch (altError) {
+              console.error('Alternative navigation error:', altError);
             }
           }
-        } catch (loginError) {
-          console.error('Auto-login failed after registration:', loginError);
-          // If auto-login fails, fall back to redirecting to login screen
-          Alert.alert('Account Created', 'Your account was created, but we couldn\'t log you in automatically. Please log in with your credentials.', [
-            { 
-              text: 'OK', 
-              onPress: () => {
-                router.replace('/login');
-              } 
-            },
-          ]);
         }
-      } catch (error: any) {
-        console.error('Registration API error:', error);
-        
-        // If we're in development mode on web, show a special dialog
-        if (Platform.OS === 'web' && process.env.NODE_ENV === 'development') {
-          Alert.alert(
-            'Development Mode',
-            'Backend connection failed. Would you like to continue with mock registration?',
-            [
-              {
-                text: 'Yes',
-                onPress: async () => {
-                  console.log('Proceeding with mock registration');
-                  try {
-                    // Attempt mock login after mock registration
-                    await login({ userNameOrEmail: username, password: password });
-                    router.replace('/');
-                    console.log('Navigation successful');
-                  } catch (mockError) {
-                    console.error('Mock login error:', mockError);
-                    router.replace('/login');
-                  }
-                },
-              },
-              { text: 'No' },
-            ]
-          );
-        } else {
-          // Normal error handling for production
-          let errorMessage = 'Please check your information and try again.';
-          if (error instanceof Error) {
-            errorMessage = error.message || errorMessage;
-          }
-          Alert.alert('Registration Failed', errorMessage);
-        }
+      } catch (loginError) {
+        console.error('Auto-login failed after registration:', loginError);
+        // If auto-login fails, fall back to redirecting to login screen
+        Alert.alert('Account Created', 'Your account was created, but we couldn\'t log you in automatically. Please log in with your credentials.', [
+          { 
+            text: 'OK', 
+            onPress: () => {
+              router.replace('/login');
+            } 
+          },
+        ]);
       }
     } catch (error: any) {
-      console.error('Registration process error:', error);
-      Alert.alert('Error', 'An unexpected error occurred. Please try again later.');
+      console.error('Registration API error:', error);
+      
+      // If we're in development mode on web, show a special dialog
+      if (Platform.OS === 'web' && process.env.NODE_ENV === 'development') {
+        Alert.alert(
+          'Development Mode',
+          'Backend connection failed. Would you like to continue with mock registration?',
+          [
+            {
+              text: 'Yes',
+              onPress: async () => {
+                console.log('Proceeding with mock registration');
+                try {
+                  // Attempt mock login after mock registration
+                  await login({ userNameOrEmail: username, password: password });
+                  router.replace('/');
+                  console.log('Navigation successful');
+                } catch (mockError) {
+                  console.error('Mock login error:', mockError);
+                  router.replace('/login');
+                }
+              },
+            },
+            { text: 'No' },
+          ]
+        );
+      } else {
+        // Normal error handling for production
+        let errorMessage = 'Please check your information and try again.';
+        if (error instanceof Error) {
+          errorMessage = error.message || errorMessage;
+        }
+        Alert.alert('Registration Failed', errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [username, email, password, phoneNumber, role, register, login, router]);
+  }, [username, email, password, location, role, register, login, router]);
 
   return (
     <KeyboardAvoidingView
@@ -375,25 +448,53 @@ export default function RegisterScreen() {
                   darkColor="#EBD3F8"
                   lightColor="#EBD3F8"
                 >
-                  Phone Number
+                  Location
                 </ThemedText>
-                <TextInput
-                  placeholder="Enter your phone number"
-                  placeholderTextColor="rgba(235, 211, 248, 0.5)"
-                  value={phoneNumber}
-                  onChangeText={setPhoneNumber}
-                  keyboardType="phone-pad"
-                  selectionColor="#31E1F7"
-                  style={[
-                    styles.input, 
-                    { 
-                      color: "#EBD3F8",
-                      fontSize: inputFontSize,
-                      height: inputHeight,
-                      paddingHorizontal: isSmallDevice ? 15 : 20
-                    }
-                  ]}
-                />
+                <View style={{ flexDirection: 'row' }}>
+                  <TextInput
+                    placeholder="Enter your location (City, PostalCode. HouseNumber)"
+                    placeholderTextColor="rgba(235, 211, 248, 0.5)"
+                    value={location}
+                    onChangeText={setLocation}
+                    selectionColor="#31E1F7"
+                    style={[
+                      styles.input, 
+                      { 
+                        color: "#EBD3F8",
+                        fontSize: inputFontSize,
+                        height: inputHeight,
+                        paddingHorizontal: isSmallDevice ? 15 : 20,
+                        flex: 1
+                      }
+                    ]}
+                  />
+                  {Platform.OS !== 'web' && (
+                    <TouchableOpacity 
+                      onPress={requestLocationPermission} 
+                      style={{
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        backgroundColor: 'rgba(49, 225, 247, 0.2)',
+                        borderRadius: 28,
+                        paddingHorizontal: 12,
+                        marginLeft: 8
+                      }}
+                      disabled={isGettingLocation}
+                    >
+                      {isGettingLocation ? (
+                        <ActivityIndicator color="#31E1F7" size="small" />
+                      ) : (
+                        <ThemedText
+                          style={{ color: "#31E1F7", fontSize: labelFontSize * 0.8 }}
+                          darkColor="#31E1F7"
+                          lightColor="#31E1F7"
+                        >
+                          Get
+                        </ThemedText>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
 
               <TouchableOpacity
@@ -405,7 +506,7 @@ export default function RegisterScreen() {
                   }
                 ]}
                 onPress={handleRegister}
-                disabled={isLoading || authLoading || !username || !email || !password || !phoneNumber}
+                disabled={isLoading || authLoading || !username || !email || !password || !location}
                 activeOpacity={0.8}
               >
                 <LinearGradient

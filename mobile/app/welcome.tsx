@@ -38,7 +38,7 @@ export default function WelcomeScreen() {
 
   const isSmallDevice = screenWidth < 380;
   const isLargeDevice = screenWidth >= 768;
-  const logoSize = isLargeDevice ? 0.4 : isSmallDevice ? 0.6 : 0.7;
+  const logoSize = isLargeDevice ? 0.5 : isSmallDevice ? 0.6 : 0.7;
 
   const titleFontSize = responsiveFontSize(24, 22, 42);
   const subtitleFontSize = responsiveFontSize(18, 16, 22);
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: "8%",
     width: "100%",
-    paddingTop: 10,
+    paddingTop: Platform.OS === "web" ? 80:10,
   },
   title: {
     fontWeight: "700",

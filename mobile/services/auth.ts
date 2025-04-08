@@ -43,7 +43,7 @@ api.interceptors.request.use(
 export interface RegisterData {
   userName: string;
   email: string;
-  phoneNumber: string;
+  location: string;  // Changed from phoneNumber
   password: string;
   role: string;
 }
@@ -59,11 +59,11 @@ export interface AuthResponse {
   userId: string;
   userName?: string;
   email?: string;
-  phoneNumber?: string;
+  location?: string;
   user?: {
     userName?: string;
     email?: string;
-    phoneNumber?: string;
+    location?: string;
   };
 }
 
@@ -107,8 +107,20 @@ export const authService = {
     console.log('Auth service: Attempting to register with data:', userData);
 
     try {
-      const response = await api.post('/api/Auth/register', userData);
+      // Prepare data for backend
+      const backendData = {
+        ...userData,
+        // Make sure phoneNumber is set for backend compatibility if needed
+        phoneNumber: userData.location
+      };
+
+      const response = await api.post('/api/Auth/register', backendData);
       console.log('Auth service: Registration success:', response.data);
+      
+      // ALWAYS store location after registration regardless of response
+      await storeSecureItem('userLocation', userData.location);
+      console.log('Stored location during registration:', userData.location);
+      
       return response.data;
     } catch (error: any) {
       console.error('Auth service: Registration failed', error.message);

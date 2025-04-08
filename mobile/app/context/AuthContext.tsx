@@ -25,7 +25,7 @@ interface AuthContextData {
 interface UserInfo {
   userName: string;
   email: string;
-  phoneNumber?: string;
+  location?: string;
   address?: string;
   createdAt?: string;
 }
@@ -63,7 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null); // Add state for userName
   const [email, setemail] = useState<string | null>(null); // Add state for email
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null); // Update your userInfo state declaration with a more precise type
 
   // Check for existing token on app load
   useEffect(() => {
@@ -115,103 +115,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('Response user data:', typedResponse.userName);
         
         // Initialize with default value to avoid undefined
-        let extractedUserName = 'User';
-        let extractedEmail = '';
+        let extractedUserName = credentials.userNameOrEmail.includes('@') ? 
+          credentials.userNameOrEmail.split('@')[0] : credentials.userNameOrEmail;
+        let extractedEmail = credentials.userNameOrEmail.includes('@') ? 
+          credentials.userNameOrEmail : `${credentials.userNameOrEmail}@example.com`;
         
-        // Extract userName from various possible locations in the response
-        if (typedResponse.userName) {
-          extractedUserName = typedResponse.userName;
-        } else if (typedResponse.user?.userName) {
-          extractedUserName = typedResponse.user.userName;
-        } else if (credentials.userNameOrEmail && credentials.userNameOrEmail.includes('@')) {
-          // If login was with email, use first part of email
-          extractedUserName = credentials.userNameOrEmail.split('@')[0];
-        } else if (credentials.userNameOrEmail) {
-          // If userName is not in response, use the login credential
-          extractedUserName = credentials.userNameOrEmail;
-        }
+        // Extract userName and email from response (simpler code)
+        if (typedResponse.userName) extractedUserName = typedResponse.userName;
+        else if (typedResponse.user?.userName) extractedUserName = typedResponse.user.userName;
         
-        // Extract email from various possible locations in the response
-        if (typedResponse.email) {
-          extractedEmail = typedResponse.email;
-        } else if (typedResponse.user?.email) {
-          extractedEmail = typedResponse.user.email;
-        } else if (credentials.userNameOrEmail && credentials.userNameOrEmail.includes('@')) {
-          // If login was with email, use it
-          extractedEmail = credentials.userNameOrEmail;
-        } else {
-          // Try different API endpoints to fetch user data
-          const token = response.token;
-          const userId = response.userId;
-          
-          // Try multiple endpoints to find user data
-          const possibleEndpoints = [
-            `/api/User/${userId}`,
-            `/api/User`,
-            `/api/Auth/login`,
-            `/api/Auth/register`,
-            `/api/Auth/logout`
-          ];
-          
-          let userData = null;
-          
-          for (const endpoint of possibleEndpoints) {
-            try {
-              console.log(`Trying to fetch user data from endpoint: ${endpoint}`);
-              const userResponse = await api.get(endpoint, {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              });
-              
-              if (userResponse.data) {
-                userData = userResponse.data;
-                console.log('Successfully fetched user data from endpoint:', endpoint);
-                break;
-              }
-            } catch (error) {
-              const endpointError = error as { message: string };
-              console.log(`Endpoint ${endpoint} failed:`, endpointError.message);
-              // Continue to next endpoint
-            }
-          }
-          
-          if (userData && (userData.email || userData.emailAddress)) {
-            extractedEmail = userData.email || userData.emailAddress;
-            console.log('Fetched email from user API:', extractedEmail);
-            
-            // If we also found userName, update it
-            if (userData.userName || userData.username) {
-              extractedUserName = userData.userName || userData.username;
-            }
-          } else {
-            console.log('Could not find user email after trying all endpoints');
-            extractedEmail = `${extractedUserName}@example.com`;
-          }
-        }
+        if (typedResponse.email) extractedEmail = typedResponse.email;
+        else if (typedResponse.user?.email) extractedEmail = typedResponse.user.email;
         
-        // Store extracted values
+        // Store extracted values - simplified
         await storeSecureItem('userName', extractedUserName);
-        setUserName(extractedUserName);
-        
         await storeSecureItem('email', extractedEmail);
+        
+        // Bypass API calls during login that might be failing
+        // We'll do them later asynchronously
+        setUserName(extractedUserName);
         setemail(extractedEmail);
         
-        // Store phone number if available
-        if (typedResponse.phoneNumber || typedResponse.user?.phoneNumber) {
-          const phone = typedResponse.phoneNumber || typedResponse.user?.phoneNumber;
-          await storeSecureItem('userPhone', phone);
+        // Handle location separately with a safety check
+        // Skip API calls for location if already getting stuck in loop
+        if (typedResponse.location || typedResponse.user?.location) {
+          const loc = typedResponse.location || typedResponse.user?.location;
+          await storeSecureItem('userLocation', loc);
         }
+
+        // Update the auth state
+        setIsAuthenticated(true);
+        setUserId(response.userId);
+        
+        // Instead of clearing userInfo which triggers loads of calls
+        // Update it directly
+        setUserInfo({
+          userName: extractedUserName,
+          email: extractedEmail,
+          location: typedResponse.location || typedResponse.user?.location || '(Location not provided)'
+        });
+
+        return response;
       }
-
-      // Update the auth state
-      setIsAuthenticated(true);
-      setUserId(response.userId);
-      
-      // Clear any previous user info to force fresh load
-      setUserInfo(null);
-
-      return response;
     } catch (error: any) {
       console.error('Auth service: Login failed', error.message);
       throw new Error(error.response?.data?.message || 'Invalid credentials');
@@ -256,7 +201,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await removeSecureItem('userId');
       await removeSecureItem('userName');
       await removeSecureItem('email');
-      await removeSecureItem('userPhone');
+      await removeSecureItem('userLocation');
 
       setIsAuthenticated(false);
       setUserId(null);
@@ -272,29 +217,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const getUserInfo = async (): Promise<UserInfo> => {
-    // If we already have user info in state, return it
+    console.log("==== GETTING USER INFO ====");
+    
+    // Check for cached data first to prevent infinite loops
     if (userInfo) {
+      console.log("Using cached user info");
       return userInfo;
     }
+    
+    // Add a timestamp to prevent excessive debug logging
+    const now = new Date().toISOString();
+    console.log(`${now} - Current storage state:`, {
+      userToken: await getSecureItem('userToken') ? "exists" : "missing",
+      userId: await getSecureItem('userId'),
+      userName: await getSecureItem('userName'),
+      userLocation: await getSecureItem('userLocation')
+    });
 
     try {
       // First, try to get user info from stored values
       const storedUserName = await getSecureItem('userName');
       const storedEmail = await getSecureItem('email');
-      const storedPhone = await getSecureItem('userPhone');
-      console.log('Stored user info:', storedEmail);
+      let storedLocation = await getSecureItem('userLocation');
       
+      // Only set placeholder location if truly missing
+      if (!storedLocation) {
+        // Skip setting a placeholder in storage to prevent loops
+        // Just use in-memory placeholder
+        storedLocation = "(Location needs to be set)";
+        console.log("Using in-memory location placeholder");
+      }
+      
+      console.log('Stored user info found:', { userName: storedUserName, email: storedEmail });
       
       // If we have stored values, use them first
       if (storedUserName && storedEmail) {
         const storedUserInfo = {
           userName: storedUserName,
           email: storedEmail,
-          phoneNumber: storedPhone || undefined,
+          location: storedLocation,
         };
-        setUserInfo(storedUserInfo);
-        setUserName(storedUserName); // Update the context state
-        setemail(storedEmail); // Update the context state
+        console.log("Using stored user info");
+        
+        // Update state only if it has changed to prevent re-renders
+        if (!userInfo || 
+            (userInfo as UserInfo).userName !== storedUserName || 
+            (userInfo as UserInfo).email !== storedEmail || 
+            (userInfo as UserInfo).location !== storedLocation) {
+          setUserInfo(storedUserInfo);
+          setUserName(storedUserName);
+          setemail(storedEmail);
+        }
+        
         return storedUserInfo;
       }
       
@@ -313,6 +287,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             Authorization: `Bearer ${token}`,
           },
         });
+        console.log('Raw API response data:', response.data);
         console.log("eljut");
         
         // Handle response with type assertion
@@ -322,8 +297,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const newUserInfo: UserInfo = {
           userName: userData.userName || userData.username || 'Unknown User',
           email: userData.email || userData.emailAddress || 'unknown@example.com',
-          phoneNumber: userData.phoneNumber || userData.phone,
-          address: userData.address,
+          location: userData.location, // Add the location field
           createdAt: userData.createdAt || userData.memberSince,
         };
         
@@ -334,8 +308,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Store the user info for future use
         await storeSecureItem('userName', newUserInfo.userName);
         await storeSecureItem('email', newUserInfo.email);
-        if (newUserInfo.phoneNumber) {
-          await storeSecureItem('userPhone', newUserInfo.phoneNumber);
+        if (newUserInfo.location) {
+          await storeSecureItem('userLocation', newUserInfo.location);
         }
         
         return newUserInfo;
@@ -350,6 +324,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const fallbackUserInfo = {
         userName: userName || `User-${userId?.substring(0, 5) || 'Unknown'}`,
         email: email || `user${email || 'unknown'}@example.com`,
+        location: await getSecureItem('userLocation') || undefined, // Add this line
       };
       
       setUserInfo(fallbackUserInfo);
@@ -361,10 +336,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Force refresh user info from API
+  // Update refreshUserInfo to be more thorough
   const refreshUserInfo = async (): Promise<UserInfo> => {
-    setUserInfo(null); // Clear cached user info
-    return getUserInfo(); // This will now try to fetch from API
+    // Clear cached user info  
+    setUserInfo(null);
+    
+    // Get latest directly from storage
+    const storedUserName = await getSecureItem('userName');
+    const storedEmail = await getSecureItem('email');
+    const storedLocation = await getSecureItem('userLocation');
+    console.log('Refreshing user info. Data from storage:', {
+      userName: storedUserName,
+      email: storedEmail, 
+      location: storedLocation
+    });
+    
+    // If we have data in storage, use it
+    if (storedUserName && storedEmail) {
+      const refreshedInfo = {
+        userName: storedUserName,
+        email: storedEmail,
+        location: storedLocation || undefined
+      };
+      
+      // Update state with refreshed info
+      setUserInfo(refreshedInfo);
+      setUserName(refreshedInfo.userName);
+      setemail(refreshedInfo.email);
+      
+      return refreshedInfo;
+    }
+    
+    // Otherwise, get updated info from API
+    return getUserInfo();
   };
 
   return (

@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   StyleSheet,
   TouchableOpacity,
@@ -17,8 +18,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import * as ImagePicker from 'expo-image-picker';
+import * as SecureStore from 'expo-secure-store';
 import { useAuth } from '../context/AuthContext';
-
+import api from '../../services/api';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -44,7 +46,7 @@ const fontFamilies = {
 const userProfile = {
   name: "John Doe",
   email: "john.doe@example.com",
-  address: "123 Main St, Anytown, US 12345",
+  location: "123 Main St, Anytown, US 12345",
   profileImage: require('@/assets/images/adaptive-icon.png'),
   memberSince: "March 2023"
 };
@@ -80,6 +82,14 @@ type SettingType = {
   type: 'toggle' | 'navigate';
   value?: boolean;
   route?: string;
+};
+
+const getSecureItem = async (key: string) => {
+  if (Platform.OS === 'web') {
+    return localStorage.getItem(key);
+  } else {
+    return await SecureStore.getItemAsync(key);
+  }
 };
 
 function SettingCard({ 
@@ -138,47 +148,68 @@ export default function ProfileScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const [isEditMode, setIsEditMode] = useState(false);
   const [settings, setSettings] = useState(settingsData);
-  const { logout, userId, isAuthenticated, getUserInfo } = useAuth();
+  const { logout, userId, isAuthenticated, getUserInfo, userName } = useAuth();
+  
+  // Initialize with safer default values
   const [profileData, setProfileData] = useState({
     name: "Loading...",
     email: "loading@example.com",
-    phone: "",
-    address: "",
+    location: "",  // Empty string instead of undefined
     memberSince: new Date().toLocaleDateString(),
-    profileImage: require("@/assets/images/adaptive-icon.png")  // Use existing image
+    profileImage: require("@/assets/images/adaptive-icon.png")
   });
   
   useEffect(() => {
+    let isMounted = true;
     const fetchUserData = async () => {
       if (!userId || !isAuthenticated) return;
       
       try {
-        const userInfo = await getUserInfo();
-        console.log('User Info:', userInfo);
+        console.log('Fetching user data for profile...');
         
-        setProfileData({
-          name: userInfo.userName || `User ${userId.substring(0, 5)}`,
-          email: userInfo.email || `User${userId.substring(0, 5)}@example.com`,
-          phone: userInfo.phoneNumber || "+1234567890",
-          address: userInfo.address || "123 University Ave",
-          memberSince: userInfo.createdAt || new Date().toLocaleDateString(),
-          profileImage: require("@/assets/images/adaptive-icon.png")
-        });
+        const storedLocation = Platform.OS === 'web' 
+          ? localStorage.getItem('userLocation') 
+          : await SecureStore.getItemAsync('userLocation');
+        
+        if (!isMounted) return;
+        
+        if (storedLocation && !profileData.location) {
+          setProfileData(prev => ({
+            ...prev,
+            location: storedLocation
+          }));
+        }
+        
+        try {
+          const userInfo = await getUserInfo();
+          
+          if (!isMounted) return;
+          
+          if (userInfo.userName !== profileData.name || 
+              userInfo.email !== profileData.email ||
+              userInfo.location !== profileData.location) {
+            setProfileData({
+              name: userInfo.userName || `User ${userId.substring(0, 5)}`,
+              email: userInfo.email || `User${userId.substring(0, 5)}@example.com`,
+              location: userInfo.location || storedLocation || "(No location provided)",
+              memberSince: userInfo.createdAt || new Date().toLocaleDateString(),
+              profileImage: require("@/assets/images/adaptive-icon.png")
+            });
+          }
+        } catch (apiError) {
+          console.error("Error getting user info from API:", apiError);
+        }
       } catch (error) {
-        console.error("Error fetching user data:", error);
-        setProfileData({
-          name: `User ${userId.substring(0, 5)}`,
-          email: `user${userId.substring(0, 5)}@example.com`,
-          phone: "+1234567890",
-          address: "123 University Ave",
-          memberSince: new Date().toLocaleDateString(),
-          profileImage: require("@/assets/images/adaptive-icon.png")
-        });
+        console.error("Error in fetchUserData:", error);
       }
     };
     
     fetchUserData();
-  }, [userId, isAuthenticated, getUserInfo]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [userId, isAuthenticated]);
 
   const screenWidth = Dimensions.get('window').width;
   const isSmallDevice = screenWidth < 380;
@@ -208,8 +239,36 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleEditProfile = () => {
-    setIsEditMode(!isEditMode);
+  const handleSaveProfile = async () => {
+    if (isEditMode) {
+      try {
+        // Save the location to SecureStore
+        if (Platform.OS === 'web') {
+          localStorage.setItem('userLocation', profileData.location);
+        } else {
+          await SecureStore.setItemAsync('userLocation', profileData.location);
+        }
+        console.log('Saved location to storage:', profileData.location);
+        
+        // Skip calling refreshUserInfo here - we already have the data in state
+        // Just manually update the AuthContext if needed
+        if (profileData.name !== userName) {
+          // Update name in secure storage
+          if (Platform.OS === 'web') {
+            localStorage.setItem('userName', profileData.name);
+          } else {
+            await SecureStore.setItemAsync('userName', profileData.name);
+          }
+        }
+        
+        setIsEditMode(false); // Exit edit mode
+      } catch (error) {
+        console.error('Failed to save profile:', error);
+        Alert.alert('Error', 'Failed to save profile changes.');
+      }
+    } else {
+      setIsEditMode(true); // Enter edit mode
+    }
   };
 
   const handleChangePhoto = async () => {
@@ -247,6 +306,8 @@ export default function ProfileScreen() {
       );
     }
   };
+
+  console.log('Current profile location:', profileData.location);
 
   return (
     <LinearGradient
@@ -286,7 +347,7 @@ export default function ProfileScreen() {
           </ThemedText>
           <TouchableOpacity
             style={styles.editButton}
-            onPress={handleEditProfile}
+            onPress={handleSaveProfile}
           >
             <ThemedText
               style={styles.editButtonText}
@@ -380,13 +441,13 @@ export default function ProfileScreen() {
                   darkColor="#EBD3F8" 
                   lightColor="#EBD3F8"
                 >
-                  Address
+                  Location
                 </ThemedText>
                 {isEditMode ? (
                   <TextInput
                     style={styles.detailInput}
-                    value={profileData.address}
-                    onChangeText={(text) => setProfileData({...profileData, address: text})}
+                    value={profileData.location}
+                    onChangeText={(text) => setProfileData({...profileData, location: text})}
                     selectionColor="#31E1F7"
                     multiline={true}
                   />
@@ -396,11 +457,39 @@ export default function ProfileScreen() {
                     darkColor="#fff" 
                     lightColor="#fff"
                   >
-                    {profileData.address}
+                    {profileData.location}
                   </ThemedText>
                 )}
               </View>
             </View>
+            {profileData.location === "(No location provided)" && (
+              <TouchableOpacity
+                style={{
+                  backgroundColor: 'rgba(49, 225, 247, 0.2)',
+                  paddingVertical: 8,
+                  paddingHorizontal: 12,
+                  borderRadius: 16,
+                  alignItems: 'center',
+                  marginTop: 8
+                }}
+                onPress={() => {
+                  setIsEditMode(true);
+                  Alert.alert(
+                    'Location Missing',
+                    'Please add your location to complete your profile',
+                    [{ text: 'OK' }]
+                  );
+                }}
+              >
+                <ThemedText
+                  style={{fontSize: 14, color: '#31E1F7'}}
+                  darkColor="#31E1F7"
+                  lightColor="#31E1F7"
+                >
+                  Add Your Location
+                </ThemedText>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
