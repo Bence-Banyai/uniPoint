@@ -267,6 +267,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: Platform.OS === "ios" ? 8 : 4,
     marginBottom: 15,
+    paddingBottom: Platform.OS === "web" ? 50 : 10,
   },
   contentContainer: {
     width: "100%",
@@ -276,13 +277,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     paddingBottom: "10%",
-    paddingTop: Platform.OS === "ios" ? 10 : 20,
+    paddingTop: Platform.OS === "ios" ? 20 : 20,
   },
   titleContainer: {
     alignItems: "center",
     marginBottom: "8%",
     width: "100%",
-    paddingTop: Platform.OS === "web" ? 80:10,
+    paddingTop: Platform.OS === "web" ? 150:15,
   },
   title: {
     fontWeight: "700",

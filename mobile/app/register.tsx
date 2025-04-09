@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import 'react-native-get-random-values';
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   StyleSheet,
   TextInput,
@@ -21,6 +22,21 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import * as Location from 'expo-location';
 import * as SecureStore from 'expo-secure-store';
+import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
+import { MaterialIcons } from '@expo/vector-icons';
+
+// Add these interfaces at the top of your file
+declare global {
+  interface Window {
+    google?: {
+      maps?: {
+        places: {
+          Autocomplete: new (input: HTMLInputElement, options?: any) => any;
+        };
+      };
+    };
+  }
+}
 
 const responsiveFontSize = (size: number, minSize: number, maxSize: number) => {
   const { width, height } = Dimensions.get('window');
@@ -48,6 +64,8 @@ export default function RegisterScreen() {
   const [role, setRole] = useState("User"); // Default role
   const [location, setLocation] = useState("");
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [isLocationValid, setIsLocationValid] = useState(false); // Add this state to track if the location is valid (selected from dropdown)
+  const [showPassword, setShowPassword] = useState(false);
   
   const { register, login, isLoading: authLoading } = useAuth();
   
@@ -70,24 +88,34 @@ export default function RegisterScreen() {
     router.replace('/welcome');
   }, []);
 
-  const requestLocationPermission = async () => {
-    if (Platform.OS === 'web') return;
+  const requestLocationPermission = async (): Promise<boolean> => {
+    if (Platform.OS === 'web') return false;
     
     setIsGettingLocation(true);
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      // Check if we already have permission before requesting it
+      const { status: existingStatus } = await Location.getForegroundPermissionsAsync();
       
-      if (status !== 'granted') {
-        Alert.alert(
-          'Permission Denied',
-          'Please allow access to your location or enter your location manually.',
-          [{ text: 'OK' }]
-        );
-        setIsGettingLocation(false);
-        return;
+      // If we don't have permission yet, request it
+      if (existingStatus !== 'granted') {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        
+        if (status !== 'granted') {
+          // User denied permission - show a more helpful message
+          Alert.alert(
+            'Location Permission',
+            'Location permission is needed to automatically fill in your current location. You can still enter it manually.',
+            [{ text: 'OK' }]
+          );
+          setIsGettingLocation(false);
+          return false;
+        }
       }
       
-      const location = await Location.getCurrentPositionAsync({});
+      // We have permission, get the current position
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced // Use balanced accuracy for faster results
+      });
       const { latitude, longitude } = location.coords;
       
       // Get readable address using reverse geocoding
@@ -99,44 +127,74 @@ export default function RegisterScreen() {
         
         if (address) {
           // Format the location as requested: {city}, {postalCode}. {houseNumber}
-          const { city, postalCode, streetNumber, street } = address;
+          const { city, postalCode, streetNumber, street, region, country } = address;
           
-          // Combine street and street number for house number if available
-          const houseNumber = streetNumber ? 
-            (street ? `${street} ${streetNumber}` : streetNumber) : 
-            "";
-          
-          // Build the location string in the requested format
+          // Build a comprehensive location string
           const locationParts = [];
+          
+          // Add detailed location components with fallbacks
+          if (street) {
+            const streetWithNumber = streetNumber ? `${street} ${streetNumber}` : street;
+            locationParts.push(streetWithNumber);
+          }
+          
           if (city) locationParts.push(city);
           if (postalCode) locationParts.push(postalCode);
+          if (!city && region) locationParts.push(region);
+          if (country) locationParts.push(country);
           
           let locationString = locationParts.join(', ');
-          if (houseNumber) {
-            locationString += `. ${houseNumber}.`;
-          }
           
           // If we couldn't get enough address details, fall back to coordinates
           if (!locationString) {
-            locationString = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
+            locationString = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
           }
           
+          // Store location in state 
           setLocation(locationString);
+          setIsLocationValid(true); // Mark as valid when using GPS
+          
+          // Directly update the GooglePlacesAutocomplete component with the location
+          if (locationInputRef.current && locationInputRef.current.setAddressText) {
+            locationInputRef.current.setAddressText(locationString);
+          }
+          
+          setIsGettingLocation(false);
+          return true;
         } else {
-          // Fallback to coordinates if reverse geocoding fails
-          setLocation(`${latitude.toFixed(2)}, ${longitude.toFixed(2)}`);
+          // Fallback to coordinates if reverse geocoding returns no results
+          const locationString = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+          setLocation(locationString);
+          
+          // Directly update the GooglePlacesAutocomplete component with the coordinates
+          if (locationInputRef.current && locationInputRef.current.setAddressText) {
+            locationInputRef.current.setAddressText(locationString);
+          }
+          
+          setIsGettingLocation(false);
+          return true;
         }
       } catch (geocodeError) {
         console.error('Error with geocoding:', geocodeError);
         // Fallback to coordinates
-        setLocation(`${latitude.toFixed(2)}, ${longitude.toFixed(2)}`);
+        const locationString = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+        setLocation(locationString);
+        setIsLocationValid(true); // Mark as valid when using GPS
+        
+        // Directly update the GooglePlacesAutocomplete component with the coordinates
+        if (locationInputRef.current && locationInputRef.current.setAddressText) {
+          locationInputRef.current.setAddressText(locationString);
+        }
+        
+        setIsGettingLocation(false);
+        return true;
       }
       
     } catch (err) {
       console.error('Error getting location:', err);
       Alert.alert('Error', 'Unable to get your location. Please enter it manually.');
-    } finally {
       setIsGettingLocation(false);
+      return false;
     }
   };
 
@@ -164,6 +222,16 @@ export default function RegisterScreen() {
       setIsLoading(false);
       return;
     }
+    
+    // Add this check to ensure location is valid
+    if (!isLocationValid) {
+      Alert.alert(
+        'Invalid Location', 
+        'Please select a location from the dropdown suggestions or use the Get Location button.'
+      );
+      setIsLoading(false);
+      return;
+    }
 
     try {
       console.log('Sending registration data with location:', location);
@@ -171,12 +239,12 @@ export default function RegisterScreen() {
       const userData = {
         userName: username,
         email: email,
-        location: location, // Map to phoneNumber for backend compatibility
+        location: location,  // Add location as a property
         password: password,
-        role: role,
+        role: role
       };
-
-      // Store location in SecureStore immediately to ensure it's saved
+      
+      // Store location in SecureStore outside of the object definition
       if (Platform.OS === 'web') {
         localStorage.setItem('userLocation', location);
         console.log('Web: Saved location during registration:', location);
@@ -268,6 +336,123 @@ export default function RegisterScreen() {
     }
   }, [username, email, password, location, role, register, login, router]);
 
+  const mapScriptLoaded = useRef(false);
+  const autocompleteInitialized = useRef(false);
+  const inputRef = useRef<TextInput>(null);
+  const locationInputRef = useRef<any>(null); // Add this line for GooglePlacesAutocomplete
+
+  // Add this useEffect to load and initialize Google Places Autocomplete for web
+  useEffect(() => {
+    if (Platform.OS === 'web' && !mapScriptLoaded.current) {
+      mapScriptLoaded.current = true;
+      
+      // Add custom CSS for Google Places autocomplete dropdown
+      const style = document.createElement('style');
+      style.textContent = `
+        .pac-container {
+          background-color: rgba(64, 13, 81, 0.95) !important;
+          border: 1px solid rgba(235, 211, 248, 0.3) !important;
+          border-radius: 12px !important;
+          box-shadow: 0 4px 8px rgba(248, 6, 204, 0.2) !important;
+          padding: 5px !important;
+          margin-top: 5px !important;
+          z-index: 1000 !important;
+          max-height: 220px !important;
+          overflow-y: auto !important;
+        }
+        .pac-item {
+          border-color: rgba(235, 211, 248, 0.15) !important;
+          padding: 8px !important;
+          cursor: pointer !important;
+        }
+        .pac-item:hover {
+          background-color: rgba(174, 0, 255, 0.2) !important;
+        }
+        .pac-item-query, .pac-matched, .pac-item span:not(.pac-icon) {
+          color: #EBD3F8 !important;
+          font-family: ${fontFamilies.text} !important;
+          font-size: ${inputFontSize * 0.9}px !important;
+        }
+        .pac-icon {
+          filter: brightness(1.5) !important;
+        }
+      `;
+      document.head.appendChild(style);
+      
+      // Create script element to load Google Maps API
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyDNWQQy6PXKyZvdYyC8_MmLP8EVTIP6tAs&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      
+      script.onload = () => {
+        console.log("Google Maps script loaded");
+        // Add a slight delay to ensure component is fully rendered
+        setTimeout(() => {
+          initializeAutocomplete();
+        }, 300);
+      };
+      
+      document.head.appendChild(script);
+      
+      return () => {
+        if (document.head.contains(script)) {
+          document.head.removeChild(script);
+        }
+        if (document.head.contains(style)) {
+          document.head.removeChild(style);
+        }
+      };
+    }
+  }, []);
+
+  // Add this function to initialize Google Places Autocomplete on the web input
+  const initializeAutocomplete = () => {
+    if (Platform.OS !== 'web' || !inputRef.current || !window.google || !window.google.maps) return;
+    
+    try {
+      // This approach will work more reliably in the web environment
+      setTimeout(() => {
+        // Find the input element by its placeholder text
+        const inputElements = document.querySelectorAll('input');
+        let locationInput = null;
+        
+        for (let i = 0; i < inputElements.length; i++) {
+          const elem = inputElements[i];
+          if (elem.placeholder === "Enter your location") {
+            locationInput = elem;
+            break;
+          }
+        }
+        
+        if (locationInput) {
+          console.log("Found location input, initializing autocomplete");
+          autocompleteInitialized.current = true;
+          
+          // Use type assertion to tell TypeScript you're sure these properties exist
+          const autocomplete = new (window.google!.maps!.places.Autocomplete)(
+            locationInput as HTMLInputElement,
+            { types: ['geocode'] }
+          );
+          
+          // Add listener for place selection
+          autocomplete.addListener('place_changed', () => {
+            const place = autocomplete.getPlace();
+            if (place && place.formatted_address) {
+              setLocation(place.formatted_address);
+              setIsLocationValid(true); // Mark as valid when selected from dropdown
+              console.log("Selected location:", place.formatted_address);
+            }
+          });
+        } else {
+          console.error("Could not find location input element");
+        }
+      }, 500);
+    } catch (error) {
+      console.error("Error initializing autocomplete:", error);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -306,6 +491,7 @@ export default function RegisterScreen() {
             isLargeDevice && { paddingHorizontal: 40 }
           ]}
           keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled={true}
         >
           <View style={[
             styles.header, 
@@ -423,23 +609,35 @@ export default function RegisterScreen() {
                 >
                   Password
                 </ThemedText>
-                <TextInput
-                  placeholder="Create a password"
-                  placeholderTextColor="rgba(235, 211, 248, 0.5)"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                  selectionColor="#31E1F7"
-                  style={[
-                    styles.input, 
-                    { 
-                      color: "#EBD3F8",
-                      fontSize: inputFontSize,
-                      height: inputHeight,
-                      paddingHorizontal: isSmallDevice ? 15 : 20
-                    }
-                  ]}
-                />
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    placeholder="Create a password"
+                    placeholderTextColor="rgba(235, 211, 248, 0.5)"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    selectionColor="#31E1F7"
+                    style={[
+                      styles.passwordInput, 
+                      { 
+                        color: "#EBD3F8",
+                        fontSize: inputFontSize,
+                        height: inputHeight,
+                        paddingHorizontal: isSmallDevice ? 15 : 20
+                      }
+                    ]}
+                  />
+                  <TouchableOpacity 
+                    style={styles.eyeButton} 
+                    onPress={() => setShowPassword(!showPassword)}
+                  >
+                    <MaterialIcons 
+                      name={showPassword ? "visibility-off" : "visibility"} 
+                      size={24} 
+                      color="#EBD3F8" 
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <View style={styles.inputContainer}>
@@ -450,51 +648,192 @@ export default function RegisterScreen() {
                 >
                   Location
                 </ThemedText>
-                <View style={{ flexDirection: 'row' }}>
-                  <TextInput
-                    placeholder="Enter your location (City, PostalCode. HouseNumber)"
-                    placeholderTextColor="rgba(235, 211, 248, 0.5)"
-                    value={location}
-                    onChangeText={setLocation}
-                    selectionColor="#31E1F7"
-                    style={[
-                      styles.input, 
-                      { 
+                
+                {Platform.OS === 'web' ? (
+                  // Improved web implementation with Google Places API
+                  <View>
+                    <TextInput
+                      ref={inputRef}
+                      placeholder="Enter your location"
+                      placeholderTextColor="rgba(235, 211, 248, 0.5)"
+                      value={location}
+                      onChangeText={(text) => {
+                        setLocation(text);
+                        setIsLocationValid(false); // Invalidate when user types manually
+                      }}
+                      selectionColor="#31E1F7"
+                      style={[
+                        styles.input, 
+                        { 
+                          color: "#EBD3F8",
+                          fontSize: inputFontSize,
+                          height: inputHeight,
+                          paddingHorizontal: isSmallDevice ? 15 : 20
+                        }
+                      ]}
+                      onFocus={() => {
+                        if (Platform.OS === 'web' && !autocompleteInitialized.current && window.google && window.google.maps) {
+                          initializeAutocomplete();
+                        }
+                      }}
+                    />
+                    <ThemedText
+                      style={{
+                        fontSize: labelFontSize * 0.7,
+                        marginTop: 8,
+                        color: "#EBD3F8",
+                        opacity: 0.7
+                      }}
+                      darkColor="#EBD3F8"
+                      lightColor="#EBD3F8"
+                    >
+                      Start typing to see location suggestions
+                    </ThemedText>
+                  </View>
+                ) : (
+                  // Mobile implementation (unchanged)
+                  <GooglePlacesAutocomplete
+                    placeholder="Search for your location"
+                    onPress={(data, details = null) => {
+                      // 'details' is provided when fetchDetails = true
+                      const locationString = data.description;
+                      setLocation(locationString);
+                      setIsLocationValid(true); // Mark location as valid when selected from dropdown
+                    }}
+                    fetchDetails={true}
+                    enablePoweredByContainer={false} // Optional: removes the "Powered by Google" footer
+                    // Add the following props
+                    listViewDisplayed={false} // Only display the list when typing
+                    keyboardShouldPersistTaps="handled"
+                    disableScroll={true} // Important to prevent nested scrolling issues
+                    query={{
+                      key: 'AIzaSyDNWQQy6PXKyZvdYyC8_MmLP8EVTIP6tAs',
+                      language: 'en',
+                    }}
+                    textInputProps={{
+                      onFocus: async () => {
+                        // When the user taps into the field, request location permission if no location
+                        if (!location) {
+                          await requestLocationPermission();
+                          // No need for the setTimeout or extra steps - the function now
+                          // directly updates the component via setAddressText
+                        }
+                      },
+                      // Add this to invalidate the location when user types manually
+                      onChangeText: () => {
+                        setIsLocationValid(false);
+                      },
+                      placeholderTextColor: "rgba(235, 211, 248, 0.5)",
+                      selectionColor: "#31E1F7",
+                    }}
+                    styles={{
+                      textInput: {
                         color: "#EBD3F8",
                         fontSize: inputFontSize,
                         height: inputHeight,
-                        paddingHorizontal: isSmallDevice ? 15 : 20,
-                        flex: 1
-                      }
-                    ]}
-                  />
-                  {Platform.OS !== 'web' && (
-                    <TouchableOpacity 
-                      onPress={requestLocationPermission} 
-                      style={{
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        backgroundColor: 'rgba(49, 225, 247, 0.2)',
+                        backgroundColor: "rgba(174, 0, 255, 0.1)",
+                        borderWidth: 1,
+                        borderColor: "rgba(235, 211, 248, 0.3)",
                         borderRadius: 28,
-                        paddingHorizontal: 12,
-                        marginLeft: 8
-                      }}
-                      disabled={isGettingLocation}
-                    >
-                      {isGettingLocation ? (
-                        <ActivityIndicator color="#31E1F7" size="small" />
-                      ) : (
-                        <ThemedText
-                          style={{ color: "#31E1F7", fontSize: labelFontSize * 0.8 }}
-                          darkColor="#31E1F7"
-                          lightColor="#31E1F7"
-                        >
-                          Get
-                        </ThemedText>
-                      )}
-                    </TouchableOpacity>
-                  )}
-                </View>
+                        paddingHorizontal: isSmallDevice ? 15 : 20,
+                        fontFamily: fontFamilies.text,
+                      },
+                      container: {
+                        flex: 0,
+                      },
+                      listView: {
+                        backgroundColor: 'rgba(64, 13, 81, 0.95)', // More transparent to see the glow circles
+                        borderWidth: 1,
+                        borderColor: 'rgba(235, 211, 248, 0.3)',
+                        borderRadius: 12,
+                        position: 'absolute',
+                        top: inputHeight + 5,
+                        left: 0,
+                        right: 0,
+                        zIndex: 1000,
+                        maxHeight: 220, // Limit the height to prevent it from taking too much space
+                        shadowColor: "#F806CC",
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.2,
+                        shadowRadius: 8,
+                        elevation: 5,
+                      },
+                      row: {
+                        backgroundColor: 'transparent', // Transparent to show the parent background
+                        padding: 15,
+                        height: 'auto',
+                        minHeight: 48,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                      },
+                      separator: {
+                        height: 1,
+                        backgroundColor: "rgba(235, 211, 248, 0.15)", // Lighter separator
+                      },
+                      description: {
+                        color: '#EBD3F8',
+                        fontSize: inputFontSize * 0.9,
+                        fontFamily: fontFamilies.text,
+                      },
+                      predefinedPlacesDescription: {
+                        color: '#31E1F7', // Highlight color for predefined places
+                      },
+                      poweredContainer: {
+                        backgroundColor: 'rgba(64, 13, 81, 0.8)',
+                        borderBottomLeftRadius: 12,
+                        borderBottomRightRadius: 12,
+                        borderColor: 'rgba(235, 211, 248, 0.2)',
+                        borderTopWidth: 0.5,
+                        padding: 8,
+                      },
+                      powered: {
+                        height: 14,
+                        opacity: 0.8,
+                      },
+                    }}
+                    renderRightButton={() => {
+                      if (isGettingLocation) {
+                        return (
+                          <View style={{
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            paddingRight: 15
+                          }}>
+                            <ActivityIndicator size="small" color="#31E1F7" />
+                          </View>
+                        );
+                      } 
+                      
+                      if (location) {
+                        return (
+                          <TouchableOpacity
+                            style={{
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              paddingRight: 15
+                            }}
+                            onPress={() => {
+                              setLocation("");
+                            }}
+                          >
+                            <IconSymbol
+                              name="checkmark.circle.fill"  // Changed from xmark.circle.fill to an allowed icon
+                              size={18}
+                              color="rgba(235, 211, 248, 0.6)"
+                            />
+                          </TouchableOpacity>
+                        );
+                      }
+                      
+                      // Return an empty View instead of null
+                      return <View style={{ width: 15 }} />;
+                    }}
+                    ref={(ref) => {
+                      // Store a reference to the GooglePlacesAutocomplete component
+                      locationInputRef.current = ref;
+                    }}
+                  />
+                )}
               </View>
 
               <TouchableOpacity
@@ -506,7 +845,7 @@ export default function RegisterScreen() {
                   }
                 ]}
                 onPress={handleRegister}
-                disabled={isLoading || authLoading || !username || !email || !password || !location}
+                disabled={isLoading || authLoading || !username || !email || !password || !location || !isLocationValid}
                 activeOpacity={0.8}
               >
                 <LinearGradient
@@ -687,5 +1026,20 @@ const styles = StyleSheet.create({
   footerText: {
     opacity: 0.6,
     fontFamily: fontFamilies.text,
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: "rgba(235, 211, 248, 0.3)",
+    borderRadius: 28,
+    backgroundColor: "rgba(174, 0, 255, 0.1)",
+  },
+  passwordInput: {
+    flex: 1,
+    fontFamily: fontFamilies.text,
+  },
+  eyeButton: {
+    paddingHorizontal: 10,
   },
 });
