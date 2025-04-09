@@ -1,45 +1,181 @@
 <template>
-    <BaseAuthForm title="Create account" subtitle="Please enter your details to sign up">
-        <form @submit.prevent="register" class="mt-6 space-y-6">
-            <div class="space-y-4">
-                <FormInput id="username" label="Username" v-model="form.userName" placeholder="Enter your username"
-                    required />
+    <div class="min-h-screen py-16 relative overflow-hidden">
+        <!-- Background decorative elements -->
+        <div class="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-accent-pink opacity-10 blur-3xl"></div>
+        <div class="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-accent-blue opacity-10 blur-3xl"></div>
 
-                <FormInput id="email" label="Email" type="email" v-model="form.email" placeholder="Enter your email"
-                    required />
+        <div class="container mx-auto px-4 relative z-10">
+            <div class="max-w-md mx-auto">
+                <!-- Card with glass effect -->
+                <div
+                    class="bg-white bg-opacity-90 backdrop-blur-md rounded-2xl shadow-raised p-8 border border-gray-100">
+                    <!-- Logo -->
+                    <div class="text-center mb-8">
+                        <NuxtLink to="/" class="inline-flex items-center justify-center mb-4 group">
+                            <div
+                                class="h-12 w-12 bg-gradient-purple rounded-xl flex items-center justify-center shadow-purple-glow transition-all duration-300 group-hover:shadow-blue-glow">
+                                <NuxtImg src="/logo.png" alt="uniPoint Logo" class="h-7 w-auto" />
+                            </div>
+                        </NuxtLink>
+                        <h1
+                            class="text-2xl font-bold bg-gradient-to-r from-primary-purple to-accent-blue bg-clip-text text-transparent">
+                            Create your account
+                        </h1>
+                        <p class="text-gray-600 mt-2">Join our community today</p>
+                    </div>
 
-                <PasswordInput v-model="form.password" placeholder="Create a password" required />
+                    <form @submit.prevent="register" class="space-y-6 animate-fade-in">
+                        <div class="space-y-4">
+                            <div>
+                                <label for="username" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Username
+                                </label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Icon name="entypo:user" class="h-5 w-5 text-gray-400" />
+                                    </div>
+                                    <input id="username" type="text" v-model="form.userName"
+                                        placeholder="Choose a username"
+                                        class="pl-10 w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-purple focus:bg-white transition-all duration-300"
+                                        required />
+                                </div>
+                            </div>
 
-                <FormInput id="location" label="Location" v-model="form.location" placeholder="Enter your location"
-                    required />
+                            <div>
+                                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Email
+                                </label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Icon name="entypo:mail" class="h-5 w-5 text-gray-400" />
+                                    </div>
+                                    <input id="email" type="email" v-model="form.email" placeholder="Enter your email"
+                                        class="pl-10 w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-purple focus:bg-white transition-all duration-300"
+                                        required />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Password
+                                </label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Icon name="entypo:lock" class="h-5 w-5 text-gray-400" />
+                                    </div>
+                                    <input id="password" :type="showPassword ? 'text' : 'password'"
+                                        v-model="form.password" placeholder="Create a password"
+                                        class="pl-10 w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-purple focus:bg-white transition-all duration-300"
+                                        required />
+                                    <button type="button" @click="showPassword = !showPassword"
+                                        class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors">
+                                        <Icon :name="showPassword ? 'entypo:eye-with-line' : 'entypo:eye'"
+                                            class="h-5 w-5" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="location" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Location
+                                </label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Icon name="entypo:location-pin" class="h-5 w-5 text-gray-400" />
+                                    </div>
+                                    <input id="location" type="text" v-model="form.location"
+                                        placeholder="Enter your city (e.g., Budapest)"
+                                        class="pl-10 w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-purple focus:bg-white transition-all duration-300"
+                                        required />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start">
+                            <div class="flex items-center h-5">
+                                <input id="terms" type="checkbox" v-model="acceptTerms"
+                                    class="h-4 w-4 text-primary-purple focus:ring-primary-purple border-gray-300 rounded"
+                                    required />
+                            </div>
+                            <div class="ml-3 text-sm">
+                                <label for="terms" class="text-gray-600">
+                                    I agree to the
+                                    <NuxtLink to="/terms"
+                                        class="font-medium text-primary-purple hover:text-secondary-purple transition-colors">
+                                        Terms of Service
+                                    </NuxtLink>
+                                    and
+                                    <NuxtLink to="/privacy"
+                                        class="font-medium text-primary-purple hover:text-secondary-purple transition-colors">
+                                        Privacy Policy
+                                    </NuxtLink>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <button type="submit" :disabled="isLoading || !acceptTerms"
+                                class="w-full flex justify-center items-center px-6 py-3 bg-gradient-purple text-white font-medium rounded-xl shadow-soft hover:shadow-purple-glow transition-all duration-300 disabled:opacity-70">
+                                <Icon v-if="isLoading" name="entypo:cycle" class="animate-spin mr-2" />
+                                <span>{{ isLoading ? 'Creating account...' : 'Create account' }}</span>
+                            </button>
+                        </div>
+
+                        <div v-if="error"
+                            class="p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm text-center animate-fade-in">
+                            {{ error }}
+                        </div>
+
+                        <div v-if="success"
+                            class="p-3 rounded-lg bg-green-50 border border-green-200 text-green-600 text-sm text-center animate-fade-in">
+                            {{ success }}
+                        </div>
+                    </form>
+
+                    <!-- Social registration options (visual only) -->
+                    <div class="mt-8">
+                        <div class="relative">
+                            <div class="absolute inset-0 flex items-center">
+                                <div class="w-full border-t border-gray-200"></div>
+                            </div>
+                            <div class="relative flex justify-center text-sm">
+                                <span class="px-2 bg-white text-gray-500">Or register with</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 grid grid-cols-3 gap-3">
+                            <button type="button"
+                                class="py-2 px-4 border border-gray-200 rounded-lg flex justify-center items-center hover:bg-gray-50 transition-all">
+                                <Icon name="entypo:google--with-circle" class="h-5 w-5 text-gray-600" />
+                            </button>
+                            <button type="button"
+                                class="py-2 px-4 border border-gray-200 rounded-lg flex justify-center items-center hover:bg-gray-50 transition-all">
+                                <Icon name="entypo:facebook-with-circle" class="h-5 w-5 text-gray-600" />
+                            </button>
+                            <button type="button"
+                                class="py-2 px-4 border border-gray-200 rounded-lg flex justify-center items-center hover:bg-gray-50 transition-all">
+                                <Icon name="entypo:twitter-with-circle" class="h-5 w-5 text-gray-600" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 text-center">
+                        <p class="text-sm text-gray-600">
+                            Already have an account?
+                            <NuxtLink to="/login"
+                                class="font-medium text-primary-purple hover:text-secondary-purple transition-colors">
+                                Sign in
+                            </NuxtLink>
+                        </p>
+                    </div>
+                </div>
             </div>
-
-            <div>
-                <FormButton :disabled="isLoading">
-                    <span v-if="isLoading">Creating account...</span>
-                    <span v-else>Create account</span>
-                </FormButton>
-            </div>
-
-            <div v-if="error" class="mt-3 text-sm text-center text-red-600">
-                {{ error }}
-            </div>
-
-            <div v-if="success" class="mt-3 text-sm text-center text-green-600">
-                {{ success }}
-            </div>
-        </form>
-
-        <div class="text-center mt-4">
-            <p class="text-sm text-gray-600">Already have an account?
-                <NuxtLink to="/login" class="font-medium text-purple-600 hover:text-purple-800">Sign in</NuxtLink>
-            </p>
         </div>
-    </BaseAuthForm>
+    </div>
 </template>
 
 <script setup lang="ts">
-import { useAuthStore } from '../../stores/auth';
+import { useAuthStore } from '~/stores/auth';
 
 definePageMeta({
     layout: 'register',
@@ -50,11 +186,19 @@ definePageMeta({
     }
 });
 
+// Add SEO metadata
+useSeoMeta({
+    title: 'Create a UniPoint Account',
+    description: 'Join UniPoint to access educational services and connect with professionals',
+})
+
 const router = useRouter();
 const authStore = useAuthStore();
 const isLoading = ref(false);
 const error = ref('');
 const success = ref('');
+const showPassword = ref(false);
+const acceptTerms = ref(false);
 
 const form = reactive({
     userName: '',

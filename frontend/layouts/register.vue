@@ -1,17 +1,14 @@
 <script setup lang="ts">
-// No business logic or definePageMeta here, just layout structure
+// Simple layout for registration page
 </script>
 
 <template>
-    <div class="min-h-screen flex flex-col">
+    <div class="min-h-screen font-Montserrat bg-gray-50">
         <AppNavbar />
 
-        <main class="flex-grow pt-16 flex items-center justify-center bg-gray-50">
-            <div class="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md">
-                <slot />
-            </div>
+        <!-- Main content -->
+        <main class="pt-16">
+            <slot />
         </main>
-
-        <AppFooter />
     </div>
 </template>
