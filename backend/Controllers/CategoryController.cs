@@ -7,7 +7,6 @@ using uniPoint_backend.Models;
 
 namespace uniPoint_backend.Controllers
 {
-    [Authorize(Roles = "Admin")]
     [Route("api/[controller]")]
     [ApiController]
     public class CategoryController : ControllerBase
@@ -23,6 +22,7 @@ namespace uniPoint_backend.Controllers
 
         // GET: api/Category
         [HttpGet]
+        [AllowAnonymous] // Allow anyone to view categories
         public async Task<ActionResult<IEnumerable<Category>>> GetCategories()
         {
             return await _uniPointContext.Categories.ToListAsync();
@@ -30,6 +30,7 @@ namespace uniPoint_backend.Controllers
 
         // GET: api/Category/5
         [HttpGet("{id}")]
+        [AllowAnonymous] // Allow anyone to view a single category
         public async Task<ActionResult<Category>> GetCategory(int id)
         {
             var category = await _uniPointContext.Categories.FindAsync(id);
@@ -44,6 +45,7 @@ namespace uniPoint_backend.Controllers
 
         // POST: api/Category
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Category>> PostCategory(Category category)
         {
             _uniPointContext.Categories.Add(category);
@@ -54,6 +56,7 @@ namespace uniPoint_backend.Controllers
 
         // PUT: api/Category/5
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> PutCategory(int id, Category category)
         {
             if (id != category.CategoryId)
@@ -84,6 +87,7 @@ namespace uniPoint_backend.Controllers
 
         // DELETE: api/Category/5
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteCategory(int id)
         {
             var category = await _uniPointContext.Categories.FindAsync(id);
@@ -100,6 +104,7 @@ namespace uniPoint_backend.Controllers
 
         // POST api/<UserController>/5/upload-profile-picture
         [HttpPost("{id}/upload-categoryicon")]
+        [Authorize(Roles = "Admin")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> UploadCategoryIcon(string id, IFormFile file)
         {

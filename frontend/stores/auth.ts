@@ -8,6 +8,7 @@ export interface AuthState {
 	user: {
 		userName: string | null;
 		email: string | null;
+		location: string | null; // Add location
 		role: string | null;
 	};
 }
@@ -20,6 +21,7 @@ export const useAuthStore = defineStore("auth", {
 		user: {
 			userName: null,
 			email: null,
+			location: null, // Initialize location as null
 			role: null,
 		},
 	}),
@@ -36,10 +38,11 @@ export const useAuthStore = defineStore("auth", {
 					this.setIsAuthenticated(true);
 
 					// Store user information from the response
-					if (response.userName || response.email || response.role) {
+					if (response.userName || response.email || response.role || response.location) {
 						this.setUser({
 							userName: response.userName || null,
 							email: response.email || null,
+							location: response.location || null, // Add location
 							role: response.role || null,
 						});
 					}
@@ -73,7 +76,7 @@ export const useAuthStore = defineStore("auth", {
 		async register(userData: {
 			userName: string;
 			email: string;
-			phoneNumber: string;
+			location: string; // Changed from phoneNumber to location
 			password: string;
 			role: string;
 		}) {
@@ -132,15 +135,20 @@ export const useAuthStore = defineStore("auth", {
 				const userData = await authApi.getUserInfo();
 
 				if (userData) {
+					// Make sure we update all user properties, including location
 					this.setUser({
 						userName: userData.userName || null,
 						email: userData.email || null,
+						location: userData.location || null,
 						role: userData.role || null,
-						// Store additional user data if needed
-						// if (userData.phoneNumber) {
-						// You might need to add phoneNumber to your user state
-						// this.user.phoneNumber = userData.phoneNumber;
-						// }
+					});
+
+					// For debugging purpose
+					console.log("Updated user info:", {
+						userName: userData.userName,
+						email: userData.email,
+						location: userData.location,
+						role: userData.role,
 					});
 				}
 
@@ -169,7 +177,12 @@ export const useAuthStore = defineStore("auth", {
 			this.isAuthenticated = status;
 		},
 
-		setUser(user: { userName: string; email: string; role: string }) {
+		setUser(user: {
+			userName: string | null;
+			email: string | null;
+			location: string | null;
+			role: string | null;
+		}) {
 			this.user = user;
 		},
 
@@ -180,6 +193,7 @@ export const useAuthStore = defineStore("auth", {
 			this.user = {
 				userName: null,
 				email: null,
+				location: null, // Clear the location
 				role: null,
 			};
 		},
@@ -211,6 +225,7 @@ export const useAuthStore = defineStore("auth", {
 							payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"] ||
 							payload.email ||
 							null,
+						location: payload.location || null, // Get location from payload
 						role:
 							payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
 							payload.role ||
@@ -222,6 +237,7 @@ export const useAuthStore = defineStore("auth", {
 					this.setUser({
 						userName: "User",
 						email: "",
+						location: null, // Add the missing location property
 						role: "User",
 					});
 				}

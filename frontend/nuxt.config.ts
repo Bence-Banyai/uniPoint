@@ -69,7 +69,7 @@ export default defineNuxtConfig({
 			"/api": {
 				target: process.env.API_BASE_URL || "http://localhost:5273",
 				changeOrigin: true,
-				prependPath: true,
+				prependPath: false, // Change this to false
 			},
 		},
 	},

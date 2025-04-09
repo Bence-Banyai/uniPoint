@@ -63,9 +63,10 @@
                         <Icon name="entypo:location-pin" class="h-5 w-5 text-gray-600 mr-2" />
                         <span class="text-gray-600">{{ service.address }}</span>
                     </div>
-                    <div v-if="service.provider && service.provider.phoneNumber" class="flex items-center mb-2">
-                        <Icon name="entypo:phone" class="h-5 w-5 text-gray-600 mr-2" />
-                        <span class="text-gray-600">{{ service.provider.phoneNumber }}</span>
+                    <!-- Display provider location instead of phone number if available -->
+                    <div v-if="service.provider && service.provider.location" class="flex items-center mb-2">
+                        <Icon name="entypo:home" class="h-5 w-5 text-gray-600 mr-2" />
+                        <span class="text-gray-600">{{ service.provider.location }}</span>
                     </div>
                     <div v-if="service.provider && service.provider.email" class="flex items-center mb-4">
                         <Icon name="entypo:mail" class="h-5 w-5 text-gray-600 mr-2" />

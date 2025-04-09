@@ -10,7 +10,6 @@ using uniPoint_backend.Models;
 
 namespace uniPoint_backend.Controllers
 {
-    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ServiceController : ControllerBase
@@ -27,18 +26,25 @@ namespace uniPoint_backend.Controllers
 
         // GET: api/<ServiceController>
         [HttpGet]
+        [AllowAnonymous] // Allow anyone to view services list
         public async Task<IActionResult> GetServices()
         {
-            var services = await _uniPointContext.Services.Include(s => s.Provider).ToListAsync();
+            var services = await _uniPointContext.Services
+                .Include(s => s.Provider)
+                .Include(s => s.Category) // Also include the Category information
+                .ToListAsync();
             return Ok(services);
         }
 
         // GET api/<ServiceController>/5
         [HttpGet("{id}")]
+        [AllowAnonymous] // Allow anyone to view service details
         public async Task<IActionResult> GetService(int id)
         {
-            var service = await _uniPointContext.Services.Include(s => s.Provider)
-                                                          .FirstOrDefaultAsync(s => s.ServiceId == id);
+            var service = await _uniPointContext.Services
+                .Include(s => s.Provider)
+                .Include(s => s.Category) // Also include the Category information
+                .FirstOrDefaultAsync(s => s.ServiceId == id);
 
             if (service == null)
             {
@@ -158,7 +164,7 @@ namespace uniPoint_backend.Controllers
             {
                 var extension = Path.GetExtension(file.FileName).ToLower();
                 if (!allowedExtensions.Contains(extension))
-                    return BadRequest("Unsupported filetype (must be: jpg, jpeg, png).");            
+                    return BadRequest("Unsupported filetype (must be: jpg, jpeg, png).");
 
                 const long maxFileSize = 15 * 1024 * 1024;
 

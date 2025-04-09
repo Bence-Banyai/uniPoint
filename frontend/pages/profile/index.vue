@@ -36,6 +36,10 @@
                                 <p>{{ authStore.user.role || 'User' }}</p>
                             </div>
                             <div>
+                                <p class="text-sm text-gray-500">Location</p>
+                                <p>{{ authStore.user.location || 'Not set' }}</p>
+                            </div>
+                            <div>
                                 <p class="text-sm text-gray-500">User ID</p>
                                 <p class="truncate">{{ authStore.userId || 'Not available' }}</p>
                             </div>
@@ -77,7 +81,37 @@ onMounted(async () => {
 
     try {
         // First get user info
-        await authStore.getUserInfo();
+        const userResult = await authStore.getUserInfo();
+
+        if (!userResult.success) {
+            console.error("Failed to fetch user info:", userResult.message);
+        }
+
+        // For debugging purposes
+        console.log("Profile loaded user data:", {
+            userName: authStore.user.userName,
+            email: authStore.user.email,
+            location: authStore.user.location || "Location not available",
+            role: authStore.user.role
+        });
+
+        // If location is still null after getUserInfo, try to get it from localStorage (for web) or another source
+        if (!authStore.user.location) {
+            console.warn("Location still null, checking alternative sources");
+
+            // For web platforms, check localStorage
+            if (process.client && window.localStorage) {
+                const storedLocation = localStorage.getItem('userLocation');
+                if (storedLocation) {
+                    console.log("Found location in localStorage:", storedLocation);
+                    // Update the user in the store with this location
+                    authStore.setUser({
+                        ...authStore.user,
+                        location: storedLocation
+                    });
+                }
+            }
+        }
 
         // Then try to get appointments if user role is appropriate
         const appointmentsApi = useAppointmentsApi();

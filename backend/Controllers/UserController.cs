@@ -18,13 +18,15 @@ namespace uniPoint_backend.Controllers
         private readonly UserManager<User> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly BlobService _blobService;
+        private readonly uniPointContext _uniPointContext;
 
 
-        public UserController(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, BlobService blobService)
+        public UserController(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, BlobService blobService, uniPointContext uniPointContext)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _blobService = blobService;
+            _uniPointContext = uniPointContext;
         }
 
         // GET: api/<UserController>
@@ -39,12 +41,32 @@ namespace uniPoint_backend.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetUser(string id)
         {
+            // Verify the user is accessing their own data or is an admin
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var isAdmin = User.IsInRole("Admin");
+
+            if (currentUserId != id && !isAdmin)
+            {
+                return Forbid();
+            }
+
             var user = await _userManager.FindByIdAsync(id);
             if (user == null)
             {
                 return NotFound();
             }
-            return Ok(user);
+
+            // Create response object with all user info including location
+            var userInfo = new
+            {
+                userName = user.UserName,
+                email = user.Email,
+                location = user.Location, // Make sure Location is included
+                role = (await _userManager.GetRolesAsync(user)).FirstOrDefault() ?? "User",
+                createdAt = user.CreatedAt
+            };
+
+            return Ok(userInfo);
         }
 
         // POST a register-en keresztul

@@ -10,12 +10,8 @@
 
                 <PasswordInput v-model="form.password" placeholder="Create a password" required />
 
-                <FormInput id="phoneNumber" label="Phone Number" v-model="form.phoneNumber"
-                    placeholder="Enter your phone number" required />
-
-                <!-- Make location optional by removing the required attribute -->
-                <FormInput id="location" label="Location (Optional)" v-model="form.location"
-                    placeholder="Enter your location" />
+                <FormInput id="location" label="Location" v-model="form.location" placeholder="Enter your location"
+                    required />
             </div>
 
             <div>
@@ -64,7 +60,6 @@ const form = reactive({
     userName: '',
     email: '',
     password: '',
-    phoneNumber: '',
     location: '',
     role: 'User' // Default role
 });
@@ -75,8 +70,8 @@ const register = async () => {
         success.value = '';
         isLoading.value = true;
 
-        // Validate form (note location is not required)
-        if (!form.userName || !form.email || !form.password || !form.phoneNumber) {
+        // Validate form (location is now required)
+        if (!form.userName || !form.email || !form.password || !form.location) {
             error.value = 'Please fill in all required fields';
             isLoading.value = false;
             return;
@@ -86,25 +81,42 @@ const register = async () => {
             userName: form.userName,
             email: form.email,
             password: form.password,
-            phoneNumber: form.phoneNumber,
+            location: form.location,
             role: form.role
-            // Location is no longer being sent to the backend
         });
 
         if (result.success) {
             success.value = 'Registration successful! You can now log in.';
 
-            // Reset form
-            form.userName = '';
-            form.email = '';
-            form.password = '';
-            form.phoneNumber = '';
-            form.location = '';
+            // Try to automatically log in the user
+            try {
+                await authStore.login({
+                    userNameOrEmail: form.userName,
+                    password: form.password
+                });
 
-            // Redirect to login after a short delay
-            setTimeout(() => {
-                router.push('/login');
-            }, 1500);
+                // Reset form after successful login and redirect
+                form.userName = '';
+                form.email = '';
+                form.password = '';
+                form.location = '';
+
+                // Redirect to profile page
+                router.push('/profile');
+            } catch (loginError) {
+                console.error('Auto-login after registration failed:', loginError);
+
+                // Reset form
+                form.userName = '';
+                form.email = '';
+                form.password = '';
+                form.location = '';
+
+                // Redirect to login after a short delay
+                setTimeout(() => {
+                    router.push('/login');
+                }, 1500);
+            }
         } else {
             error.value = result.message || 'Registration failed';
         }

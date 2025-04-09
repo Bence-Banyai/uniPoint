@@ -22,6 +22,7 @@ export interface Service {
 		email: string;
 		phoneNumber: string;
 		profilePictureUrl: string;
+		location: string;
 	};
 	category?: Category;
 }
@@ -29,9 +30,21 @@ export interface Service {
 export const serviceApi = {
 	async getAllServices(page = 1, limit = 10) {
 		try {
-			const { data } = await useFetch<Service[]>("/api/Service", {
-				params: { page, limit },
-			});
+			console.log("Fetching all services...");
+
+			// Get the runtime config to use the API base URL
+			const config = useRuntimeConfig();
+			const apiBaseUrl = config.public.apiBaseUrl;
+
+			// Use the full URL instead of relying on the proxy
+			const { data, error } = await useFetch<Service[]>(`${apiBaseUrl}/api/Service`);
+
+			if (error.value) {
+				console.error("Error response from API:", error.value);
+				throw new Error(`API error: ${error.value.message}`);
+			}
+
+			console.log("Services data received:", data.value);
 			return data.value || [];
 		} catch (error) {
 			console.error("Error fetching services:", error);
@@ -41,7 +54,21 @@ export const serviceApi = {
 
 	async getServiceById(id: string | string[]) {
 		try {
-			const { data } = await useFetch<Service>(`/api/Service/${id}`);
+			console.log(`Fetching service with ID: ${id}`);
+
+			// Get the runtime config to use the API base URL
+			const config = useRuntimeConfig();
+			const apiBaseUrl = config.public.apiBaseUrl;
+
+			// Use the full URL instead of relying on the proxy
+			const { data, error } = await useFetch<Service>(`${apiBaseUrl}/api/Service/${id}`);
+
+			if (error.value) {
+				console.error(`Error fetching service ${id}:`, error.value);
+				throw new Error(`API error: ${error.value.message}`);
+			}
+
+			console.log("Service data received:", data.value);
 			return data.value as Service;
 		} catch (error) {
 			console.error(`Error fetching service with id ${id}:`, error);
@@ -51,19 +78,51 @@ export const serviceApi = {
 
 	async getAllCategories() {
 		try {
-			const { data } = await useFetch<Category[]>("/api/Category");
+			console.log("Fetching all categories...");
+
+			// Get the runtime config to use the API base URL
+			const config = useRuntimeConfig();
+			const apiBaseUrl = config.public.apiBaseUrl;
+
+			// Use the full URL instead of relying on the proxy
+			const { data, error } = await useFetch<Category[]>(`${apiBaseUrl}/api/Category`);
+
+			if (error.value) {
+				console.error("Error fetching categories:", error.value);
+				// Return empty array instead of throwing error so the page can still load
+				return [];
+			}
+
+			console.log("Categories data received:", data.value);
 			return data.value || [];
 		} catch (error) {
 			console.error("Error fetching categories:", error);
-			throw error;
+			// Return empty array instead of throwing error
+			return [];
 		}
 	},
 
 	async getServicesByCategory(categoryId: number) {
 		try {
-			// We're using the main service endpoint and filtering client-side
-			const { data } = await useFetch<Service[]>("/api/Service");
-			return (data.value || []).filter((service) => service.categoryId === categoryId);
+			console.log(`Fetching services for category ID: ${categoryId}`);
+
+			// Get the runtime config to use the API base URL
+			const config = useRuntimeConfig();
+			const apiBaseUrl = config.public.apiBaseUrl;
+
+			// Use the full URL instead of relying on the proxy
+			const { data, error } = await useFetch<Service[]>(`${apiBaseUrl}/api/Service`);
+
+			if (error.value) {
+				console.error(`Error fetching services for category ${categoryId}:`, error.value);
+				throw new Error(`API error: ${error.value.message}`);
+			}
+
+			const filteredServices = (data.value || []).filter(
+				(service) => service.categoryId === categoryId
+			);
+			console.log(`Found ${filteredServices.length} services for category ${categoryId}`);
+			return filteredServices;
 		} catch (error) {
 			console.error(`Error fetching services for category ${categoryId}:`, error);
 			throw error;

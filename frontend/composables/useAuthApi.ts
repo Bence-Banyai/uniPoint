@@ -9,55 +9,57 @@ export default function useAuthApi() {
 		register(userData: {
 			userName: string;
 			email: string;
-			phoneNumber: string;
+			location: string; // Changed from phoneNumber to location
 			password: string;
 			role: string;
 		}) {
 			return apiClient.post("/api/Auth/register", userData);
 		},
 
-		// Login a user
-		async login(credentials: { userNameOrEmail: string; password: string }) {
-			const response = await apiClient.post("/api/Auth/login", credentials);
-			return response;
+		// Login
+		login(credentials: { userNameOrEmail: string; password: string }) {
+			return apiClient.post("/api/Auth/login", credentials);
 		},
 
-		// Logout the current user
+		// Logout
 		logout() {
 			return apiClient.post("/api/Auth/logout", {});
 		},
 
-		// Fetch user info from the User endpoint using the userId
+		// Get user info
 		async getUserInfo() {
 			try {
+				// Get the user ID from the auth store
 				const authStore = useAuthStore();
+				const userId = authStore.userId;
 
-				if (!authStore.token || !authStore.userId) {
-					return null;
+				if (!userId) {
+					throw new Error("No user ID found");
 				}
 
-				// First try to get user info from the User API
-				try {
-					// Use the userId from the auth store to get the user details
-					const userData = await apiClient.get(`/api/User/${authStore.userId}`);
+				console.log("Fetching user data for ID:", userId);
 
-					// Map the response to the expected user info format
-					return {
-						userName: userData.userName,
-						email: userData.email,
-						role: null, // Role might not be directly available from this endpoint
-						phoneNumber: userData.phoneNumber,
-						profilePictureUrl: userData.profilePictureUrl,
-					};
-				} catch (apiError) {
-					console.error("Error fetching user info from API:", apiError);
+				// Fetch user data from the API
+				const response = await apiClient.get(`/api/User/${userId}`);
+				console.log("User API response:", response);
 
-					// Fallback to JWT parsing if API call fails
-					return this.parseUserFromToken();
+				// Check if location is present in the response
+				if (!response.location && response.location !== "") {
+					console.warn("Location not found in API response, checking token fallback");
+					// Try to get location from token as fallback
+					const tokenData = this.parseUserFromToken();
+					if (tokenData && tokenData.location) {
+						response.location = tokenData.location;
+						console.log("Using location from token:", tokenData.location);
+					}
 				}
+
+				return response;
 			} catch (error) {
-				console.error("Error getting user info:", error);
-				return null;
+				console.error("Failed to get user info:", error);
+
+				// If API call fails, try to extract information from token as fallback
+				return this.parseUserFromToken();
 			}
 		},
 
@@ -67,21 +69,24 @@ export default function useAuthApi() {
 				const authStore = useAuthStore();
 				const token = authStore.token;
 
-				if (!token) return null;
+				if (!token) {
+					throw new Error("No token found");
+				}
 
 				const parts = token.split(".");
 				if (parts.length !== 3) {
-					console.error("Invalid token format");
-					return null;
+					throw new Error("Invalid token format");
 				}
 
-				// Add this check to ensure parts[1] exists
 				if (!parts[1]) {
-					console.error("Invalid token structure: missing payload part");
-					return null;
+					throw new Error("Token payload is missing");
 				}
-
 				const payload = JSON.parse(atob(parts[1]));
+				console.log("Token payload:", payload);
+
+				// Extract location from token claims
+				const location = payload.location || null;
+				console.log("Location from token:", location);
 
 				return {
 					userName:
@@ -92,13 +97,14 @@ export default function useAuthApi() {
 						payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"] ||
 						payload.email ||
 						null,
+					location: location,
 					role:
 						payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
 						payload.role ||
 						null,
 				};
 			} catch (error) {
-				console.error("Error parsing token:", error);
+				console.error("Failed to parse token:", error);
 				return null;
 			}
 		},

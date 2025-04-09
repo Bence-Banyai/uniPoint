@@ -88,13 +88,19 @@ const fetchServices = async () => {
     error.value = null;
 
     try {
-        const [servicesData, categoriesData] = await Promise.all([
-            serviceApi.getAllServices(),
-            serviceApi.getAllCategories()
-        ]);
+        // First, fix the Promise.all call - you were only fetching categories
+        const servicesData = await serviceApi.getAllServices();
+        const categoriesData = await serviceApi.getAllCategories();
 
-        services.value = servicesData;
-        categories.value = categoriesData;
+        console.log('Fetched services:', servicesData);
+        console.log('Fetched categories:', categoriesData);
+
+        // Update state
+        services.value = servicesData || [];
+        categories.value = categoriesData || [];
+
+        console.log('Updated services state:', services.value);
+        console.log('Updated categories state:', categories.value);
     } catch (err) {
         error.value = "Failed to load services. Please try again later.";
         console.error("Error fetching services:", err);
@@ -161,6 +167,7 @@ watch([searchQuery, activeCategory], () => {
 
 // Fetch data on component mount
 onMounted(() => {
+    console.log('Component mounted, fetching services...');
     fetchServices();
 });
 </script>

@@ -95,7 +95,8 @@ namespace uniPoint_backend.Controllers
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName)
+                new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName),
+                new Claim("location", user.Location ?? "") // Add location claim to the token
             };
 
             foreach (var role in userRoles)
