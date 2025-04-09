@@ -18,6 +18,7 @@ import { useAuth } from './context/AuthContext';
 import { ThemedText } from '@/components/ThemedText';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const responsiveFontSize = (size: number, minSize: number, maxSize: number) => {
   const { width, height } = Dimensions.get('window');
@@ -42,6 +43,7 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [userNameOrEmail, setUserNameOrEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   
   const { login } = useAuth();
   
@@ -234,23 +236,35 @@ export default function LoginScreen() {
                 >
                   Password
                 </ThemedText>
-                <TextInput
-                  placeholder="Enter your password"
-                  placeholderTextColor="rgba(235, 211, 248, 0.5)"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                  selectionColor="#31E1F7"
-                  style={[
-                    styles.input, 
-                    { 
-                      color: "#EBD3F8",
-                      fontSize: inputFontSize,
-                      height: inputHeight,
-                      paddingHorizontal: isSmallDevice ? 15 : 20
-                    }
-                  ]}
-                />
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    placeholder="Enter your password"
+                    placeholderTextColor="rgba(235, 211, 248, 0.5)"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    selectionColor="#31E1F7"
+                    style={[
+                      styles.passwordInput, 
+                      { 
+                        color: "#EBD3F8",
+                        fontSize: inputFontSize,
+                        height: inputHeight,
+                        paddingHorizontal: isSmallDevice ? 15 : 20
+                      }
+                    ]}
+                  />
+                  <TouchableOpacity 
+                    style={styles.eyeButton} 
+                    onPress={() => setShowPassword(!showPassword)}
+                  >
+                    <MaterialIcons 
+                      name={showPassword ? "visibility-off" : "visibility"} 
+                      size={24} 
+                      color="#EBD3F8" 
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <TouchableOpacity
@@ -443,5 +457,20 @@ const styles = StyleSheet.create({
   footerText: {
     opacity: 0.6,
     fontFamily: fontFamilies.text,
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: "rgba(235, 211, 248, 0.3)",
+    borderRadius: 28,
+    backgroundColor: "rgba(174, 0, 255, 0.1)",
+  },
+  passwordInput: {
+    flex: 1,
+    fontFamily: fontFamilies.text,
+  },
+  eyeButton: {
+    paddingHorizontal: 10,
   },
 });
