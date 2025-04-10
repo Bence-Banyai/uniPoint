@@ -7,14 +7,17 @@ import {
   Dimensions,
   Platform,
   FlatList,
-  Text
+  Text,
+  ActivityIndicator
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { router } from 'expo-router';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../context/AuthContext';
+import { fetchCategories, Category as CategoryType } from '../../services/categoryApi';
+import { Image as ExpoImage } from 'expo-image';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -111,40 +114,52 @@ const pastAppointments = [
   },
 ];
 
-const categories = [
-  { id: 'doctor', title: 'Doctor', icon: 'chevron.right' as const, color: '#4CAF50' },
-  { id: 'dentist', title: 'Dentist', icon: 'chevron.right' as const, color: '#2196F3' },
-  { id: 'barber', title: 'Barber', icon: 'chevron.right' as const, color: '#FF9800' },
-  { id: 'trainer', title: 'Trainer', icon: 'chevron.right' as const, color: '#9C27B0' },
-  { id: 'massage', title: 'Massage', icon: 'chevron.right' as const, color: '#E91E63' },
-];
-
 type CategoryProps = {
-  category: {
-    id: string;
-    title: string;
-    icon: 'chevron.right';
-    color: string;
-  };
-  onPress: (id: string) => void;
+  category: CategoryType;
+  onPress: (id: number) => void;
 };
 
 function CategoryCard({ category, onPress }: CategoryProps) {
+  const getCategoryColor = (categoryId: number): string => {
+    const colors: {[key: number]: string} = {
+      1: '#4CAF50', // Health
+      2: '#E91E63', // Beauty
+      3: '#2196F3', // Fitness
+      4: '#FF9800', // Auto
+      5: '#9C27B0', // Legal
+      6: '#3F51B5', // Education
+      7: '#607D8B', // Tech
+      8: '#009688', // Cleaning
+    };
+    
+    return colors[categoryId] || '#AE00FF';
+  };
+
+  const color = getCategoryColor(category.categoryId);
+
   return (
     <TouchableOpacity 
-      style={[styles.categoryCard, { borderColor: category.color }]}
+      style={[styles.categoryCard, { borderColor: color }]}
       activeOpacity={0.7}
-      onPress={() => onPress(category.id)}
+      onPress={() => onPress(category.categoryId)}
     >
-      <View style={[styles.categoryIconContainer, { backgroundColor: `${category.color}20` }]}>
-        <IconSymbol name={category.icon} size={20} color={category.color} />
+      <View style={[styles.categoryIconContainer, { backgroundColor: `${color}20` }]}>
+        {category.iconUrl ? (
+          <ExpoImage 
+            source={{ uri: category.iconUrl }}
+            style={styles.categoryIconImage}
+            contentFit="contain"
+          />
+        ) : (
+          <IconSymbol name="chevron.right" size={20} color={color} />
+        )}
       </View>
       <ThemedText 
         style={styles.categoryTitle}
         darkColor="#EBD3F8" 
         lightColor="#EBD3F8"
       >
-        {category.title}
+        {category.name}
       </ThemedText>
     </TouchableOpacity>
   );
@@ -306,6 +321,24 @@ export default function AppointmentsScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const [activeTab, setActiveTab] = useState('upcoming'); 
   const { userName, email } = useAuth();
+  const [categories, setCategories] = useState<CategoryType[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setLoadingCategories(true);
+        const categoriesData = await fetchCategories();
+        setCategories(categoriesData);
+      } catch (err) {
+        console.error('Failed to load categories:', err);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    loadCategories();
+  }, []);
   
   const screenWidth = Dimensions.get('window').width;
   const isSmallDevice = screenWidth < 380;
@@ -319,7 +352,7 @@ export default function AppointmentsScreen() {
     console.log(`Cancel appointment ${id}`);
   };
   
-  const handleCategoryPress = (categoryId: string) => {
+  const handleCategoryPress = (categoryId: number) => {
     console.log(`Selected category: ${categoryId}`);
   };
   
@@ -401,20 +434,24 @@ export default function AppointmentsScreen() {
             Book an Appointment
           </ThemedText>
           
-          <FlatList
-            data={categories}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoriesList}
-            renderItem={({ item }) => (
-              <CategoryCard 
-                category={item}
-                onPress={() => handleCategoryPress(item.id)} 
-              />
-            )}
-            keyExtractor={(item) => item.id}
-            ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
-          />
+          {loadingCategories ? (
+            <ActivityIndicator size="large" color="#31E1F7" />
+          ) : (
+            <FlatList
+              data={categories}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoriesList}
+              renderItem={({ item }) => (
+                <CategoryCard 
+                  category={item}
+                  onPress={handleCategoryPress} 
+                />
+              )}
+              keyExtractor={(item) => item.categoryId.toString()}
+              ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+            />
+          )}
         </View>
         
         <View style={styles.appointmentsContainer}>
@@ -643,6 +680,10 @@ const styles = StyleSheet.create({
     fontSize: responsiveFontSize(14, 12, 16),
     fontFamily: fontFamilies.text,
     textAlign: 'center',
+  },
+  categoryIconImage: {
+    width: 24,
+    height: 24,
   },
   appointmentsContainer: {
     marginBottom: 24,

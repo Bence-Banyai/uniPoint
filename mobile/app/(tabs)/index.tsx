@@ -3,18 +3,21 @@ import {
   View,
   ScrollView,
   TouchableOpacity,
-  Image,
   Dimensions,
   Platform,
   FlatList,
-  Text
+  Text,
+  ActivityIndicator
 } from 'react-native';
+import { Image } from 'expo-image';  // Replace the React Native Image import
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { fetchCategories, Category as CategoryType } from '../../services/categoryApi';
+import { fetchServices, Service } from '../../services/serviceApi';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -157,9 +160,41 @@ interface ServiceItem {
 }
 
 interface ServiceCardProps {
-  service: ServiceItem;
+  service: Service;
   onPress: () => void;
 }
+
+// Helper function to get gradient colors based on category ID
+const getCategoryGradient = (categoryId: number): [string, string] => {
+  const gradients: {[key: number]: [string, string]} = {
+    1: ['#4CAF50', '#8BC34A'],   // Health
+    2: ['#E91E63', '#F44336'],   // Beauty
+    3: ['#2196F3', '#03A9F4'],   // Fitness
+    4: ['#FF9800', '#FF5722'],   // Auto
+    5: ['#9C27B0', '#673AB7'],   // Legal
+    6: ['#3F51B5', '#2196F3'],   // Education
+    7: ['#607D8B', '#455A64'],   // Tech
+    8: ['#009688', '#4CAF50'],   // Cleaning
+  };
+  
+  return gradients[categoryId] || ['#AE00FF', '#F806CC'];
+};
+
+// Add this function after getCategoryGradient
+const getCategoryColor = (categoryId: number): string => {
+  const colors: {[key: number]: string} = {
+    1: '#4CAF50', // Health
+    2: '#E91E63', // Beauty
+    3: '#2196F3', // Fitness
+    4: '#FF9800', // Auto
+    5: '#9C27B0', // Legal
+    6: '#3F51B5', // Education
+    7: '#607D8B', // Tech
+    8: '#009688', // Cleaning
+  };
+  
+  return colors[categoryId] || '#AE00FF';
+};
 
 function BannerCarousel({ data, onBannerPress }: BannerCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -326,33 +361,39 @@ function QuickAccessCard({ item, onPress }: QuickAccessCardProps) {
   );
 }
 
-function ServiceCard({ service, onPress }: ServiceCardProps) {
+function ServiceCard({ service, onPress }: { service: Service; onPress: () => void }) {
+  const color = getCategoryColor(service.categoryId);
+  
   return (
     <TouchableOpacity 
       style={styles.serviceCard}
       activeOpacity={0.7}
       onPress={onPress}
     >
-      <View style={[styles.serviceImageContainer, { borderColor: service.color }]}>
-        <Image 
-          source={service.image}
-          style={styles.serviceImage}
-          resizeMode="cover"
-        />
+      <View style={[styles.serviceImageContainer, { borderColor: color }]}>
+        {service.imageUrls && service.imageUrls.length > 0 ? (
+          <Image 
+            source={{ uri: service.imageUrls[0] }}
+            style={styles.serviceImage}
+            contentFit="cover"
+          />
+        ) : (
+          <IconSymbol name="chevron.right" size={24} color={color} />
+        )}
       </View>
       <ThemedText 
         style={styles.serviceTitle}
         darkColor="#fff" 
         lightColor="#fff"
       >
-        {service.title}
+        {service.serviceName}
       </ThemedText>
       <ThemedText 
         style={styles.serviceProvider}
         darkColor="#EBD3F8" 
         lightColor="#EBD3F8"
       >
-        {service.provider}
+        {service.provider ? service.provider.userName : 'Unknown Provider'}
       </ThemedText>
     </TouchableOpacity>
   );
@@ -374,7 +415,40 @@ export default function HomeScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const { userName } = useAuth();
   const [isWeb] = useState(Platform.OS === 'web');
+  const [categories, setCategories] = useState<CategoryType[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [services, setServices] = useState<Service[]>([]);
+  const [loadingServices, setLoadingServices] = useState(true);
   
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoadingCategories(true);
+        setLoadingServices(true);
+        
+        // Load categories and services in parallel
+        const [categoriesData, servicesData] = await Promise.all([
+          fetchCategories(),
+          fetchServices()
+        ]);
+        
+        setCategories(categoriesData);
+        
+        // Sort services by something (since we don't have ratings yet, we'll use price as a proxy)
+        // In the future, you could sort by actual ratings once implemented
+        const sortedServices = servicesData.sort((a, b) => b.price - a.price);
+        setServices(sortedServices.slice(0, 5)); // Take top 5 services
+      } catch (err) {
+        console.error('Failed to load data:', err);
+      } finally {
+        setLoadingCategories(false);
+        setLoadingServices(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
   const screenWidth = Dimensions.get('window').width;
   const isSmallDevice = screenWidth < 380;
   const isLargeDevice = screenWidth >= 768;
@@ -398,8 +472,12 @@ export default function HomeScreen() {
     }
   };
   
-  const handleServicePress = (service: ServiceItem) => {
-    console.log(`Selected service: ${service.title}`);
+  const handleServicePress = (service: Service) => {
+    console.log(`Selected service: ${service.serviceName}`);
+    router.push({
+      pathname: '/appointments',
+      params: { serviceId: service.serviceId.toString() }
+    });
   };
   
   const handleSeeAllServices = () => {
@@ -548,141 +626,89 @@ export default function HomeScreen() {
         </View>
         
         <View style={styles.categoriesContainer}>
-          <ThemedText 
-            style={styles.sectionTitle}
-            darkColor="#fff" 
-            lightColor="#fff"
-          >
-            Categories
-          </ThemedText>
-          
-          <View style={styles.categoriesGrid}>
-            <TouchableOpacity 
-              style={styles.categoryButton}
-              onPress={() => router.push('/appointments')}
+          <View style={styles.sectionHeader}>
+            <ThemedText 
+              style={styles.sectionTitle}
+              darkColor="#fff" 
+              lightColor="#fff"
             >
-              <LinearGradient
-                colors={['#4CAF50', '#8BC34A']}
-                style={styles.categoryIcon}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <IconSymbol name="chevron.right" size={24} color="#fff" />
-              </LinearGradient>
+              Categories
+            </ThemedText>
+            <TouchableOpacity onPress={() => router.push('/search')}>
               <ThemedText 
-                style={styles.categoryLabel}
-                darkColor="#EBD3F8" 
-                lightColor="#EBD3F8"
+                style={styles.seeAllText}
+                darkColor="#31E1F7" 
+                lightColor="#31E1F7"
               >
-                Doctor
-              </ThemedText>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.categoryButton}
-              onPress={() => router.push('/appointments')}
-            >
-              <LinearGradient
-                colors={['#2196F3', '#03A9F4']}
-                style={styles.categoryIcon}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <IconSymbol name="chevron.right" size={24} color="#fff" />
-              </LinearGradient>
-              <ThemedText 
-                style={styles.categoryLabel}
-                darkColor="#EBD3F8" 
-                lightColor="#EBD3F8"
-              >
-                Dentist
-              </ThemedText>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.categoryButton}
-              onPress={() => router.push('/appointments')}
-            >
-              <LinearGradient
-                colors={['#FF9800', '#FF5722']}
-                style={styles.categoryIcon}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <IconSymbol name="chevron.right" size={24} color="#fff" />
-              </LinearGradient>
-              <ThemedText 
-                style={styles.categoryLabel}
-                darkColor="#EBD3F8" 
-                lightColor="#EBD3F8"
-              >
-                Barber
-              </ThemedText>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.categoryButton}
-              onPress={() => router.push('/appointments')}
-            >
-              <LinearGradient
-                colors={['#9C27B0', '#673AB7']}
-                style={styles.categoryIcon}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <IconSymbol name="chevron.right" size={24} color="#fff" />
-              </LinearGradient>
-              <ThemedText 
-                style={styles.categoryLabel}
-                darkColor="#EBD3F8" 
-                lightColor="#EBD3F8"
-              >
-                Trainer
-              </ThemedText>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.categoryButton}
-              onPress={() => router.push('/appointments')}
-            >
-              <LinearGradient
-                colors={['#E91E63', '#F44336']}
-                style={styles.categoryIcon}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <IconSymbol name="chevron.right" size={24} color="#fff" />
-              </LinearGradient>
-              <ThemedText 
-                style={styles.categoryLabel}
-                darkColor="#EBD3F8" 
-                lightColor="#EBD3F8"
-              >
-                Massage
-              </ThemedText>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.categoryButton}
-              onPress={() => router.push('/appointments')}
-            >
-              <LinearGradient
-                colors={['#607D8B', '#455A64']}
-                style={styles.categoryIcon}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <IconSymbol name="chevron.right" size={24} color="#fff" />
-              </LinearGradient>
-              <ThemedText 
-                style={styles.categoryLabel}
-                darkColor="#EBD3F8" 
-                lightColor="#EBD3F8"
-              >
-                More
+                See All
               </ThemedText>
             </TouchableOpacity>
           </View>
+          
+          {loadingCategories ? (
+            <ActivityIndicator size="large" color="#31E1F7" />
+          ) : (
+            <View style={styles.categoriesGrid}>
+              {categories.slice(0, 5).map((category) => (
+                <TouchableOpacity 
+                  key={category.categoryId}
+                  style={styles.categoryButton}
+                  onPress={() => router.push({
+                    pathname: '/search',
+                    params: { categoryId: category.categoryId.toString() }
+                  })}
+                >
+                  <LinearGradient
+                    colors={getCategoryGradient(category.categoryId)}
+                    style={styles.categoryIcon}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <View style={styles.iconContainer}>
+                      <Image 
+                        source={{ uri: category.iconUrl }}
+                        style={styles.categoryIconImage}
+                        contentFit="contain"
+                        contentPosition="center"
+                      />
+                    </View>
+                  </LinearGradient>
+                  <ThemedText 
+                    style={styles.categoryLabel}
+                    darkColor="#EBD3F8" 
+                    lightColor="#EBD3F8"
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {category.name}
+                  </ThemedText>
+                </TouchableOpacity>
+              ))}
+              
+              <TouchableOpacity 
+                style={styles.categoryButton}
+                onPress={() => router.push('/search')}
+              >
+                <LinearGradient
+                  colors={['#9C27B0', '#673AB7']}
+                  style={[styles.categoryIcon, styles.moreIcon]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <View style={styles.iconContainer}>
+                    <IconSymbol name="chevron.right" size={28} color="#fff" />
+                  </View>
+                </LinearGradient>
+                <ThemedText 
+                  style={styles.categoryLabel}
+                  darkColor="#EBD3F8" 
+                  lightColor="#EBD3F8"
+                >
+                  More
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
         
         <View style={styles.servicesContainer}>
@@ -694,7 +720,7 @@ export default function HomeScreen() {
             >
               Popular Services
             </ThemedText>
-            <TouchableOpacity onPress={handleSeeAllServices}>
+            <TouchableOpacity onPress={() => router.push('/search')}>
               <ThemedText 
                 style={styles.seeAllText}
                 darkColor="#31E1F7" 
@@ -705,20 +731,32 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
           
-          <FlatList<ServiceItem>
-            data={recommendedServices}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.servicesList}
-            renderItem={({ item }) => (
-              <ServiceCard 
-                service={item}
-                onPress={() => handleServicePress(item)} 
-              />
-            )}
-            keyExtractor={(item) => item.id}
-            ItemSeparatorComponent={() => <View style={{ width: 16 }} />}
-          />
+          {loadingServices ? (
+            <ActivityIndicator size="large" color="#31E1F7" />
+          ) : services.length === 0 ? (
+            <ThemedText 
+              style={[styles.serviceProvider, { textAlign: 'left', marginLeft: 10 }]}
+              darkColor="#EBD3F8" 
+              lightColor="#EBD3F8"
+            >
+              No services available
+            </ThemedText>
+          ) : (
+            <FlatList
+              data={services}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.servicesList}
+              renderItem={({ item }) => (
+                <ServiceCard 
+                  service={item}
+                  onPress={() => handleServicePress(item)} 
+                />
+              )}
+              keyExtractor={(item) => item.serviceId.toString()}
+              ItemSeparatorComponent={() => <View style={{ width: 16 }} />}
+            />
+          )}
         </View>
         
         <TouchableOpacity
@@ -845,22 +883,44 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   categoryButton: {
-    width: '30%',
+    width: '31%',  // Slightly wider to better fit on the screen
     alignItems: 'center',
     marginBottom: 16,
   },
   categoryIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 5,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  moreIcon: {
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(108, 29, 146, 0.2)', 
   },
   categoryLabel: {
     fontSize: responsiveFontSize(12, 11, 14),
     fontFamily: fontFamilies.text,
     textAlign: 'center',
+    width: '100%',  // This ensures text alignment works properly
+    paddingHorizontal: 2,  // Adds some padding for longer text
+  },
+  iconContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  categoryIconImage: {
+    width: 24,
+    height: 24,
   },
   
   container: {

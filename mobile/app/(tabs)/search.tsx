@@ -1,23 +1,26 @@
 import {
   StyleSheet,
-  Image,
   Platform,
   View,
   TextInput,
   TouchableOpacity,
   Dimensions,
   FlatList,
-  ScrollView
+  ScrollView,
+  ActivityIndicator
 } from 'react-native';
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Image } from 'expo-image';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { fetchCategories, Category as CategoryType } from '../../services/categoryApi';
+import { fetchServices, Service } from '../../services/serviceApi';
 
 const responsiveFontSize = (size: number, minSize: number, maxSize: number) => {
   const { width, height } = Dimensions.get('window');
@@ -38,79 +41,66 @@ const popularSearches = [
   'Dentist', 'Hair Salon', 'Massage', 'Gym Trainer', 'Doctor', 'Spa'
 ];
 
-const providers: Provider[] = [
-  {
-    id: '1',
-    name: 'Grand Medical Center',
-    category: 'doctor',
-    rating: 4.9,
-    reviews: 127,
-    distance: '1.2',
-    image: require('@/assets/images/adaptive-icon.png'),
-    color: '#4CAF50'
-  },
-  {
-    id: '2',
-    name: 'Downtown Dental Clinic',
-    category: 'dentist',
-    rating: 4.7,
-    reviews: 98,
-    distance: '0.8',
-    image: require('@/assets/images/adaptive-icon.png'),
-    color: '#2196F3'
-  },
-  {
-    id: '3',
-    name: 'City Style Salon',
-    category: 'barber',
-    rating: 4.8,
-    reviews: 156,
-    distance: '1.5',
-    image: require('@/assets/images/adaptive-icon.png'),
-    color: '#FF9800'
-  },
-  {
-    id: '4',
-    name: 'Serenity Spa & Wellness',
-    category: 'massage',
-    rating: 4.9,
-    reviews: 210,
-    distance: '2.3',
-    image: require('@/assets/images/adaptive-icon.png'),
-    color: '#E91E63'
-  },
-  {
-    id: '5',
-    name: 'Fitness Center',
-    category: 'trainer',
-    rating: 4.6,
-    reviews: 89,
-    distance: '1.7',
-    image: require('@/assets/images/adaptive-icon.png'),
-    color: '#9C27B0'
-  },
-];
+// Convert backend service to provider format for display
+const serviceToProvider = (service: Service): Provider => {
+  const color = getCategoryColor(service.categoryId);
+  
+  return {
+    id: service.serviceId.toString(),
+    name: service.serviceName,
+    categoryId: service.categoryId,
+    rating: 4.5, // You could add this to your backend model in the future
+    reviews: 0, // Default until you implement reviews in backend
+    distance: "Nearby", // This could be calculated if you add coordinates to your backend
+    image: service.imageUrls && service.imageUrls.length > 0 
+      ? { uri: service.imageUrls[0] } 
+      : require('@/assets/images/adaptive-icon.png'),
+    color: color,
+    providerName: service.provider?.userName || 'Unknown Provider',
+    price: service.price || 0,
+    description: service.description || '',
+    address: service.address || 'No address provided'
+  };
+};
 
-const categories = {
-  doctor: { name: 'Doctor', color: '#4CAF50' },
-  dentist: { name: 'Dentist', color: '#2196F3' },
-  barber: { name: 'Barber', color: '#FF9800' },
-  massage: { name: 'Massage', color: '#E91E63' },
-  trainer: { name: 'Trainer', color: '#9C27B0' },
+// Get color based on category ID
+const getCategoryColor = (categoryId: number): string => {
+  const colors: {[key: number]: string} = {
+    1: '#4CAF50', // Health
+    2: '#E91E63', // Beauty
+    3: '#2196F3', // Fitness
+    4: '#FF9800', // Auto
+    5: '#9C27B0', // Legal
+    6: '#3F51B5', // Education
+    7: '#607D8B', // Tech
+    8: '#009688', // Cleaning
+  };
+  
+  return colors[categoryId] || '#AE00FF';
 };
 
 interface Provider {
   id: string;
   name: string;
-  category: keyof typeof categories;
+  categoryId: number;
   rating: number;
   reviews: number;
   distance: string;
   image: any;
   color: string;
+  providerName?: string;
+  price?: number;
+  description?: string;
+  address?: string;
 }
 
-function ProviderCard({ provider, onPress }: { provider: Provider; onPress: () => void }) {
+function ProviderCard({ provider, onPress, categories }: { 
+  provider: Provider; 
+  onPress: () => void;
+  categories: CategoryType[];
+}) {
+  const category = categories.find(c => c.categoryId === provider.categoryId);
+  
   return (
     <TouchableOpacity 
       style={styles.providerCard}
@@ -122,7 +112,7 @@ function ProviderCard({ provider, onPress }: { provider: Provider; onPress: () =
           <Image 
             source={provider.image}
             style={styles.providerImage}
-            resizeMode="cover"
+            contentFit="cover"
           />
         </View>
         <View style={styles.providerInfo}>
@@ -139,31 +129,43 @@ function ProviderCard({ provider, onPress }: { provider: Provider; onPress: () =
               darkColor="#fff" 
               lightColor="#fff"
             >
-              {categories[provider.category].name}
+              {category ? category.name : 'Unknown Category'}
             </ThemedText>
           </View>
+          {provider.description && (
+            <ThemedText 
+              style={styles.providerDescription}
+              darkColor="#EBD3F8" 
+              lightColor="#EBD3F8"
+              numberOfLines={2}
+            >
+              {provider.description}
+            </ThemedText>
+          )}
         </View>
       </View>
       
       <View style={styles.providerDetails}>
-        <View style={styles.ratingContainer}>
-          <IconSymbol name="chevron.right" size={16} color="#FFD700" />
+        {provider.address && (
+          <View style={styles.addressContainer}>
+            <IconSymbol name="house.fill" size={16} color="#31E1F7" />
+            <ThemedText 
+              style={styles.addressText}
+              darkColor="#EBD3F8" 
+              lightColor="#EBD3F8"
+            >
+              {provider.address}
+            </ThemedText>
+          </View>
+        )}
+        <View style={styles.priceContainer}>
+          <IconSymbol name="chevron.right" size={16} color="#4CAF50" />
           <ThemedText 
-            style={styles.ratingText}
+            style={styles.priceText}
             darkColor="#EBD3F8" 
             lightColor="#EBD3F8"
           >
-            {provider.rating} ({provider.reviews} reviews)
-          </ThemedText>
-        </View>
-        <View style={styles.distanceContainer}>
-          <IconSymbol name="chevron.right" size={16} color="#31E1F7" />
-          <ThemedText 
-            style={styles.distanceText}
-            darkColor="#EBD3F8" 
-            lightColor="#EBD3F8"
-          >
-            {provider.distance} miles away
+            Price: {(provider.price || 0).toLocaleString()} HUF
           </ThemedText>
         </View>
       </View>
@@ -195,13 +197,86 @@ function ProviderCard({ provider, onPress }: { provider: Provider; onPress: () =
 export default function ExploreScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
+  const params = useLocalSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
-  const [recentSearches, setRecentSearches] = useState(['Haircut', 'Dental Cleaning']);
+  const [recentSearches, setRecentSearches] = useState<string[]>(['Haircut', 'Dental Cleaning']);
+  const [categories, setCategories] = useState<CategoryType[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [providers, setProviders] = useState<Provider[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loadingServices, setLoadingServices] = useState(true);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   
-  const screenWidth = Dimensions.get('window').width;
-  const isSmallDevice = screenWidth < 380;
-  const isLargeDevice = screenWidth >= 768;
-  
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoadingCategories(true);
+        setLoadingServices(true);
+        
+        // Load categories and services in parallel
+        const [categoriesData, servicesData] = await Promise.all([
+          fetchCategories(),
+          fetchServices()
+        ]);
+        
+        setCategories(categoriesData);
+        setServices(servicesData);
+        
+        // Convert services to provider format
+        const providersData = servicesData.map(service => serviceToProvider(service));
+        setProviders(providersData);
+      } catch (err) {
+        console.error('Failed to load data:', err);
+      } finally {
+        setLoadingCategories(false);
+        setLoadingServices(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    if (params.categoryId) {
+      const categoryId = parseInt(params.categoryId as string, 10);
+      setSelectedCategoryId(categoryId);
+    }
+  }, [params.categoryId]);
+
+  const handleCategoryFilter = (categoryId: number) => {
+    if (selectedCategoryId === categoryId) {
+      setSelectedCategoryId(null);
+    } else {
+      setSelectedCategoryId(categoryId);
+      
+      const category = categories.find(c => c.categoryId === categoryId);
+      if (category) {
+        setSearchQuery(category.name);
+      }
+    }
+  };
+
+  const filteredProviders = useMemo(() => {
+    let result = [...providers];
+    
+    if (selectedCategoryId !== null) {
+      result = result.filter(provider => provider.categoryId === selectedCategoryId);
+    }
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      result = result.filter(provider => 
+        provider.name.toLowerCase().includes(query) || 
+        provider.description?.toLowerCase().includes(query) ||
+        provider.address?.toLowerCase().includes(query) ||
+        provider.providerName?.toLowerCase().includes(query) ||
+        categories.find(c => c.categoryId === provider.categoryId)?.name.toLowerCase().includes(query)
+      );
+    }
+    
+    return result;
+  }, [providers, searchQuery, categories, selectedCategoryId]);
+
   const handleSearch = () => {
     if (searchQuery.trim()) {
       if (!recentSearches.includes(searchQuery.trim())) {
@@ -218,7 +293,10 @@ export default function ExploreScreen() {
   
   const handleProviderPress = (provider: Provider) => {
     console.log(`Selected provider: ${provider.name}`);
-    router.push('/appointments');
+    router.push({
+      pathname: '/appointments',
+      params: { serviceId: provider.id }
+    });
   };
 
   return (
@@ -281,6 +359,38 @@ export default function ExploreScreen() {
               </TouchableOpacity>
             )}
           </View>
+        </View>
+
+        <View style={styles.categoryFiltersContainer}>
+          <ScrollView 
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryFiltersList}
+          >
+            {categories.map((category) => (
+              <TouchableOpacity 
+                key={category.categoryId} 
+                style={[
+                  styles.categoryFilterChip,
+                  selectedCategoryId === category.categoryId && { 
+                    backgroundColor: `${getCategoryColor(category.categoryId)}40`,
+                    borderColor: getCategoryColor(category.categoryId)
+                  }
+                ]}
+                onPress={() => handleCategoryFilter(category.categoryId)}
+              >
+                <ThemedText 
+                  style={styles.categoryFilterText}
+                  darkColor={selectedCategoryId === category.categoryId ? 
+                    getCategoryColor(category.categoryId) : "#EBD3F8"}
+                  lightColor={selectedCategoryId === category.categoryId ? 
+                    getCategoryColor(category.categoryId) : "#EBD3F8"}
+                >
+                  {category.name}
+                </ThemedText>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
         
         {recentSearches.length > 0 && (
@@ -363,18 +473,43 @@ export default function ExploreScreen() {
             darkColor="#fff" 
             lightColor="#fff"
           >
-            Top Providers Near You
+            {searchQuery ? 'Search Results' : 'Top Services Near You'}
           </ThemedText>
           
-          <View style={styles.providersList}>
-            {providers.map((provider) => (
-              <ProviderCard 
-                key={provider.id} 
-                provider={provider}
-                onPress={() => handleProviderPress(provider)}
-              />
-            ))}
-          </View>
+          {loadingServices ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#31E1F7" />
+              <ThemedText 
+                style={styles.loadingText}
+                darkColor="#EBD3F8" 
+                lightColor="#EBD3F8"
+              >
+                Loading services...
+              </ThemedText>
+            </View>
+          ) : filteredProviders.length === 0 ? (
+            <View style={styles.emptyResultsContainer}>
+              <IconSymbol name="chevron.right" size={50} color="rgba(235, 211, 248, 0.3)" />
+              <ThemedText 
+                style={styles.emptyResultsText}
+                darkColor="#EBD3F8" 
+                lightColor="#EBD3F8"
+              >
+                {searchQuery ? 'No services match your search' : 'No services available'}
+              </ThemedText>
+            </View>
+          ) : (
+            <View style={styles.providersList}>
+              {filteredProviders.map((provider) => (
+                <ProviderCard 
+                  key={provider.id} 
+                  provider={provider}
+                  categories={categories}
+                  onPress={() => handleProviderPress(provider)}
+                />
+              ))}
+            </View>
+          )}
         </View>
       </ScrollView>
     </LinearGradient>
@@ -446,6 +581,26 @@ const styles = StyleSheet.create({
   },
   clearButton: {
     padding: 5,
+  },
+  categoryFiltersContainer: {
+    marginBottom: 16,
+    zIndex: 1,
+  },
+  categoryFiltersList: {
+    paddingRight: 20,
+  },
+  categoryFilterChip: {
+    backgroundColor: 'rgba(174, 0, 255, 0.1)',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(235, 211, 248, 0.2)',
+  },
+  categoryFilterText: {
+    fontSize: responsiveFontSize(14, 12, 16),
+    fontFamily: fontFamilies.text,
   },
   recentSearchesContainer: {
     marginBottom: 24,
@@ -600,5 +755,55 @@ const styles = StyleSheet.create({
     fontSize: responsiveFontSize(14, 13, 16),
     fontWeight: '600',
     fontFamily: fontFamilies.button,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: responsiveFontSize(16, 14, 18),
+    fontFamily: fontFamilies.text,
+  },
+  emptyResultsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  emptyResultsText: {
+    marginTop: 12,
+    fontSize: responsiveFontSize(16, 14, 18),
+    opacity: 0.6,
+    fontFamily: fontFamilies.text,
+    textAlign: 'center',
+  },
+  providerSubtitle: {
+    fontSize: responsiveFontSize(12, 10, 14),
+    marginTop: 2,
+    fontFamily: fontFamilies.text,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  priceText: {
+    fontSize: responsiveFontSize(14, 13, 16),
+    fontFamily: fontFamilies.text,
+  },
+  providerDescription: {
+    fontSize: responsiveFontSize(12, 10, 14),
+    marginTop: 2,
+    fontFamily: fontFamilies.text,
+  },
+  addressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  addressText: {
+    fontSize: responsiveFontSize(14, 13, 16),
+    fontFamily: fontFamilies.text,
   },
 });
