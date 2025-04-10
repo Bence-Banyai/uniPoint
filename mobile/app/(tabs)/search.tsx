@@ -7,7 +7,8 @@ import {
   Dimensions,
   FlatList,
   ScrollView,
-  ActivityIndicator
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 import { useState, useEffect, useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,6 +22,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { fetchCategories, Category as CategoryType } from '../../services/categoryApi';
 import { fetchServices, Service } from '../../services/serviceApi';
+import { bookAppointment } from '../../services/appointmentApi';
 
 const responsiveFontSize = (size: number, minSize: number, maxSize: number) => {
   const { width, height } = Dimensions.get('window');
@@ -101,6 +103,13 @@ function ProviderCard({ provider, onPress, categories }: {
 }) {
   const category = categories.find(c => c.categoryId === provider.categoryId);
   
+  const handleViewServiceDetails = () => {
+    router.push({
+      pathname: '/serviceDetails',
+      params: { id: provider.id }
+    });
+  };
+
   return (
     <TouchableOpacity 
       style={styles.providerCard}
@@ -173,7 +182,7 @@ function ProviderCard({ provider, onPress, categories }: {
       <TouchableOpacity 
         style={styles.bookButton}
         activeOpacity={0.7}
-        onPress={onPress}
+        onPress={handleViewServiceDetails}
       >
         <LinearGradient
           colors={[provider.color, provider.color + '99']}
@@ -186,7 +195,7 @@ function ProviderCard({ provider, onPress, categories }: {
             darkColor="#fff" 
             lightColor="#fff"
           >
-            Book Appointment
+            View Details
           </ThemedText>
         </LinearGradient>
       </TouchableOpacity>
@@ -194,7 +203,7 @@ function ProviderCard({ provider, onPress, categories }: {
   );
 }
 
-export default function ExploreScreen() {
+export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const params = useLocalSearchParams();
@@ -294,8 +303,8 @@ export default function ExploreScreen() {
   const handleProviderPress = (provider: Provider) => {
     console.log(`Selected provider: ${provider.name}`);
     router.push({
-      pathname: '/appointments',
-      params: { serviceId: provider.id }
+      pathname: '/serviceDetails',
+      params: { id: provider.id }
     });
   };
 

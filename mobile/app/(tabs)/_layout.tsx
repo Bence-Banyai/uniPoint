@@ -145,7 +145,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="search"
         options={{
-          title: 'Explore',
+          title: 'Search',
         }}
       />
       <Tabs.Screen
@@ -158,6 +158,13 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Profile',
+        }}
+      />
+      <Tabs.Screen
+        name="serviceDetails"
+        options={{
+          title: 'Service Details',
+          href: null,  // This hides it from the tab bar
         }}
       />
     </Tabs>

@@ -14,10 +14,17 @@ const MAPPING = {
   'lock.fill': 'lock',
   'questionmark.circle': 'help',
   'chevron.right': 'chevron-right',
+  'chevron.left': 'chevron-left',
   'envelope.fill': 'email',
   'camera.fill': 'camera-alt',
   'checkmark.circle.fill': 'check-circle',
   'location': 'location-on',
+  'photo': 'photo',
+  'location.fill': 'place',
+  'clock.fill': 'access-time',
+  'tag.fill': 'local-offer',
+  'mappin.and.ellipse': 'pin-drop',
+  'exclamationmark.triangle.fill': 'warning',
 };
 
 export type SFSymbols6_0 = 
@@ -29,10 +36,17 @@ export type SFSymbols6_0 =
   | 'lock.fill'
   | 'questionmark.circle'
   | 'chevron.right'
+  | 'chevron.left'
   | 'envelope.fill'
   | 'camera.fill'
   | 'checkmark.circle.fill'
-  | 'location';
+  | 'location'
+  | 'photo'
+  | 'location.fill'
+  | 'clock.fill'
+  | 'tag.fill'
+  | 'mappin.and.ellipse'
+  | 'exclamationmark.triangle.fill';
 
 interface IconSymbolProps {
   name: SFSymbols6_0;
@@ -54,7 +68,10 @@ export function IconSymbol({
   
   return (
     <Text style={[styles.icon, { fontSize: size, color }, style]}>
-      {name === 'chevron.right' ? '›' : '•'}
+      {name === 'chevron.right' ? '›' : 
+       name === 'chevron.left' ? '‹' : 
+       name === 'photo' ? '📷' : 
+       name === 'exclamationmark.triangle.fill' ? '⚠️' : '•'}
     </Text>
   );
 }

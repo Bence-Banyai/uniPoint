@@ -358,6 +358,7 @@ export default function AppointmentsScreen() {
   
   const handleBookNew = () => {
     console.log('Book new appointment');
+    router.push('/(tabs)/search');
   };
   
   const displayedAppointments = activeTab === 'upcoming' ? upcomingAppointments : pastAppointments;
@@ -415,14 +416,6 @@ export default function AppointmentsScreen() {
               </ThemedText>
             </View>
           </View>
-          <TouchableOpacity style={styles.notificationButton}>
-            <View style={styles.notificationBadge} />
-            <IconSymbol 
-              name="chevron.right" 
-              size={24} 
-              color="#EBD3F8" 
-            />
-          </TouchableOpacity>
         </View>
         
         <View style={styles.categoriesContainer}>
@@ -626,24 +619,6 @@ const styles = StyleSheet.create({
     fontSize: responsiveFontSize(18, 16, 20),
     fontWeight: '600',
     fontFamily: fontFamilies.subtitle,
-  },
-  notificationButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(174, 0, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#F44336',
-    zIndex: 1,
   },
   categoriesContainer: {
     marginBottom: 24,

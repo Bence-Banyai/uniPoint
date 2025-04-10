@@ -44,35 +44,10 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack 
-          screenOptions={{ 
-            headerShown: false,
-            animation: 'fade',
-          }} 
-          initialRouteName="welcome"
-        >
-          <Stack.Screen 
-            name="welcome" 
-            options={{ 
-              headerShown: false,
-              animation: 'fade',
-            }} 
-          />
-          <Stack.Screen 
-            name="login" 
-            options={{ 
-              headerShown: false,
-              animation: 'slide_from_right',
-            }} 
-          />
-          <Stack.Screen 
-            name="(tabs)" 
-            options={{ 
-              headerShown: false,
-              gestureEnabled: false,
-              animation: 'fade',
-            }} 
-          />
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="serviceDetails" options={{ headerShown: false }} />
+          {/* Add other non-tab routes here */}
         </Stack>
         <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
       </ThemeProvider>

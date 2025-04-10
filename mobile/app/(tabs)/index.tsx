@@ -46,7 +46,8 @@ const featuredBanners: BannerItem[] = [
     action: 'Book Now',
     image: require('@/assets/images/adaptive-icon.png'),
     colors: ['#F806CC', '#8E05C2'] as [string, string],
-    route: '/appointments' as const
+    route: '/appointments' as const,
+    categoryId: 2 // Beauty category
   },
   {
     id: 'banner2',
@@ -55,7 +56,8 @@ const featuredBanners: BannerItem[] = [
     action: 'Explore',
     image: require('@/assets/images/adaptive-icon.png'),
     colors: ['#31E1F7', '#2979FF'] as [string, string],
-    route: '/appointments' as const
+    route: '/appointments' as const,
+    categoryId: 2 // Beauty category
   },
   {
     id: 'banner3',
@@ -64,7 +66,8 @@ const featuredBanners: BannerItem[] = [
     action: 'Schedule',
     image: require('@/assets/images/adaptive-icon.png'),
     colors: ['#4CAF50', '#8BC34A'] as [string, string],
-    route: '/appointments' as const
+    route: '/appointments' as const,
+    categoryId: 1 // Health category
   },
 ];
 
@@ -130,6 +133,7 @@ interface BannerItem {
   image: any;
   colors: [string, string];
   route: '/appointments' | '/profile' | '/' | '/login' | '/register';
+  categoryId?: number; // Add this field to link banners to categories
 }
 
 interface BannerCarouselProps {
@@ -237,13 +241,14 @@ function BannerCarousel({ data, onBannerPress }: BannerCarouselProps) {
   });
   
   const handleBannerPress = (item: BannerItem) => {
+    onBannerPress(item); // This was missing - now it will call the parent handler
   };
   
   const renderBanner = ({ item }: { item: BannerItem }) => (
     <TouchableOpacity 
       style={[styles.bannerContainer, { width: bannerWidth }]}
       activeOpacity={0.8}
-      onPress={() => handleBannerPress(item)}
+      onPress={() => handleBannerPress(item)} // Call local handler which calls parent
     >
       <LinearGradient
         colors={item.colors}
@@ -456,16 +461,16 @@ export default function HomeScreen() {
   const handleQuickAccess = (action: string) => {
     switch(action) {
       case 'book':
-        router.push('/appointments');
+        router.push('/(tabs)/search');
         break;
       case 'upcoming':
-        router.push('/appointments');
+        router.push('/(tabs)/appointments');
         break;
       case 'past':
-        router.push('/appointments');
+        router.push('/(tabs)/appointments');
         break;
       case 'profile':
-        router.push('/profile');
+        router.push('/(tabs)/profile');
         break;
       default:
         console.log(`Action: ${action}`);
@@ -485,12 +490,23 @@ export default function HomeScreen() {
   };
 
   const handleBannerPress = (banner: BannerItem) => {
-    if (isWeb) {
-      setTimeout(() => {
-        router.push(banner.route);
-      }, 300);
+    // Always navigate to search screen with the category parameter if available
+    if (banner.categoryId) {
+      router.push({
+        pathname: '/(tabs)/search',
+        params: { categoryId: banner.categoryId.toString() }
+      });
     } else {
-      router.push(banner.route);
+      // Fall back to the route if no categoryId is specified
+      const route = banner.route === '/appointments' ? '/(tabs)/search' : banner.route;
+      
+      if (isWeb) {
+        setTimeout(() => {
+          router.push(route);
+        }, 300);
+      } else {
+        router.push(route);
+      }
     }
   };
 
@@ -545,14 +561,6 @@ export default function HomeScreen() {
               </ThemedText>
             </View>
           </View>
-          <TouchableOpacity style={styles.notificationButton}>
-            <View style={styles.notificationBadge} />
-            <IconSymbol 
-              name="chevron.right" 
-              size={24} 
-              color="#EBD3F8" 
-            />
-          </TouchableOpacity>
         </View>
         
         <BannerCarousel 
@@ -762,7 +770,7 @@ export default function HomeScreen() {
         <TouchableOpacity
           style={[styles.bookButton, { marginBottom: 10, marginTop: 20 }]}
           activeOpacity={0.8}
-          onPress={() => router.push('/appointments')}
+          onPress={() => router.push('/(tabs)/search')}
         >
           <LinearGradient
             colors={["#31E1F7", "#6EDCD9"]}
@@ -979,24 +987,6 @@ const styles = StyleSheet.create({
     fontSize: responsiveFontSize(18, 16, 20),
     fontWeight: '600',
     fontFamily: fontFamilies.subtitle,
-  },
-  notificationButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(174, 0, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#F44336',
-    zIndex: 1,
   },
   nextAppointmentContainer: {
     marginBottom: 24,
