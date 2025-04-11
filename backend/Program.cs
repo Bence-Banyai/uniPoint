@@ -15,9 +15,11 @@ namespace uniPoint_backend
             var builder = WebApplication.CreateBuilder(args);
 
 
-            var connectionString = "Server=localhost;Database=uniPoint;Uid=root;Pwd=;";
+            var connectionString = "Server=unipoint.mysql.database.azure.com;Database=unipoint;Uid=uniPointAdmin;Pwd=AK$p9r-))p@HD^+;";
             builder.Services.AddDbContext<uniPointContext>(options =>
                 options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+
+
 
             var jwtSettings = builder.Configuration.GetSection("JwtSettings");
             var key = Encoding.UTF8.GetBytes(jwtSettings["Secret"]);

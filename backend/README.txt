@@ -6,20 +6,30 @@
 Table of Contents
 ─────────────────
 
-1. Adatbázis felépítése
+1. Mysql Szerver
+2. Adatbázis felépítése
 .. 1. user tábla
 .. 2. services tábla
-.. 3. appointments tábla
-.. 4. reviews tábla
-.. 5. EntityFramework és IdentityUser által létrehozott táblák
-2. Végpontok
+.. 3. categories tábla
+.. 4. appointments tábla
+.. 5. reviews tábla
+.. 6. EntityFramework és IdentityUser által létrehozott táblák
+3. Végpontok
 .. 1. Auth
 ..... 1. Register
 ..... 2. Login
 ..... 3. Logout
 
 
-1 Adatbázis felépítése
+1 Mysql Szerver
+═══════════════
+
+  • Admin login
+    • Username: uniPointAdmin
+    • Password: AK$p9r-))p@HD^+
+
+
+2 Adatbázis felépítése
 ══════════════════════
 
   Az adatbázis elkészítését az EntityFramework kezeli, tehát a model
@@ -28,14 +38,15 @@ Table of Contents
   meg.
 
 
-1.1 user tábla
+2.1 user tábla
 ──────────────
 
   • Id: PK, VARCHAR(255), not null, unique
   • UserName: LONGTEXT, not null, 1-30 hosszú
   • Email: VARCHAR(255), email validáció
   • PhoneNumber: LONGTEXT, telefonszám validáció
-  • ProfilePictureUrl: VARCHAR(255), not null, default: "default.png"
+  • ProfilePictureUrl: VARCHAR(255), not null, default:
+    "<https://tiszolczijacint.blob.core.windows.net/img/63cf316b-35a1-432e-92fe-0f2d0b2029c3.jpg>"
   • CreatedAt: DATETIME(6), not null, timestamp validáció, default:
     létrehozás dátuma UTC
   • PasswordHash: LONGTEXT, not null, automatikus titkosítás
@@ -57,7 +68,7 @@ Table of Contents
   • TwoFactorEnabled: TINYINT(1), not null
 
 
-1.2 services tábla
+2.2 services tábla
 ──────────────────
 
   • ServiceId: PK, INT(11), not null, unique
@@ -67,19 +78,26 @@ Table of Contents
   • Description: VARHCHAR(2000), not null
   • Address: VARCHAR(255), not null
   • Duration: INT(11), not null
-  • Category: LONGTEXT, not null
-  • CategoryIconUrl: LONGTEXT
+  • CategoryId: INT, not null
   • ImageUrls: LONGTEXT (Entityframework string list)
-  • OpeningHours: INT(11)
+  • OpeningHours: INT
 
 
-1.3 appointments tábla
+2.3 categories tábla
+────────────────────
+
+  • CategoryId: PK, INT, not null
+  • Name: VARCHAR(255), not null
+  • IconUrl: LONGTEXT
+
+
+2.4 appointments tábla
 ──────────────────────
 
   • Id: PK, INT(11), not null, unique
   • UserId: VARCHAR(255), FK: user.Id, (Foglaló Id)
   • ServiceId: INT(11), not null, FK: services.ServiceId
-  • ScheduledAt: DATETIME(6), not null, timestamp validáció
+  • appointmentDate: DATETIME(6), not null, timestamp validáció
   • Status: INT(11), not null
     • az EF kezeli, igazából enum
     • lehetséges értékei: OPEN, SCHEDULED, DONE, CANCELLED_BY_USER,
@@ -87,7 +105,7 @@ Table of Contents
     • default: OPEN
 
 
-1.4 reviews tábla
+2.5 reviews tábla
 ─────────────────
 
   • ReviewId: PK, INT(11), not null, unique
@@ -99,7 +117,7 @@ Table of Contents
     létrehozás dátuma UTC
 
 
-1.5 EntityFramework és IdentityUser által létrehozott táblák
+2.6 EntityFramework és IdentityUser által létrehozott táblák
 ────────────────────────────────────────────────────────────
 
   • roleclaims
@@ -135,13 +153,13 @@ Table of Contents
     • ProductVersion: VARCHAR(32), not null
 
 
-2 Végpontok
+3 Végpontok
 ═══════════
 
-2.1 Auth
+3.1 Auth
 ────────
 
-2.1.1 Register
+3.1.1 Register
 ╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
   • url: /api/Auth/register
@@ -164,7 +182,7 @@ Table of Contents
   └────
 
 
-2.1.2 Login
+3.1.2 Login
 ╌╌╌╌╌╌╌╌╌╌╌
 
   • url: /api/Auth/login
@@ -186,7 +204,7 @@ Table of Contents
   └────
 
 
-2.1.3 Logout
+3.1.3 Logout
 ╌╌╌╌╌╌╌╌╌╌╌╌
 
   • url: /api/Auth/logout

@@ -11,6 +11,8 @@ namespace uniPoint_backend.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.Sql("SET SESSION sql_generate_invisible_primary_key = ON;");
+
             migrationBuilder.DropColumn(
                 name: "Category",
                 table: "Services");

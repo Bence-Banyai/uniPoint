@@ -1,5 +1,10 @@
 #+title: UniPoint backend dokumentáció
 
+* Mysql Szerver
+- Admin login
+  - Username: uniPointAdmin
+  - Password: AK$p9r-))p@HD^+
+
 * Adatbázis felépítése
 
 Az adatbázis elkészítését az EntityFramework kezeli, tehát a model osztályokból készíti a táblákat és a kapcsolatokat. Az adatbázis MySQL alapú, ezt a Pomelo.EntityFrameworkCore.MySql NuGet package valósítja meg.
@@ -9,7 +14,7 @@ Az adatbázis elkészítését az EntityFramework kezeli, tehát a model osztál
 - UserName: LONGTEXT, not null, 1-30 hosszú
 - Email: VARCHAR(255), email validáció
 - PhoneNumber: LONGTEXT, telefonszám validáció
-- ProfilePictureUrl: VARCHAR(255), not null, default: "default.png"
+- ProfilePictureUrl: VARCHAR(255), not null, default: "https://tiszolczijacint.blob.core.windows.net/img/63cf316b-35a1-432e-92fe-0f2d0b2029c3.jpg"
 - CreatedAt: DATETIME(6), not null, timestamp validáció, default: létrehozás dátuma UTC
 - PasswordHash: LONGTEXT, not null, automatikus titkosítás
 - Location: VARCHAR(255)
@@ -36,16 +41,20 @@ IdentityUser által létrehozott, közvetlenül nem használt
 - Description: VARHCHAR(2000), not null
 - Address: VARCHAR(255), not null
 - Duration: INT(11), not null
-- Category: LONGTEXT, not null
-- CategoryIconUrl: LONGTEXT
+- CategoryId: INT, not null
 - ImageUrls: LONGTEXT (Entityframework string list)
-- OpeningHours: INT(11)
+- OpeningHours: INT
+
+** categories tábla
+- CategoryId: PK, INT, not null
+- Name: VARCHAR(255), not null
+- IconUrl: LONGTEXT
 
 ** appointments tábla
 - Id:  PK, INT(11), not null, unique
 - UserId: VARCHAR(255), FK: user.Id, (Foglaló Id)
 - ServiceId: INT(11), not null, FK: services.ServiceId
-- ScheduledAt: DATETIME(6), not null, timestamp validáció
+- appointmentDate: DATETIME(6), not null, timestamp validáció
 - Status: INT(11), not null
   - az EF kezeli, igazából enum
   - lehetséges értékei: OPEN, SCHEDULED, DONE, CANCELLED_BY_USER, CANCELLED_BY_SERVICE

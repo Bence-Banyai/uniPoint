@@ -12,6 +12,7 @@ namespace uniPoint_backend.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.Sql("SET SESSION sql_generate_invisible_primary_key = OFF;");
             migrationBuilder.DropForeignKey(
                 name: "FK_Appointments_Users_UserId",
                 table: "Appointments");
