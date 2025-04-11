@@ -8,12 +8,14 @@ import {
   Text,
   Platform,
   SafeAreaView,
+  StatusBar,
 } from "react-native";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import * as SecureStore from "expo-secure-store";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Stack } from "expo-router";
 
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
@@ -88,6 +90,12 @@ export default function WelcomeScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <StatusBar 
+        barStyle="light-content"
+        backgroundColor="transparent" 
+        translucent={true}
+      />
       <LinearGradient
         colors={["#2E0249", "#570A57", "#A91079"]}
         style={styles.container}
