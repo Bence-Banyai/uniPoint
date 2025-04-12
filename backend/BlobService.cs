@@ -8,6 +8,8 @@ namespace uniPoint_backend
         private readonly BlobServiceClient _blobServiceClient;
         private readonly string _containerName;
 
+        public BlobService() { }
+
         public BlobService(IConfiguration configuration)
         {
             string connectionString = configuration["ConnectionStrings:StorageAccount"];
