@@ -106,7 +106,7 @@ namespace uniPoint_backend.Controllers
         [HttpPost("{id}/upload-categoryicon")]
         [Authorize(Roles = "Admin")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> UploadCategoryIcon(string id, IFormFile file)
+        public async Task<IActionResult> UploadCategoryIcon(int id, IFormFile file)
         {
             if (file == null)
                 return BadRequest();

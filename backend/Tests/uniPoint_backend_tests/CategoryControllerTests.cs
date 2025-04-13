@@ -135,7 +135,7 @@ namespace uniPoint_backend_tests
         [Fact]
         public async Task UploadCategoryIcon_ReturnsBadRequest_WhenFileIsNull()
         {
-            var result = await _controller.UploadCategoryIcon("1", null);
+            var result = await _controller.UploadCategoryIcon(1, null);
             Assert.IsType<BadRequestResult>(result);
         }
 
@@ -145,7 +145,7 @@ namespace uniPoint_backend_tests
             var fileMock = new Mock<IFormFile>();
             fileMock.Setup(_ => _.FileName).Returns("icon.txt");
 
-            var result = await _controller.UploadCategoryIcon("1", fileMock.Object);
+            var result = await _controller.UploadCategoryIcon(1, fileMock.Object);
             var badRequest = Assert.IsType<BadRequestObjectResult>(result);
             Assert.Contains("Unsupported filetype", badRequest.Value.ToString());
         }
@@ -157,7 +157,7 @@ namespace uniPoint_backend_tests
             fileMock.Setup(_ => _.FileName).Returns("icon.jpg");
             fileMock.Setup(_ => _.Length).Returns(20 * 1024 * 1024); // 20MB
 
-            var result = await _controller.UploadCategoryIcon("1", fileMock.Object);
+            var result = await _controller.UploadCategoryIcon(1, fileMock.Object);
             var badRequest = Assert.IsType<BadRequestObjectResult>(result);
             Assert.Contains("under 15MB", badRequest.Value.ToString());
         }

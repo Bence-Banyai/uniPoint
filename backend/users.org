@@ -1,0 +1,43 @@
+* Users
+- Nagy János
+  "userName": "NagyJanos",
+  "email": "nagyjanos@example.com",
+  "location": "Győr Baross út 34",
+  "password": "NagyJanos123",
+  "role": "User"
+
+- Kis Béla
+  "userName": "KisBela",
+  "email": "kisbela@example.com",
+  "location": "Győr Szent István út 49",
+  "password": "KisBela123",
+  "role": "User"
+
+- Kovács Isván
+  "userName": "KovacsIsvan",
+  "email": "kovacsistvan@example.com",
+  "location": "Budapest Váci út 234",
+  "password": "KovacsIstvan123",
+  "role": "User"
+
+* Providers
+- Nagy Ferenc
+  "userName": "NagyFerenc",
+  "email": "nagyferenc@example.com",
+  "location": "Győr Budai Út 23",
+  "password": "NagyFerenc123",
+  "role": "Provider"
+
+- Kis Jenő
+  "userName": "KisJeno",
+  "email": "kisjeno@example.com",
+  "location": "Budapest Váci út 93",
+  "password": "KisJeno123",
+  "role": "Provider"
+
+* Categories
+- Hajvágás
+  "name": "Hajvágás"
+
+- Szerelés
+  "name": "Szerelés"
