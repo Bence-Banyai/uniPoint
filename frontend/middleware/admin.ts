@@ -1,22 +1,32 @@
 // middleware/admin.ts
-import { useAuthStore } from "../stores/auth";
+import { useAuthStore } from "~/stores/auth";
 
-export default defineNuxtRouteMiddleware((to, from) => {
+export default defineNuxtRouteMiddleware(async (to, from) => {
 	const authStore = useAuthStore();
 
-	// Make sure user is authenticated
+	// If not authenticated, redirect to login
 	if (!authStore.isAuthenticated) {
-		return navigateTo("/login");
+		return navigateTo({
+			path: "/login",
+			query: { redirect: to.fullPath },
+		});
+	}
+
+	// Try to refresh user info if role is missing
+	if (!authStore.user.role) {
+		try {
+			await authStore.getUserInfo();
+		} catch (error) {
+			console.error("Failed to get user info:", error);
+		}
 	}
 
 	// Check if user has admin role
-	if (!authStore.user || authStore.user.role !== "Admin") {
-		// Redirect to home page with a warning/error message
+	if (authStore.user.role !== "Admin") {
+		// Redirect to home with error message
 		return navigateTo({
 			path: "/",
-			query: {
-				error: "You do not have permission to access the admin area",
-			},
+			query: { error: "You do not have permission to access the admin area" },
 		});
 	}
 });

@@ -172,12 +172,14 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import useAdminApi from '../../composables/useAdminApi'; // Import the admin API composable
 
 definePageMeta({
     layout: 'admin',
-    middleware: ['admin'] // Create this middleware to check for admin role
+    middleware: ['admin']
 });
 
+const adminApi = useAdminApi(); // Initialize the API client
 const loading = ref(true);
 const isSubmitting = ref(false);
 const showAddModal = ref(false);
@@ -263,12 +265,22 @@ function confirmDeleteUser(user) {
 async function fetchUsers() {
     loading.value = true;
     try {
-        // Replace with actual API call
-        const response = await fetch('/api/users');
-        if (!response.ok) {
-            throw new Error('Failed to fetch users');
+        // Replace with your API client call
+        const response = await adminApi.getAllUsers();
+        users.value = response;
+
+        // Extract roles for each user if they're not already included
+        for (const user of users.value) {
+            if (!user.role && user.id) {
+                try {
+                    const userDetails = await adminApi.getUserById(user.id);
+                    user.role = userDetails.role || 'User';
+                } catch (error) {
+                    console.warn(`Couldn't fetch role for user ${user.id}:`, error);
+                    user.role = 'User'; // Default role
+                }
+            }
         }
-        users.value = await response.json();
     } catch (error) {
         console.error('Error fetching users:', error);
         // Add error notification here if desired
@@ -290,35 +302,23 @@ async function saveUser() {
     isSubmitting.value = true;
 
     try {
-        let response;
         if (showAddModal.value) {
             // Create new user
-            response = await fetch('/api/users', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(userForm.value)
+            await adminApi.createUser({
+                userName: userForm.value.userName,
+                email: userForm.value.email,
+                password: userForm.value.password,
+                role: userForm.value.role,
+                location: userForm.value.location
             });
         } else {
             // Update existing user
-            response = await fetch(`/api/users/${userForm.value.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    userName: userForm.value.userName,
-                    email: userForm.value.email,
-                    role: userForm.value.role,
-                    location: userForm.value.location
-                })
+            await adminApi.updateUser(userForm.value.id, {
+                name: userForm.value.userName, // Note: backend expects "name" not "userName" here
+                email: userForm.value.email,
+                role: userForm.value.role,
+                location: userForm.value.location
             });
-        }
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to save user');
         }
 
         // If successful, refresh user list and close modal
@@ -338,13 +338,7 @@ async function deleteUser() {
     isSubmitting.value = true;
 
     try {
-        const response = await fetch(`/api/users/${userToDelete.value.id}`, {
-            method: 'DELETE'
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to delete user');
-        }
+        await adminApi.deleteUser(userToDelete.value.id);
 
         // If successful, refresh user list and close modal
         await fetchUsers();
@@ -352,7 +346,7 @@ async function deleteUser() {
         userToDelete.value = null;
     } catch (error) {
         console.error('Error deleting user:', error);
-        // Add error notification here if desired
+        formError.value = error.message || 'Failed to delete user';
     } finally {
         isSubmitting.value = false;
     }
