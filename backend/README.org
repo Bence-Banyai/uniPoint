@@ -46,7 +46,7 @@ IdentityUser által létrehozott, közvetlenül nem használt
 - OpeningHours: INT
 
 ** categories tábla
-- CategoryId: PK, INT, not null
+- CategoryId: PK, INT, not null, default: "https://tiszolczijacint.blob.core.windows.net/img/63cf316b-35a1-432e-92fe-0f2d0b2029c3.jpg"
 - Name: VARCHAR(255), not null
 - IconUrl: LONGTEXT
 

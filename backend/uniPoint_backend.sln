@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.12.35707.178 d17.12
+VisualStudioVersion = 17.12.35707.178
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "uniPoint_backend", "uniPoint_backend.csproj", "{9BE83E69-21BD-4A0E-8471-49D4A21AFD83}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "uniPoint_backend_tests", "Tests\uniPoint_backend_tests\uniPoint_backend_tests.csproj", "{7752B308-9D44-F6EB-102C-675BC0DD712E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,8 +17,15 @@ Global
 		{9BE83E69-21BD-4A0E-8471-49D4A21AFD83}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9BE83E69-21BD-4A0E-8471-49D4A21AFD83}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9BE83E69-21BD-4A0E-8471-49D4A21AFD83}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7752B308-9D44-F6EB-102C-675BC0DD712E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7752B308-9D44-F6EB-102C-675BC0DD712E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7752B308-9D44-F6EB-102C-675BC0DD712E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7752B308-9D44-F6EB-102C-675BC0DD712E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5F92214E-7901-4FF7-8354-9432E844B74F}
 	EndGlobalSection
 EndGlobal

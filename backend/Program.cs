@@ -91,7 +91,10 @@ namespace uniPoint_backend
             using (var scope = app.Services.CreateScope())
             {
                 var services = scope.ServiceProvider;
-                await SeedRolesAsync(services);
+                var userManager = services.GetRequiredService<UserManager<User>>();
+                var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+                await SeedRolesAsync(services, roleManager);
+                await IdentitySeeder.SeedAsync(userManager, roleManager);
             }
 
             // Configure the HTTP request pipeline.
@@ -118,10 +121,8 @@ namespace uniPoint_backend
             await app.RunAsync();
         }
         
-        static async Task SeedRolesAsync(IServiceProvider serviceProvider)
+        static async Task SeedRolesAsync(IServiceProvider serviceProvider, RoleManager<IdentityRole> roleManager)
         {
-            var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-
             string[] roles = { "Admin", "Provider", "User" };
 
             foreach (var role in roles)

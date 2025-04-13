@@ -1,0 +1,115 @@
+Table of Contents
+─────────────────
+
+1. Users
+2. Providers
+3. Categories
+4. Services
+5. Appointments
+.. 1. Create appointment
+.. 2. Book appointment
+6. Review
+
+
+1 Users
+═══════
+
+  • Nagy János "userName": "Nagy_Janos", "email":
+    "nagyjanos@example.com", "location": "Győr Baross út 34",
+    "password": "NagyJanos123", "role": "User"
+
+  • Kis Béla "userName": "KisBela", "email": "kisbela@example.com",
+    "location": "Győr Szent István út 49", "password": "KisBela123",
+    "role": "User"
+
+  • Kovács Isván "userName": "KovacsIsvan", "email":
+    "kovacsistvan@example.com", "location": "Budapest Váci út 234",
+    "password": "KovacsIstvan123", "role": "User"
+
+
+2 Providers
+═══════════
+
+  • Nagy Ferenc "userName": "NagyFerenc", "email":
+    "nagyferenc@example.com", "location": "Győr Budai Út 23",
+    "password": "NagyFerenc123", "role": "Provider"
+
+  • Kis Jenő "userName": "KisJeno", "email": "kisjeno@example.com",
+    "location": "Budapest Váci út 93", "password": "KisJeno123", "role":
+    "Provider"
+
+
+3 Categories
+════════════
+
+  • Hajvágás "name": "Hajvágás"
+
+  • Szerelés "name": "Szerelés"
+
+
+4 Services
+══════════
+
+  • Nagy Ferenc Férfi hajvágás "userId":
+    "5b02dd18-efa6-49e4-bb14-72956dfd92fb", "categoryId": 1,
+    "serviceName": "Férfi hajvágás", "price": 5000, "description":
+    "Donec pretium posuere tellus. Nullam rutrum. Praesent augue.
+    Aliquam erat volutpat. Nunc eleifend leo vitae magna. In id erat non
+    orci commodo lobortis. Proin neque massa, cursus ut, gravida ut,
+    lobortis eget, lacus. Sed diam. Praesent fermentum tempor tellus.
+    Nullam tempus. Mauris ac felis vel velit tristique imperdiet. Donec
+    at pede. Etiam vel neque nec dui dignissim bibendum. Vivamus id
+    enim. Phasellus neque orci, porta a, aliquet quis, semper a, massa.
+    Phasellus purus. Pellentesque tristique imperdiet tortor. Nam
+    euismod tellus id erat.", "address": "Győr Budai Út 83", "duration":
+    20, "openingHours": 2
+
+  • Kis Jenő Mobiltelefon szerelés "userId":
+    "35a3407f-5d3f-4715-a6b6-51f154c40511", "categoryId": 2,
+    "serviceName": "Mobiltelefon szerelés", "price": 20000,
+    "description": "Donec pretium posuere tellus. Nullam rutrum.
+    Praesent augue. Aliquam erat volutpat. Nunc eleifend leo vitae
+    magna. In id erat non orci commodo lobortis. Proin neque massa,
+    cursus ut, gravida ut, lobortis eget, lacus. Sed diam. Praesent
+    fermentum tempor tellus. Nullam tempus. Mauris ac felis vel velit
+    tristique imperdiet. Donec at pede. Etiam vel neque nec dui
+    dignissim bibendum. Vivamus id enim. Phasellus neque orci, porta a,
+    aliquet quis, semper a, massa. Phasellus purus. Pellentesque
+    tristique imperdiet tortor. Nam euismod tellus id erat.", "address":
+    "Budapest Váci út 93", "duration": 100, "openingHours": 10
+
+
+5 Appointments
+══════════════
+
+  • Kis Jeno Mobiltelefon szereles 3db
+    • 2. booked by Kovacs Istvan id: 2
+
+
+5.1 Create appointment
+──────────────────────
+
+  "serviceId": 2, "appointmentDate": "2025-05-13T17:00:00.356Z",
+  "status": 0
+
+
+5.2 Book appointment
+────────────────────
+
+  id: 2
+
+  • Nagy Ferenc Férfi hajvágás 2db
+    • 1. booked by Nagy Janos id: 4
+    • 2. booked by Kis Bela id: 5
+
+
+6 Review
+════════
+
+  • Nagy Janos on Ferfi hajvagas "userId":
+    "e71892bc-d7bc-4bc3-9894-6ab02d5bcfee", "serviceId": 1, "score": 5,
+    "description": "jo", "createdAt": "2025-07-13T15:27:39.730Z"
+
+  • Kis Bela on Ferfi hajvagas "userId":
+    "e46ffda0-5900-438a-adee-5f010ec388b3", "serviceId": 1, "score": 2,
+    "description": "szar", "createdAt": "2025-07-13T13:27:39.730Z"
