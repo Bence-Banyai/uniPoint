@@ -100,7 +100,8 @@
 
             <!-- Bottom footer -->
             <div class="pt-8 mt-8 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center">
-                <p class="text-sm text-gray-600">© 2023 UniPoint. All rights reserved.</p>
+                <p class="text-sm text-gray-600">© 2025 UniPoint. Bányai Bence, Sándor Kevin, Tiszolczi Jácint. All
+                    rights reserved.</p>
                 <div class="mt-4 md:mt-0">
                     <NuxtImg src="/payment-methods.png" alt="Payment Methods" class="h-8" />
                 </div>

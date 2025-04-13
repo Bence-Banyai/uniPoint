@@ -1,5 +1,22 @@
 <template>
     <div>
+        <!-- Toast notifications -->
+        <div v-if="errorMessage"
+            class="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50 shadow-lg flex items-center">
+            <span>{{ errorMessage }}</span>
+            <button @click="errorMessage = ''" class="ml-4 text-red-500 hover:text-red-700">
+                <Icon name="mdi:close" />
+            </button>
+        </div>
+
+        <div v-if="successMessage"
+            class="fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded z-50 shadow-lg flex items-center">
+            <span>{{ successMessage }}</span>
+            <button @click="successMessage = ''" class="ml-4 text-green-500 hover:text-green-700">
+                <Icon name="mdi:close" />
+            </button>
+        </div>
+
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-bold">Manage Users</h1>
             <button @click="showAddModal = true"
@@ -172,14 +189,16 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import useAdminApi from '../../composables/useAdminApi'; // Import the admin API composable
+import useAdminApi from '../../composables/useAdminApi';
+import { useAuthStore } from '~/stores/auth';
 
 definePageMeta({
     layout: 'admin',
     middleware: ['admin']
 });
 
-const adminApi = useAdminApi(); // Initialize the API client
+const adminApi = useAdminApi();
+const authStore = useAuthStore();
 const loading = ref(true);
 const isSubmitting = ref(false);
 const showAddModal = ref(false);
@@ -188,6 +207,8 @@ const showDeleteModal = ref(false);
 const searchQuery = ref('');
 const roleFilter = ref('');
 const formError = ref('');
+const errorMessage = ref('');
+const successMessage = ref('');
 const users = ref([]);
 const userToDelete = ref(null);
 const userForm = ref({
@@ -264,26 +285,47 @@ function confirmDeleteUser(user) {
 
 async function fetchUsers() {
     loading.value = true;
+    errorMessage.value = '';
+
     try {
-        // Replace with your API client call
+        // Get all users with the enhanced API method
         const response = await adminApi.getAllUsers();
+
+        // Check if response is valid
+        if (!response || !Array.isArray(response)) {
+            console.warn("Unexpected response format:", response);
+            users.value = [];
+            return;
+        }
+
         users.value = response;
 
-        // Extract roles for each user if they're not already included
+        // Process user roles if needed
         for (const user of users.value) {
-            if (!user.role && user.id) {
+            // Skip users that already have roles
+            if (user.role) continue;
+
+            if (user.id) {
                 try {
+                    // Try to get user details
                     const userDetails = await adminApi.getUserById(user.id);
-                    user.role = userDetails.role || 'User';
+                    if (userDetails && userDetails.role) {
+                        user.role = userDetails.role;
+                    } else {
+                        user.role = 'User'; // Default role
+                    }
                 } catch (error) {
                     console.warn(`Couldn't fetch role for user ${user.id}:`, error);
                     user.role = 'User'; // Default role
                 }
+            } else {
+                user.role = 'User';
             }
         }
     } catch (error) {
         console.error('Error fetching users:', error);
-        // Add error notification here if desired
+        errorMessage.value = 'Failed to load users. Please try again.';
+        users.value = []; // Set empty array to show empty state
     } finally {
         loading.value = false;
     }
@@ -309,21 +351,30 @@ async function saveUser() {
                 email: userForm.value.email,
                 password: userForm.value.password,
                 role: userForm.value.role,
-                location: userForm.value.location
+                location: userForm.value.location || ""
             });
+
+            successMessage.value = "User created successfully!";
         } else {
             // Update existing user
             await adminApi.updateUser(userForm.value.id, {
-                name: userForm.value.userName, // Note: backend expects "name" not "userName" here
+                name: userForm.value.userName,
                 email: userForm.value.email,
                 role: userForm.value.role,
-                location: userForm.value.location
+                location: userForm.value.location || ""
             });
+
+            successMessage.value = "User updated successfully!";
         }
 
         // If successful, refresh user list and close modal
         await fetchUsers();
         closeModals();
+
+        // Auto-hide success message after 3 seconds
+        setTimeout(() => {
+            successMessage.value = '';
+        }, 3000);
     } catch (error) {
         console.error('Error saving user:', error);
         formError.value = error.message || 'An error occurred while saving the user';
@@ -344,6 +395,14 @@ async function deleteUser() {
         await fetchUsers();
         showDeleteModal.value = false;
         userToDelete.value = null;
+
+        // Show success message
+        successMessage.value = "User deleted successfully!";
+
+        // Auto-hide success message after 3 seconds
+        setTimeout(() => {
+            successMessage.value = '';
+        }, 3000);
     } catch (error) {
         console.error('Error deleting user:', error);
         formError.value = error.message || 'Failed to delete user';
@@ -352,7 +411,23 @@ async function deleteUser() {
     }
 }
 
-onMounted(() => {
-    fetchUsers();
+// Override the existing onMounted to include better error handling
+onMounted(async () => {
+    try {
+        // Make sure we're authenticated
+        if (!authStore.isAuthenticated) {
+            const result = await authStore.getUserInfo();
+            if (!result.success) {
+                errorMessage.value = "Authentication error. Please log in again.";
+                return;
+            }
+        }
+
+        // Fetch users
+        await fetchUsers();
+    } catch (error) {
+        console.error("Error initializing admin panel:", error);
+        errorMessage.value = "Error loading admin panel. Please refresh the page.";
+    }
 });
 </script>
