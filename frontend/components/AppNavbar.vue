@@ -31,6 +31,13 @@
             <div class="flex items-center space-x-4">
                 <!-- Show logout and user info if authenticated -->
                 <template v-if="authStore.isAuthenticated">
+                    <!-- Add Admin Dashboard link for admins -->
+                    <NuxtLink v-if="authStore.user && authStore.user.role === 'Admin'" to="/admin"
+                        class="flex items-center px-4 py-2 bg-accent-blue text-white rounded-xl hover:shadow-blue-glow transition-all duration-300 mr-2">
+                        <Icon name="entypo:cog" class="mr-2" />
+                        <span>Admin</span>
+                    </NuxtLink>
+
                     <NuxtLink to="/profile"
                         class="flex items-center px-4 py-2 bg-purple-glass rounded-xl hover:shadow-purple-glow transition-all duration-300">
                         <span

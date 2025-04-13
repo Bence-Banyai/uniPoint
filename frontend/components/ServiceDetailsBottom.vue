@@ -78,7 +78,7 @@
                     <h3 class="text-xl font-bold mb-4">Book this Service</h3>
                     <div class="mb-4">
                         <label class="block text-gray-700 mb-2">Select Date</label>
-                        <input type="date"
+                        <input type="date" v-model="selectedDate"
                             class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" />
                     </div>
                     <div class="mb-6">
@@ -96,7 +96,8 @@
                             </button>
                         </div>
                     </div>
-                    <button class="w-full px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700">Book
+                    <button class="w-full px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                        @click="bookAppointment">Book
                         Appointment</button>
                 </div>
 
@@ -130,12 +131,18 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import type { Service } from '~/services/serviceApi';
 import { serviceApi } from '~/services/serviceApi';
+import useAppointmentsApi from '../composables/useAppointmentsApi';
+import { useAuthStore } from '../stores/auth';
 
 const props = defineProps<{
     service: Service
 }>();
 
 const router = useRouter();
+const authStore = useAuthStore();
+
+const selectedDate = ref(new Date().toISOString().split('T')[0]);
+const isLoading = ref(false);
 
 // Mocked reviews data - in a real app, this would come from the API
 const reviews = ref([
@@ -155,15 +162,14 @@ const reviews = ref([
     }
 ]);
 
-// Mocked time slots - in a real app, this would be generated based on service availability
-const availableTimes = ref([
-    { label: '9:00 AM', value: '09:00', available: true, selected: false },
-    { label: '10:00 AM', value: '10:00', available: true, selected: false },
-    { label: '11:00 AM', value: '11:00', available: true, selected: false },
-    { label: '1:00 PM', value: '13:00', available: true, selected: true },
-    { label: '2:00 PM', value: '14:00', available: false, selected: false },
-    { label: '3:00 PM', value: '15:00', available: true, selected: false }
-]);
+interface TimeSlot {
+    label: string;
+    value: string;
+    available: boolean;
+    selected: boolean;
+}
+
+const availableTimes = ref<TimeSlot[]>([]);
 
 const similarServices = ref<Service[]>([]);
 
@@ -205,10 +211,76 @@ const fetchSimilarServices = async () => {
     }
 };
 
+const fetchAvailableTimeSlots = async () => {
+    if (!props.service?.serviceId || !selectedDate.value) return;
+
+    isLoading.value = true;
+    try {
+        const appointmentsApi = useAppointmentsApi();
+        const response = await appointmentsApi.getTimeSlots(
+            props.service.serviceId,
+            selectedDate.value
+        );
+
+        availableTimes.value = response.data.map((slot: { label: string, value: string, available: boolean }) => ({
+            label: slot.label,
+            value: slot.value,
+            available: slot.available,
+            selected: false
+        }));
+    } catch (error) {
+        console.error("Error fetching time slots:", error);
+    } finally {
+        isLoading.value = false;
+    }
+};
+
+const bookAppointment = async () => {
+    if (!authStore.isAuthenticated) {
+        router.push('/login');
+        return;
+    }
+
+    const selectedTime = availableTimes.value.find(t => t.selected);
+    if (!selectedTime || !selectedDate.value) {
+        // Show error message
+        return;
+    }
+
+    try {
+        isLoading.value = true;
+        const appointmentsApi = useAppointmentsApi();
+
+        const appointmentData = {
+            serviceId: props.service.serviceId,
+            scheduledAt: `${selectedDate.value}T${selectedTime.value}:00`
+        };
+
+        const response = await appointmentsApi.create(appointmentData);
+        await appointmentsApi.book(response.data.id);
+
+        // Redirect or show success message
+    } catch (error) {
+        console.error("Error booking appointment:", error);
+    } finally {
+        isLoading.value = false;
+    }
+};
+
 // Fetch similar services when the component mounts or service changes
 watch(() => props.service, () => {
     if (props.service && props.service.serviceId) {
         fetchSimilarServices();
     }
 }, { immediate: true });
+
+// Watch for date changes to update time slots
+watch(selectedDate, () => {
+    fetchAvailableTimeSlots();
+});
+
+// Also fetch time slots when component mounts
+onMounted(() => {
+    fetchAvailableTimeSlots();
+});
 </script>

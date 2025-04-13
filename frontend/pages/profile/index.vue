@@ -47,12 +47,61 @@
                     </div>
                 </div>
 
-                <!-- Future sections for appointments, etc. -->
-                <div>
-                    <h3 class="text-xl font-semibold mb-2">My Appointments</h3>
-                    <p v-if="appointments.length === 0" class="text-gray-600">You don't have any appointments yet.</p>
-                    <div v-else class="space-y-4">
-                        <!-- Appointment cards would go here -->
+                <div class="mt-8">
+                    <h3 class="text-xl font-semibold mb-4">My Appointments</h3>
+
+                    <div class="flex space-x-4 mb-4">
+                        <button @click="activeFilter = 'all'"
+                            :class="{ 'bg-purple-600 text-white': activeFilter === 'all', 'bg-gray-200': activeFilter !== 'all' }"
+                            class="px-4 py-2 rounded-md transition-colors">
+                            All
+                        </button>
+                        <button @click="activeFilter = 'upcoming'"
+                            :class="{ 'bg-purple-600 text-white': activeFilter === 'upcoming', 'bg-gray-200': activeFilter !== 'upcoming' }"
+                            class="px-4 py-2 rounded-md transition-colors">
+                            Upcoming
+                        </button>
+                        <button @click="activeFilter = 'past'"
+                            :class="{ 'bg-purple-600 text-white': activeFilter === 'past', 'bg-gray-200': activeFilter !== 'past' }"
+                            class="px-4 py-2 rounded-md transition-colors">
+                            Past
+                        </button>
+                    </div>
+
+                    <div v-if="filteredAppointments.length > 0" class="space-y-4">
+                        <div v-for="appointment in filteredAppointments" :key="appointment.id"
+                            class="bg-white p-4 rounded-lg shadow-md border-l-4"
+                            :class="getStatusClass(appointment.status)">
+                            <div class="flex justify-between">
+                                <div>
+                                    <h4 class="font-bold text-lg">
+                                        {{ appointment.service?.serviceName || 'Unknown Service' }}</h4>
+                                    <p class="text-gray-600">{{ formatDateTime(appointment.appointmentDate) }}</p>
+                                    <p class="text-gray-600">{{ appointment.service?.address || 'No address' }}</p>
+                                </div>
+                                <div>
+                                    <span class="px-2 py-1 rounded-full text-xs"
+                                        :class="getStatusBadgeClass(appointment.status)">
+                                        {{ getStatusText(appointment.status) }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="flex mt-4" v-if="canCancelAppointment(appointment)">
+                                <button @click="cancelAppointment(appointment.id)"
+                                    class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                                    Cancel Appointment
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-else class="text-center py-8 bg-gray-50 rounded-lg">
+                        <p class="text-gray-500">No appointments found.</p>
+                        <NuxtLink to="/services"
+                            class="mt-4 inline-block px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700">
+                            Book a Service
+                        </NuxtLink>
                     </div>
                 </div>
             </div>
@@ -75,6 +124,95 @@ definePageMeta({
 const authStore = useAuthStore();
 const isLoading = ref(true);
 const appointments = ref([]);
+const activeFilter = ref('all');
+
+const filteredAppointments = computed(() => {
+    if (activeFilter.value === 'all') {
+        return appointments.value;
+    }
+
+    const now = new Date();
+
+    if (activeFilter.value === 'upcoming') {
+        return appointments.value.filter(app => {
+            const appDate = new Date(app.appointmentDate);
+            return appDate > now && app.status !== 3 && app.status !== 4; // Not cancelled
+        });
+    }
+
+    // Past appointments
+    return appointments.value.filter(app => {
+        const appDate = new Date(app.appointmentDate);
+        return appDate <= now || app.status === 3 || app.status === 4; // Past or cancelled
+    });
+});
+
+const getStatusText = (status) => {
+    switch (status) {
+        case 0: return 'Open';
+        case 1: return 'Scheduled';
+        case 2: return 'Completed';
+        case 3: return 'Cancelled by User';
+        case 4: return 'Cancelled by Provider';
+        default: return 'Unknown';
+    }
+};
+
+const getStatusClass = (status) => {
+    switch (status) {
+        case 0: return 'border-blue-400';
+        case 1: return 'border-green-400';
+        case 2: return 'border-purple-400';
+        case 3:
+        case 4: return 'border-red-400';
+        default: return 'border-gray-400';
+    }
+};
+
+const getStatusBadgeClass = (status) => {
+    switch (status) {
+        case 0: return 'bg-blue-100 text-blue-800';
+        case 1: return 'bg-green-100 text-green-800';
+        case 2: return 'bg-purple-100 text-purple-800';
+        case 3:
+        case 4: return 'bg-red-100 text-red-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+};
+
+const canCancelAppointment = (appointment) => {
+    // Can only cancel if appointment is scheduled and in the future
+    const now = new Date();
+    const appDate = new Date(appointment.appointmentDate);
+    return appointment.status === 1 && appDate > now;
+};
+
+const cancelAppointment = async (id) => {
+    try {
+        const appointmentsApi = useAppointmentsApi();
+        await appointmentsApi.cancel(id);
+
+        // Refresh appointments
+        fetchAppointments();
+    } catch (error) {
+        console.error("Error cancelling appointment:", error);
+    }
+};
+
+const formatDateTime = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleString();
+};
+
+const fetchAppointments = async () => {
+    try {
+        const appointmentsApi = useAppointmentsApi();
+        const response = await appointmentsApi.getAll();
+        appointments.value = response.data;
+    } catch (error) {
+        console.error("Error fetching appointments:", error);
+    }
+};
 
 onMounted(async () => {
     isLoading.value = true;
@@ -127,5 +265,7 @@ onMounted(async () => {
     } finally {
         isLoading.value = false;
     }
+
+    fetchAppointments();
 });
 </script>
