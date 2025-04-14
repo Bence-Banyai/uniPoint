@@ -44,6 +44,7 @@ jobs:
         #subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         client-id: f3c3ce74-b6e3-4832-a4a4-9bca4d6f7886
         tenant-id: 03789cef-0dbf-4ae9-bd93-cfcf6abae60f
+        client-secret: b6i8Q~jD1FNsQsOThr.U7IQpX_.OlBOCcg.Egbiu
         subscription-id: ec2a3399-e799-45db-84d2-3cef09d60387
 
     - name: Log in to Azure Container Registry (ACR)
