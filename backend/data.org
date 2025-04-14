@@ -93,3 +93,10 @@
   "score": 2,
   "description": "szar",
   "createdAt": "2025-07-13T13:27:39.730Z"
+
+
+* ACR
+ACR_NAME: ```uniPointbackend20250412181409```
+ACR_USERNAME: ```uniPointbackend20250412181409```
+ACR_PASSWORD: ```PXpWw5K4iKPWPf379MZWzWqn6KaANPTQmep8IB37Ol+ACRCq/5aI```
+AZURE_APP_NAME: ```uniPoint```
