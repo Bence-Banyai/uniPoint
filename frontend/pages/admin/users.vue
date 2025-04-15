@@ -286,10 +286,11 @@ function confirmDeleteUser(user) {
 async function fetchUsers() {
     loading.value = true;
     errorMessage.value = '';
-
+    console.log('Fetching users: start');
     try {
         // Only use the main endpoint
         const response = await adminApi.getAllUsers();
+        console.log('Fetched users response:', response);
 
         // Accept both array and object with users property
         let userList = [];
@@ -298,12 +299,13 @@ async function fetchUsers() {
         } else if (response && Array.isArray(response.users)) {
             userList = response.users;
         } else {
-            console.warn("Unexpected response format:", response);
+            console.warn('Unexpected response format:', response);
             users.value = [];
             return;
         }
 
         users.value = userList;
+        console.log('Processed userList:', userList);
 
         // Process user roles if needed
         for (const user of users.value) {
@@ -312,19 +314,26 @@ async function fetchUsers() {
                 try {
                     const userDetails = await adminApi.getUserById(user.id);
                     user.role = userDetails && userDetails.role ? userDetails.role : 'User';
+                    console.log('Fetched user details for', user.id, userDetails);
                 } catch (error) {
                     user.role = 'User';
+                    console.error('Error fetching user details for', user.id, error);
                 }
             } else {
                 user.role = 'User';
             }
         }
     } catch (error) {
-        console.error('Error fetching users:', error);
-        errorMessage.value = 'Failed to load users. Please try again.';
+        console.error('Error in fetchUsers:', error);
+        if (error.response && error.response.status === 401) {
+            errorMessage.value = 'Session expired or not authenticated. Please log in again.';
+        } else {
+            errorMessage.value = 'Failed to load users. Please try again.';
+        }
         users.value = [];
     } finally {
         loading.value = false;
+        console.log('Fetching users: end');
     }
 }
 
@@ -373,8 +382,11 @@ async function saveUser() {
             successMessage.value = '';
         }, 3000);
     } catch (error) {
-        console.error('Error saving user:', error);
-        formError.value = error.message || 'An error occurred while saving the user';
+        if (error.response && error.response.status === 403) {
+            formError.value = "You can only update/delete your own user. Admin update/delete for any user is not yet supported.";
+        } else {
+            formError.value = error.message || 'An error occurred while saving the user';
+        }
     } finally {
         isSubmitting.value = false;
     }
@@ -401,8 +413,11 @@ async function deleteUser() {
             successMessage.value = '';
         }, 3000);
     } catch (error) {
-        console.error('Error deleting user:', error);
-        formError.value = error.message || 'Failed to delete user';
+        if (error.response && error.response.status === 403) {
+            formError.value = "You can only update/delete your own user. Admin update/delete for any user is not yet supported.";
+        } else {
+            formError.value = error.message || 'Failed to delete user';
+        }
     } finally {
         isSubmitting.value = false;
     }
@@ -412,8 +427,10 @@ async function deleteUser() {
 onMounted(async () => {
     try {
         // Make sure we're authenticated
+        console.log('Admin panel onMounted: checking authentication');
         if (!authStore.isAuthenticated) {
             const result = await authStore.getUserInfo();
+            console.log('getUserInfo result:', result);
             if (!result.success) {
                 errorMessage.value = "Authentication error. Please log in again.";
                 return;
