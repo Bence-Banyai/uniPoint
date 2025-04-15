@@ -4,7 +4,7 @@ export default defineNuxtConfig({
 
 	runtimeConfig: {
 		public: {
-			apiBaseUrl: process.env.API_BASE_URL || "http://localhost:5273", // Your backend URL
+			apiBaseUrl: process.env.API_BASE_URL, // Your backend URL
 		},
 	},
 
@@ -15,7 +15,7 @@ export default defineNuxtConfig({
 		globalAppMiddleware: {
 			isEnabled: false, // Enable this later when auth is working
 		},
-		baseURL: process.env.API_BASE_URL || "http://localhost:5273", // Set the base URL for auth requests
+		baseURL: process.env.API_BASE_URL, // Set the base URL for auth requests
 	},
 
 	future: {
@@ -67,7 +67,7 @@ export default defineNuxtConfig({
 	nitro: {
 		devProxy: {
 			"/api": {
-				target: process.env.API_BASE_URL || "http://localhost:5273",
+				target: process.env.API_BASE_URL,
 				changeOrigin: true,
 				prependPath: false, // Change this to false
 			},
