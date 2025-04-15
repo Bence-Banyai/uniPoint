@@ -288,35 +288,32 @@ async function fetchUsers() {
     errorMessage.value = '';
 
     try {
-        // Get all users with the enhanced API method
+        // Only use the main endpoint
         const response = await adminApi.getAllUsers();
 
-        // Check if response is valid
-        if (!response || !Array.isArray(response)) {
+        // Accept both array and object with users property
+        let userList = [];
+        if (Array.isArray(response)) {
+            userList = response;
+        } else if (response && Array.isArray(response.users)) {
+            userList = response.users;
+        } else {
             console.warn("Unexpected response format:", response);
             users.value = [];
             return;
         }
 
-        users.value = response;
+        users.value = userList;
 
         // Process user roles if needed
         for (const user of users.value) {
-            // Skip users that already have roles
             if (user.role) continue;
-
             if (user.id) {
                 try {
-                    // Try to get user details
                     const userDetails = await adminApi.getUserById(user.id);
-                    if (userDetails && userDetails.role) {
-                        user.role = userDetails.role;
-                    } else {
-                        user.role = 'User'; // Default role
-                    }
+                    user.role = userDetails && userDetails.role ? userDetails.role : 'User';
                 } catch (error) {
-                    console.warn(`Couldn't fetch role for user ${user.id}:`, error);
-                    user.role = 'User'; // Default role
+                    user.role = 'User';
                 }
             } else {
                 user.role = 'User';
@@ -325,7 +322,7 @@ async function fetchUsers() {
     } catch (error) {
         console.error('Error fetching users:', error);
         errorMessage.value = 'Failed to load users. Please try again.';
-        users.value = []; // Set empty array to show empty state
+        users.value = [];
     } finally {
         loading.value = false;
     }

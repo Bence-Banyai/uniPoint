@@ -7,19 +7,11 @@ export default function useAdminApi() {
 		// Users
 		async getAllUsers() {
 			try {
-				// First try the standard endpoint
+				// Only use the main endpoint, remove fallback to /api/Auth/users
 				return await apiClient.get("/api/User");
 			} catch (error) {
-				console.warn("Error with primary user endpoint, trying fallback...", error);
-
-				// Fallback to fetch users with the auth endpoint (which might be more stable)
-				try {
-					const response = await apiClient.get("/api/Auth/users");
-					return response;
-				} catch (secondError) {
-					console.error("Failed with fallback endpoint too:", secondError);
-					return []; // Return empty array to avoid breaking the UI
-				}
+				console.error("Error fetching users:", error);
+				return []; // Return empty array to avoid breaking the UI
 			}
 		},
 

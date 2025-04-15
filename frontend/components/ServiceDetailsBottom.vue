@@ -78,27 +78,34 @@
                     <h3 class="text-xl font-bold mb-4">Book this Service</h3>
                     <div class="mb-4">
                         <label class="block text-gray-700 mb-2">Select Date</label>
-                        <input type="date" v-model="selectedDate"
+                        <input type="date" v-model="selectedDate" :min="todayDate"
                             class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" />
                     </div>
                     <div class="mb-6">
-                        <label class="block text-gray-700 mb-2">Select Time</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button v-for="time in availableTimes" :key="time.value" :class="[
-                                'px-3 py-2 rounded-md',
-                                time.selected
-                                    ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                                    : time.available
-                                        ? 'bg-gray-100 text-gray-700 hover:bg-purple-100'
-                                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            ]" :disabled="!time.available" @click="selectTime(time)">
-                                {{ time.label }}
+                        <label class="block text-gray-700 mb-2">Select Available Appointment</label>
+                        <div v-if="isLoading" class="text-center text-gray-500">Loading...</div>
+                        <div v-else-if="filteredOpenAppointments.length === 0" class="text-center text-gray-500">
+                            No open appointments found for this date.
+                        </div>
+                        <div v-else class="space-y-2 max-h-48 overflow-y-auto">
+                            <button v-for="appt in filteredOpenAppointments" :key="appt.id" :class="[
+                                'w-full text-left px-3 py-2 rounded-md border',
+                                selectedAppointmentId === appt.id
+                                    ? 'bg-purple-100 text-purple-700 border-purple-300'
+                                    : 'bg-gray-50 text-gray-700 hover:bg-purple-50 border-gray-200'
+                            ]" @click="selectAppointment(appt.id)">
+                                {{ formatAppointmentTime(appt.appointmentDate) }}
                             </button>
                         </div>
                     </div>
-                    <button class="w-full px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
-                        @click="bookAppointment">Book
-                        Appointment</button>
+                    <button
+                        class="w-full px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        :disabled="!selectedAppointmentId || isBooking" @click="bookSelectedAppointment">
+                        <span v-if="isBooking">Booking...</span>
+                        <span v-else>Book Selected Appointment</span>
+                    </button>
+                    <p v-if="bookingError" class="text-red-500 text-sm mt-2">{{ bookingError }}</p>
+                    <p v-if="bookingSuccess" class="text-green-500 text-sm mt-2">{{ bookingSuccess }}</p>
                 </div>
 
                 <div class="bg-white p-6 rounded-lg shadow-md">
@@ -133,6 +140,7 @@ import type { Service } from '~/services/serviceApi';
 import { serviceApi } from '~/services/serviceApi';
 import useAppointmentsApi from '../composables/useAppointmentsApi';
 import { useAuthStore } from '../stores/auth';
+import type { Appointment } from '~/models/Appointment'; // Assuming you have this model defined
 
 const props = defineProps<{
     service: Service
@@ -140,54 +148,56 @@ const props = defineProps<{
 
 const router = useRouter();
 const authStore = useAuthStore();
+const appointmentsApi = useAppointmentsApi();
 
-const selectedDate = ref(new Date().toISOString().split('T')[0]);
+const todayDate = new Date().toISOString().split('T')[0];
+const selectedDate = ref(todayDate);
 const isLoading = ref(false);
+const isBooking = ref(false);
+const bookingError = ref<string | null>(null);
+const bookingSuccess = ref<string | null>(null);
+
+const allOpenAppointments = ref<Appointment[]>([]);
+const selectedAppointmentId = ref<number | null>(null);
 
 // Mocked reviews data - in a real app, this would come from the API
 const reviews = ref([
-    {
-        name: "Jane Doe",
-        rating: 4,
-        comment: "Great service! Would highly recommend.",
-        date: "2 months ago",
-        profilePicture: null
-    },
-    {
-        name: "John Smith",
-        rating: 5,
-        comment: "Excellent service and very professional.",
-        date: "1 month ago",
-        profilePicture: null
-    }
+    { name: "Jane Doe", rating: 4, comment: "Great service! Would highly recommend.", date: "2 months ago", profilePicture: null },
+    { name: "John Smith", rating: 5, comment: "Excellent service and very professional.", date: "1 month ago", profilePicture: null }
 ]);
 
-interface TimeSlot {
-    label: string;
-    value: string;
-    available: boolean;
-    selected: boolean;
-}
-
-const availableTimes = ref<TimeSlot[]>([]);
-
 const similarServices = ref<Service[]>([]);
+
+// Computed property to filter open appointments for the current service and selected date
+const filteredOpenAppointments = computed(() => {
+    if (!props.service?.serviceId || !selectedDate.value) {
+        return [];
+    }
+    const targetDate = selectedDate.value;
+    return allOpenAppointments.value.filter(appt => {
+        const apptDate = appt.appointmentDate.split('T')[0]; // Compare only the date part
+        return appt.serviceId === props.service.serviceId && apptDate === targetDate;
+    });
+});
 
 // Methods
 const formatPrice = (price: number) => {
     return new Intl.NumberFormat('hu-HU', { style: 'currency', currency: 'HUF' }).format(price);
 };
 
-const formatOpeningHours = (hours: number) => {
-    return `${hours}:00 - 18:00`;
+const formatOpeningHours = (hours: number | undefined) => {
+    return hours ? `${hours}:00 - 18:00` : 'N/A'; // Handle undefined case
 };
 
-const selectTime = (time: { label: string, value: string, available: boolean, selected: boolean }) => {
-    if (!time.available) return;
+const formatAppointmentTime = (dateTimeString: string) => {
+    const date = new Date(dateTimeString);
+    return date.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
+};
 
-    availableTimes.value.forEach(t => {
-        t.selected = t.value === time.value;
-    });
+const selectAppointment = (id: number) => {
+    selectedAppointmentId.value = id;
+    bookingError.value = null; // Clear previous errors on new selection
+    bookingSuccess.value = null;
 };
 
 const truncateText = (text: string, maxLength: number) => {
@@ -201,7 +211,6 @@ const navigateToService = (serviceId: number) => {
 const fetchSimilarServices = async () => {
     try {
         if (!props.service || !props.service.categoryId) return;
-
         const services = await serviceApi.getServicesByCategory(props.service.categoryId);
         similarServices.value = services
             .filter(s => s.serviceId !== props.service.serviceId)
@@ -211,59 +220,51 @@ const fetchSimilarServices = async () => {
     }
 };
 
-const fetchAvailableTimeSlots = async () => {
-    if (!props.service?.serviceId || !selectedDate.value) return;
-
+// Fetch ALL open appointments initially and store them
+const fetchAllOpenAppointments = async () => {
     isLoading.value = true;
+    selectedAppointmentId.value = null; // Reset selection when fetching
     try {
-        const appointmentsApi = useAppointmentsApi();
-        const response = await appointmentsApi.getTimeSlots(
-            props.service.serviceId,
-            selectedDate.value
-        );
-
-        availableTimes.value = response.data.map((slot: { label: string, value: string, available: boolean }) => ({
-            label: slot.label,
-            value: slot.value,
-            available: slot.available,
-            selected: false
-        }));
+        const response = await appointmentsApi.getOpen();
+        allOpenAppointments.value = response || [];
     } catch (error) {
-        console.error("Error fetching time slots:", error);
+        console.error("Error fetching open appointments:", error);
+        allOpenAppointments.value = []; // Clear on error
     } finally {
         isLoading.value = false;
     }
 };
 
-const bookAppointment = async () => {
+const bookSelectedAppointment = async () => {
     if (!authStore.isAuthenticated) {
-        router.push('/login');
+        router.push('/login?redirect=' + encodeURIComponent(router.currentRoute.value.fullPath));
         return;
     }
 
-    const selectedTime = availableTimes.value.find(t => t.selected);
-    if (!selectedTime || !selectedDate.value) {
-        // Show error message
+    if (!selectedAppointmentId.value) {
+        bookingError.value = "Please select an appointment time.";
         return;
     }
+
+    isBooking.value = true;
+    bookingError.value = null;
+    bookingSuccess.value = null;
 
     try {
-        isLoading.value = true;
-        const appointmentsApi = useAppointmentsApi();
-
-        const appointmentData = {
-            serviceId: props.service.serviceId,
-            scheduledAt: `${selectedDate.value}T${selectedTime.value}:00`
-        };
-
-        const response = await appointmentsApi.create(appointmentData);
-        await appointmentsApi.book(response.data.id);
-
-        // Redirect or show success message
-    } catch (error) {
+        const response = await appointmentsApi.book(selectedAppointmentId.value);
+        bookingSuccess.value = response?.data?.message || "Appointment booked successfully!";
+        // Refresh the list of open appointments as the booked one is no longer open
+        await fetchAllOpenAppointments();
+        selectedAppointmentId.value = null; // Clear selection after successful booking
+        // Optionally redirect to profile/appointments page
+        // router.push('/profile');
+    } catch (error: any) {
         console.error("Error booking appointment:", error);
+        bookingError.value = error?.response?.data?.message || error?.response?.data || "Failed to book appointment. It might have been taken.";
+        // Also refresh list in case the appointment was booked by someone else simultaneously
+        await fetchAllOpenAppointments();
     } finally {
-        isLoading.value = false;
+        isBooking.value = false;
     }
 };
 
@@ -271,16 +272,20 @@ const bookAppointment = async () => {
 watch(() => props.service, () => {
     if (props.service && props.service.serviceId) {
         fetchSimilarServices();
+        fetchAllOpenAppointments(); // Fetch open appointments when service changes
     }
 }, { immediate: true });
 
-// Watch for date changes to update time slots
+// Watch for date changes to potentially clear selection (optional, but good UX)
 watch(selectedDate, () => {
-    fetchAvailableTimeSlots();
+    selectedAppointmentId.value = null; // Reset selection when date changes
+    bookingError.value = null;
+    bookingSuccess.value = null;
+    // No need to re-fetch all appointments, just rely on the computed property to filter
 });
 
-// Also fetch time slots when component mounts
+// Fetch all open appointments when component mounts
 onMounted(() => {
-    fetchAvailableTimeSlots();
+    // fetchAllOpenAppointments is already called by the service watcher on immediate: true
 });
 </script>

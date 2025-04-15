@@ -1,46 +1,46 @@
 import useApiClient from "./useApiClient";
+import type { Appointment } from '~/models/Appointment'; // Assuming you have this model defined
 
 // Update your appointment API client with all necessary endpoints
 export default function useAppointmentsApi() {
-	const apiClient = useApiClient();
+    const apiClient = useApiClient();
 
-	return {
-		getAll() {
-			return apiClient.get("/api/Appointment");
-		},
+    return {
+        getAll() {
+            return apiClient.get("/api/Appointment") as Promise<Appointment[]>;
+        },
 
-		getOpen() {
-			return apiClient.get("/api/Appointment/open");
-		},
+        getOpen() {
+            // Fetches ALL open appointments across all services
+            return apiClient.get("/api/Appointment/open") as Promise<Appointment[]>;
+        },
 
-		getById(id: number) {
-			return apiClient.get(`/api/Appointment/${id}`);
-		},
+        getById(id: number) {
+            return apiClient.get(`/api/Appointment/${id}`) as Promise<Appointment>;
+        },
 
-		book(id: number) {
-			return apiClient.post(`/api/Appointment/book/${id}`, {});
-		},
+        book(id: number) {
+            // Books a specific OPEN appointment by its ID
+            return apiClient.post(`/api/Appointment/book/${id}`, {});
+        },
 
-		cancel(id: number) {
-			return apiClient.put(`/api/Appointment/cancel/${id}`, {});
-		},
+        cancel(id: number) {
+            return apiClient.put(`/api/Appointment/cancel/${id}`, {});
+        },
 
-		create(appointmentData: { serviceId: number; scheduledAt: string }) {
-			return apiClient.post("/api/Appointment", appointmentData);
-		},
+        create(appointmentData: { serviceId: number; appointmentDate: string }) {
+            // Creates a NEW appointment (likely for providers/admins)
+            return apiClient.post("/api/Appointment", appointmentData) as Promise<Appointment>;
+        },
 
-		update(id: number, appointmentData: any) {
-			return apiClient.put(`/api/Appointment/${id}`, appointmentData);
-		},
+        update(id: number, appointmentData: any) {
+            return apiClient.put(`/api/Appointment/${id}`, appointmentData);
+        },
 
-		delete(id: number) {
-			return apiClient.delete(`/api/Appointment/${id}`);
-		},
+        delete(id: number) {
+            return apiClient.delete(`/api/Appointment/${id}`);
+        },
 
-		// New method for time slots
-		getTimeSlots(serviceId: number, date: string) {
-			// This endpoint needs to be created in your backend
-			return apiClient.get(`/api/Appointment/timeslots/${serviceId}/${date}`);
-		},
-	};
+        // getTimeSlots is removed as we are fetching open appointments directly
+    };
 }
