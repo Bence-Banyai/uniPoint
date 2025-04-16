@@ -5,6 +5,7 @@ using uniPoint_backend;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
+using AutoMapper;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -19,14 +20,16 @@ namespace uniPoint_backend.Controllers
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly BlobService _blobService;
         private readonly uniPointContext _uniPointContext;
+        private readonly IMapper _mapper;
 
 
-        public UserController(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, BlobService blobService, uniPointContext uniPointContext)
+        public UserController(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, BlobService blobService, uniPointContext uniPointContext, IMapper mapper)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _blobService = blobService;
             _uniPointContext = uniPointContext;
+            _mapper = mapper;
         }
 
         // GET: api/<UserController>
@@ -34,7 +37,9 @@ namespace uniPoint_backend.Controllers
         public async Task<IActionResult> GetUsers()
         {
             var users = await _userManager.Users.ToListAsync();
-            return Ok(users);
+
+            var dto = _mapper.Map<List<UserDto>>(users);
+            return Ok(dto);
         }
 
         // GET api/<UserController>/5
@@ -56,12 +61,11 @@ namespace uniPoint_backend.Controllers
                 return NotFound();
             }
 
-            // Create response object with all user info including location
             var userInfo = new
             {
                 userName = user.UserName,
                 email = user.Email,
-                location = user.Location, // Make sure Location is included
+                location = user.Location,
                 role = (await _userManager.GetRolesAsync(user)).FirstOrDefault() ?? "User",
                 createdAt = user.CreatedAt
             };

@@ -26,8 +26,10 @@ namespace uniPoint_backend.Controllers
         {
             var openAppointments = await _uniPointContext.Appointments
                                                          .Where(a => a.Status == AppointmentStatus.OPEN)
+                                                         .Include(a => a.Booker)
                                                          .Include(a => a.Service)
                                                          .ThenInclude(s => s.Provider)
+                                                         .Include(s => s.Service.Category)
                                                          .ToListAsync();
             return Ok(openAppointments);
         }
@@ -36,17 +38,36 @@ namespace uniPoint_backend.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAppointments()
         {
+            var appointments = await _uniPointContext.Appointments
+                                             .Include(a => a.Booker)
+                                             .Include(a => a.Service)
+                                             .ThenInclude(s => s.Provider)
+                                             .Include(s => s.Service.Category)
+                                             .ToListAsync();
+            return Ok(appointments);
+        }
+
+        // GET: api/<AppointmentController>
+        [HttpGet("myappointments")]
+        public async Task<IActionResult> GetMyAppointments()
+        {
             var role = User.FindFirstValue(ClaimTypes.Role);
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             IQueryable<Appointment> query = _uniPointContext.Appointments
                                                              .Include(a => a.Booker)
                                                              .Include(a => a.Service)
-                                                             .ThenInclude(s => s.Provider);
+                                                             .ThenInclude(s => s.Provider)
+                                                             .Include(s => s.Service.Category);
 
             if (role == "Provider")
             {
                 query = query.Where(a => a.Service.UserId == userId);
+            }
+
+            if (role == "User")
+            {
+                query = query.Where(a => a.UserId == userId);
             }
 
             var appointments = await query.ToListAsync();

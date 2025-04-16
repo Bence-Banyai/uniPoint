@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
@@ -15,9 +16,17 @@ namespace uniPoint_backend_tests
     {
         private readonly ReviewController _controller;
         private readonly uniPointContext _context;
+        private readonly IMapper _mapper;
 
         public ReviewControllerTests()
         {
+            var config = new MapperConfiguration(cfg =>
+            {
+                cfg.AddProfile<MappingProfile>();
+            });
+
+            _mapper = config.CreateMapper();
+
             var options = new DbContextOptionsBuilder<uniPointContext>()
                 .UseInMemoryDatabase(databaseName: "TestReviewDb_" + System.Guid.NewGuid())
                 .Options;
@@ -25,7 +34,7 @@ namespace uniPoint_backend_tests
             _context = new uniPointContext(options);
             SeedDatabase();
 
-            _controller = new ReviewController(_context);
+            _controller = new ReviewController(_context, _mapper);
         }
 
         private void SeedDatabase()
