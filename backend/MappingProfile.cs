@@ -10,6 +10,7 @@ namespace uniPoint_backend
             CreateMap<User, UserDto>();
             CreateMap<Service, ServiceDto>();
             CreateMap<Review, ReviewDto>();
+            CreateMap<Appointment, AppointmentDto>();
         }
     }
 }
