@@ -69,19 +69,15 @@ namespace uniPoint_backend
                 options.AddPolicy("AllowAll", builder =>
                 {
                     builder
-                        .WithOrigins(
-                            "http://localhost:3000",    // Nuxt dev server
-                            "http://localhost:8081",    // Mobile - Expo
-                            "http://localhost:19006"    // Mobile - Expo web
-                        )
+                        .SetIsOriginAllowed(_ => true) // allow any origin
                         .AllowAnyHeader()
-                        .AllowAnyMethod()
-                        .AllowCredentials();
+                        .AllowAnyMethod();
                 });
             });
 
             // Add services to the container.
             builder.Services.AddControllers();
+            builder.Services.AddAutoMapper(typeof(MappingProfile));
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();

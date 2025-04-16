@@ -13,6 +13,7 @@ using uniPoint_backend;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Xunit;
+using AutoMapper;
 
 namespace uniPoint_backend_tests
 {
@@ -21,6 +22,7 @@ namespace uniPoint_backend_tests
         private readonly ServiceController _controller;
         private readonly Mock<BlobService> _mockBlobService;
         private readonly uniPointContext _context;
+        private readonly IMapper _mapper;
         private int _service1Id;
         private int _service2Id;
 
@@ -38,7 +40,14 @@ namespace uniPoint_backend_tests
 
             _mockBlobService = new Mock<BlobService>();
 
-            _controller = new ServiceController(_context, _mockBlobService.Object);
+            var config = new MapperConfiguration(cfg =>
+            {
+                cfg.AddProfile<MappingProfile>();
+            });
+
+            _mapper = config.CreateMapper();
+
+            _controller = new ServiceController(_context, _mockBlobService.Object, _mapper);
 
             // Mock authentication
             var user = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]

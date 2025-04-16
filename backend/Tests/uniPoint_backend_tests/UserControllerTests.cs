@@ -13,6 +13,7 @@ using uniPoint_backend.Models;
 using Xunit;
 using Microsoft.EntityFrameworkCore.InMemory;
 using Microsoft.EntityFrameworkCore;
+using AutoMapper;
 
 namespace uniPoint_backend_tests
 {
@@ -22,12 +23,20 @@ namespace uniPoint_backend_tests
         private readonly Mock<RoleManager<IdentityRole>> _roleManagerMock;
         private readonly Mock<BlobService> _blobServiceMock;
         private readonly UserController _controller;
+        private readonly IMapper _mapper;
 
         public UserControllerTests()
         {
             _userManagerMock = MockUserManager();
             _roleManagerMock = MockRoleManager();
             _blobServiceMock = new Mock<BlobService>();
+
+            var config = new MapperConfiguration(cfg =>
+            {
+                cfg.AddProfile<MappingProfile>();
+            });
+
+            _mapper = config.CreateMapper();
 
             var options = new DbContextOptionsBuilder<uniPointContext>()
     .UseInMemoryDatabase(databaseName: "TestReviewDb_" + System.Guid.NewGuid())
@@ -39,7 +48,8 @@ namespace uniPoint_backend_tests
                 _userManagerMock.Object,
                 _roleManagerMock.Object,
                 _blobServiceMock.Object,
-                context);
+                context,
+                _mapper);
         }
 
         private Mock<UserManager<User>> MockUserManager()

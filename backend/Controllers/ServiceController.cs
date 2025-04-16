@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,12 +17,14 @@ namespace uniPoint_backend.Controllers
     {
         private readonly uniPointContext _uniPointContext;
         private readonly BlobService _blobService;
+        private readonly IMapper _mapper;
 
 
-        public ServiceController(uniPointContext uniPointContext, BlobService blobService)
+        public ServiceController(uniPointContext uniPointContext, BlobService blobService, IMapper mapper)
         {
             _uniPointContext = uniPointContext;
             _blobService = blobService;
+            _mapper = mapper;
         }
 
         // GET: api/<ServiceController>
@@ -33,7 +36,9 @@ namespace uniPoint_backend.Controllers
                 .Include(s => s.Provider)
                 .Include(s => s.Category) // Also include the Category information
                 .ToListAsync();
-            return Ok(services);
+
+            var dto = _mapper.Map<List<ServiceDto>>(services);
+            return Ok(dto);
         }
 
         // GET api/<ServiceController>/5
@@ -51,7 +56,8 @@ namespace uniPoint_backend.Controllers
                 return NotFound();
             }
 
-            return Ok(service);
+            var dto = _mapper.Map<ServiceDto>(service);
+            return Ok(dto);
         }
 
         // POST api/<ServiceController>

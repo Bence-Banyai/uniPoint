@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using AutoMapper;
 
 namespace uniPoint_backend.Controllers
 {
@@ -14,10 +15,12 @@ namespace uniPoint_backend.Controllers
     public class ReviewController : ControllerBase
     {
         private readonly uniPointContext _uniPointContext;
+        private readonly IMapper _mapper;
 
-        public ReviewController(uniPointContext uniPointContext)
+        public ReviewController(uniPointContext uniPointContext, IMapper mapper)
         {
             _uniPointContext = uniPointContext;
+            _mapper = mapper;
         }
 
         // GET: api/<ReviewController>
@@ -27,8 +30,12 @@ namespace uniPoint_backend.Controllers
             var reviews = await _uniPointContext.Reviews
                                                 .Include(r => r.Reviewer)
                                                 .Include(r => r.Service)
+                                                .Include(r => r.Service.Provider)
+                                                .Include(r => r.Service.Category)
                                                 .ToListAsync();
-            return Ok(reviews);
+
+            var dto = _mapper.Map<List<ReviewDto>>(reviews);
+            return Ok(dto);
         }
 
         // GET api/<ReviewController>/5
@@ -38,6 +45,8 @@ namespace uniPoint_backend.Controllers
             var review = await _uniPointContext.Reviews
                                                .Include(r => r.Reviewer)
                                                .Include(r => r.Service)
+                                               .Include(r => r.Service.Provider)
+                                               .Include(r => r.Service.Category)
                                                .FirstOrDefaultAsync(r => r.ReviewId == id);
 
             if (review == null)
@@ -45,7 +54,8 @@ namespace uniPoint_backend.Controllers
                 return NotFound();
             }
 
-            return Ok(review);
+            var dto = _mapper.Map<ReviewDto>(review);
+            return Ok(dto);
         }
 
         // POST api/<ReviewController>
