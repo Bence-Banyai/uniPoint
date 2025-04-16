@@ -69,14 +69,9 @@ namespace uniPoint_backend
                 options.AddPolicy("AllowAll", builder =>
                 {
                     builder
-                        .WithOrigins(
-                            "http://localhost:3000",    // Nuxt dev server
-                            "http://localhost:8081",    // Mobile - Expo
-                            "http://localhost:19006"    // Mobile - Expo web
-                        )
+                        .SetIsOriginAllowed(_ => true) // allow any origin
                         .AllowAnyHeader()
-                        .AllowAnyMethod()
-                        .AllowCredentials();
+                        .AllowAnyMethod();
                 });
             });
 
