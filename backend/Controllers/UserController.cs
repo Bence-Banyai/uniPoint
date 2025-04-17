@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer; // <-- Add this
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -13,7 +14,8 @@ namespace uniPoint_backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    // Explicitly specify JWT Bearer scheme for authorization
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class UserController : ControllerBase
     {
         private readonly UserManager<User> _userManager;

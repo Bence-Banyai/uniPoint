@@ -1,17 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using uniPoint_backend.Models;
-using System.Threading.Tasks;
-using System.Linq;
-using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
 using AutoMapper;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace uniPoint_backend.Controllers
 {
-    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class AppointmentController : ControllerBase
     {
         private readonly uniPointContext _uniPointContext;
