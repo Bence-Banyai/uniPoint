@@ -7,7 +7,7 @@
             <div class="absolute -bottom-32 -left-20 w-80 h-80 rounded-full bg-accent-pink opacity-20 blur-3xl"></div>
 
             <div class="container mx-auto px-4 text-center relative z-10">
-                <h1 class="text-4xl md:text-5xl font-bold mb-6 animate-fade-in">Csöcsfasz Csöcsfasz</h1>
+                <h1 class="text-4xl md:text-5xl font-bold mb-6 animate-fade-in">uniPoint.</h1>
                 <p class="text-xl mb-10 max-w-2xl mx-auto text-blue-50">UniPoint brings together students, educators,
                     and
                     institutions on a single powerful platform.</p>
