@@ -191,6 +191,7 @@
 import { ref, computed, onMounted } from 'vue';
 import useAdminApi from '../../composables/useAdminApi';
 import { useAuthStore } from '~/stores/auth';
+import { useRuntimeConfig } from '#app';
 
 definePageMeta({
     layout: 'admin',
@@ -288,6 +289,10 @@ async function fetchUsers() {
     errorMessage.value = '';
     console.log('Fetching users: start');
     try {
+        // Get the runtime config to check the actual API URL being used
+        const config = useRuntimeConfig();
+        console.log('Using API base URL:', config.public.apiBaseUrl);
+        
         // Only use the main endpoint
         const response = await adminApi.getAllUsers();
         console.log('Fetched users response:', response);
@@ -298,6 +303,16 @@ async function fetchUsers() {
             userList = response;
         } else if (response && Array.isArray(response.users)) {
             userList = response.users;
+        } else if (response && typeof response === 'object') {
+            // Try to extract users from response object if possible
+            console.log('Attempting to extract users from object response');
+            userList = Object.values(response).filter(item => 
+                item && typeof item === 'object' && 'userName' in item
+            );
+            if (userList.length === 0) {
+                console.warn('Could not extract users from response:', response);
+                userList = [];
+            }
         } else {
             console.warn('Unexpected response format:', response);
             users.value = [];
@@ -308,25 +323,39 @@ async function fetchUsers() {
         console.log('Processed userList:', userList);
 
         // Process user roles if needed
-        for (const user of users.value) {
-            if (user.role) continue;
-            if (user.id) {
-                try {
-                    const userDetails = await adminApi.getUserById(user.id);
-                    user.role = userDetails && userDetails.role ? userDetails.role : 'User';
-                    console.log('Fetched user details for', user.id, userDetails);
-                } catch (error) {
+        if (users.value.length > 0) {
+            for (const user of users.value) {
+                if (user.role) continue;
+                if (user.id) {
+                    try {
+                        const userDetails = await adminApi.getUserById(user.id);
+                        user.role = userDetails && userDetails.role ? userDetails.role : 'User';
+                        console.log('Fetched user details for', user.id, userDetails);
+                    } catch (error) {
+                        user.role = 'User';
+                        console.error('Error fetching user details for', user.id, error);
+                    }
+                } else {
                     user.role = 'User';
-                    console.error('Error fetching user details for', user.id, error);
                 }
-            } else {
-                user.role = 'User';
             }
         }
     } catch (error) {
         console.error('Error in fetchUsers:', error);
+        
+        // Add more detailed error logging
+        if (error.response) {
+            console.error('Response error details:', {
+                status: error.response.status,
+                statusText: error.response.statusText,
+                data: error.response.data
+            });
+        }
+        
         if (error.response && error.response.status === 401) {
             errorMessage.value = 'Session expired or not authenticated. Please log in again.';
+        } else if (error.message && error.message.includes('CORS')) {
+            errorMessage.value = 'CORS error: Unable to connect to the API. Please check your network settings.';
         } else {
             errorMessage.value = 'Failed to load users. Please try again.';
         }

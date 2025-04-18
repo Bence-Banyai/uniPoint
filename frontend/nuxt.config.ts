@@ -4,18 +4,24 @@ export default defineNuxtConfig({
 
 	runtimeConfig: {
 		public: {
-			apiBaseUrl: process.env.API_BASE_URL, // Your backend URL
+			// Read from environment variable, fallback for safety (though .env should provide it)
+			apiBaseUrl:
+				process.env.API_BASE_URL ||
+				"https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net",
 		},
 	},
 
 	auth: {
 		provider: {
-			type: "local", // Use a custom auth provider instead of Auth.js
+			type: "local",
 		},
 		globalAppMiddleware: {
-			isEnabled: false, // Enable this later when auth is working
+			isEnabled: false,
 		},
-		baseURL: process.env.API_BASE_URL, // Set the base URL for auth requests
+		// Use the same environment variable for consistency
+		baseURL:
+			process.env.API_BASE_URL ||
+			"https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net",
 	},
 
 	future: {
@@ -67,9 +73,10 @@ export default defineNuxtConfig({
 	nitro: {
 		devProxy: {
 			"/api": {
-				target: process.env.API_BASE_URL,
+				// Point the dev proxy to the Azure backend for local testing against deployed backend
+				target: "https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net",
 				changeOrigin: true,
-				prependPath: false, // Change this to false
+				prependPath: false,
 			},
 		},
 	},

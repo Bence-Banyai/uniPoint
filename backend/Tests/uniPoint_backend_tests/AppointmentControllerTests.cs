@@ -10,6 +10,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using uniPoint_backend;
+using AutoMapper;
 
 namespace uniPoint_backend_tests
 {
@@ -17,11 +18,19 @@ namespace uniPoint_backend_tests
     {
         private readonly AppointmentController _controller;
         private readonly uniPointContext _context;
+        private readonly IMapper _mapper;
         private int _openAppointmentId;
         private int _openAppointment2Id;
 
         public AppointmentControllerTests()
         {
+            var config = new MapperConfiguration(cfg =>
+            {
+                cfg.AddProfile<MappingProfile>();
+            });
+
+            _mapper = config.CreateMapper();
+
             var options = new DbContextOptionsBuilder<uniPointContext>()
                 .UseInMemoryDatabase(databaseName: "TestAppointmentDb_" + System.Guid.NewGuid())
                 .Options;
@@ -29,7 +38,7 @@ namespace uniPoint_backend_tests
             _context = new uniPointContext(options);
             SeedDatabase();
 
-            _controller = new AppointmentController(_context);
+            _controller = new AppointmentController(_context, _mapper);
 
             var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
             {
@@ -167,7 +176,7 @@ namespace uniPoint_backend_tests
                 new Claim(ClaimTypes.Role, "Provider"),
             }, "mock"));
 
-            var controller = new AppointmentController(_context);
+            var controller = new AppointmentController(_context, _mapper);
             controller.ControllerContext = new ControllerContext
             {
                 HttpContext = new DefaultHttpContext { User = provider }
