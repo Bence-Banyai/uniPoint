@@ -4,9 +4,9 @@ import { Platform } from 'react-native';
 
 // Base URL is different depending on platform
 const BASE_URL = Platform.select({
-  web: 'http://localhost:5273',
-  android: 'http://10.0.2.2:5273',
-  ios: 'http://localhost:5273',
+  web: 'https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net',
+  android: 'https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net',
+  ios: 'https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net',
 });
 
 const api = axios.create({

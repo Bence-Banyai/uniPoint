@@ -9,10 +9,10 @@ const SecureStore = Platform.OS !== 'web' ? SecureStoreModule : null;
 
 // Configure API base URL based on platform
 const BASE_URL = Platform.select({
-  web: 'http://localhost:5273', // For web dev environment
-  android: 'http://10.0.2.2:5273', // For Android emulator (points to host's localhost)
-  ios: 'http://localhost:5273', // For iOS simulator
-  default: 'http://localhost:5273', // Default fallback
+  web: 'https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net', // For web dev environment
+  android: 'https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net', // For Android emulator (points to host's localhost)
+  ios: 'https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net', // For iOS simulator
+  default: 'https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net', // Default fallback
 });
 
 // Create axios instance with base URL
