@@ -453,6 +453,16 @@ export default function RegisterScreen() {
     }
   };
 
+  console.log('Button disabled due to:', {
+    isLoading,
+    authLoading,
+    username: !username,
+    email: !email,
+    password: !password,
+    location: !location,
+    isLocationValid: !isLocationValid
+  });
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -659,7 +669,12 @@ export default function RegisterScreen() {
                       value={location}
                       onChangeText={(text) => {
                         setLocation(text);
-                        setIsLocationValid(false); // Invalidate when user types manually
+                        setIsLocationValid(text.length > 3); // Simple validation - at least 4 characters
+                        
+                        // Existing code - set to false initially for dropdown flow
+                        if (text.length <= 3) {
+                          setIsLocationValid(false);
+                        }
                       }}
                       selectionColor="#31E1F7"
                       style={[
@@ -720,8 +735,14 @@ export default function RegisterScreen() {
                         }
                       },
                       // Add this to invalidate the location when user types manually
-                      onChangeText: () => {
-                        setIsLocationValid(false);
+                      onChangeText: (text) => {
+                        // Allow manual entry by setting isLocationValid to true when text is long enough
+                        setIsLocationValid(text.length > 3); // Simple validation - at least 4 characters
+                        
+                        // Existing code - set to false initially for dropdown flow
+                        if (text.length <= 3) {
+                          setIsLocationValid(false);
+                        }
                       },
                       placeholderTextColor: "rgba(235, 211, 248, 0.5)",
                       selectionColor: "#31E1F7",
@@ -834,6 +855,18 @@ export default function RegisterScreen() {
                     }}
                   />
                 )}
+
+                {!isLocationValid && location.length > 0 && (
+                  <ThemedText
+                    style={{
+                      color: "#F806CC",
+                      fontSize: labelFontSize * 0.7,
+                      marginTop: 4
+                    }}
+                  >
+                    Please select a location from suggestions or use Get Location
+                  </ThemedText>
+                )}
               </View>
 
               <TouchableOpacity
@@ -841,7 +874,8 @@ export default function RegisterScreen() {
                   styles.primaryButton,
                   { 
                     height: buttonHeight,
-                    marginTop: isSmallDevice ? 25 : 35 
+                    marginTop: isSmallDevice ? 25 : 35,
+                    opacity: (isLoading || authLoading || !username || !email || !password || !location || !isLocationValid) ? 0.5 : 1
                   }
                 ]}
                 onPress={handleRegister}
