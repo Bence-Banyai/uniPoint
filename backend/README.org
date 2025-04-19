@@ -40,10 +40,11 @@ IdentityUser által létrehozott, közvetlenül nem használt
 - Price: INT(11), not null
 - Description: VARHCHAR(2000), not null
 - Address: VARCHAR(255), not null
-- Duration: INT(11), not null
+- Duration: INT(11)
 - CategoryId: INT, not null
 - ImageUrls: LONGTEXT (Entityframework string list)
-- OpeningHours: INT
+- ClosesAt: TIME(6)
+- OpensAt: TIME(6)
 
 ** categories tábla
 - CategoryId: PK, INT, not null, default: "https://tiszolczijacint.blob.core.windows.net/img/63cf316b-35a1-432e-92fe-0f2d0b2029c3.jpg"

@@ -33,11 +33,11 @@ namespace uniPoint_backend.Models
         [MaxLength(255)]
         public string Address { get; set; }
 
-        [Required]
         public int Duration { get; set; }
 
-        public int OpeningHours { get; set; } // todo
-
+        public TimeOnly OpensAt { get; set; }
+        public TimeOnly ClosesAt { get; set; }
+        
         public List<string>? ImageUrls { get; set; }
     }
 }
