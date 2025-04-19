@@ -28,7 +28,6 @@ Table of Contents
     • Username: uniPointAdmin
     • Password: AK$p9r-))p@HD^+
 
-
 2 Adatbázis felépítése
 ══════════════════════
 
