@@ -255,17 +255,19 @@ async function createAppointment() {
             return;
         }
 
-        // Log for debugging
-        console.log('Sending appointmentDate to backend:', localDate.toISOString());
-
         if (isNaN(localDate.getTime())) {
             formError.value = 'Invalid date or time.';
             isSubmitting.value = false;
             return;
         }
+
+        // Format as 'YYYY-MM-DDTHH:mm:00' (local time, no timezone info)
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        const appointmentDateStr = `${year}-${pad(month)}-${pad(day)}T${pad(hour)}:${pad(minute)}:00`;
+
         await appointmentsApi.createAsProvider({
             serviceId: Number(newAppointment.value.serviceId),
-            appointmentDate: localDate.toISOString() // Always UTC, backend should store as-is
+            appointmentDate: appointmentDateStr
         });
         successMessage.value = 'Appointment created successfully!';
         closeAddModal();
