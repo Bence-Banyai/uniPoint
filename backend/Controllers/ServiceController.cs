@@ -7,8 +7,6 @@ using System.Data;
 using System.Security.Claims;
 using uniPoint_backend.Models;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
 namespace uniPoint_backend.Controllers
 {
     [Route("api/[controller]")]
@@ -29,12 +27,12 @@ namespace uniPoint_backend.Controllers
 
         // GET: api/<ServiceController>
         [HttpGet]
-        [AllowAnonymous] // Allow anyone to view services list
+        [AllowAnonymous]
         public async Task<IActionResult> GetServices()
         {
             var services = await _uniPointContext.Services
                 .Include(s => s.Provider)
-                .Include(s => s.Category) // Also include the Category information
+                .Include(s => s.Category)
                 .ToListAsync();
 
             var dto = _mapper.Map<List<ServiceDto>>(services);
@@ -43,12 +41,12 @@ namespace uniPoint_backend.Controllers
 
         // GET api/<ServiceController>/5
         [HttpGet("{id}")]
-        [AllowAnonymous] // Allow anyone to view service details
+        [AllowAnonymous]
         public async Task<IActionResult> GetService(int id)
         {
             var service = await _uniPointContext.Services
                 .Include(s => s.Provider)
-                .Include(s => s.Category) // Also include the Category information
+                .Include(s => s.Category)
                 .FirstOrDefaultAsync(s => s.ServiceId == id);
 
             if (service == null)
@@ -70,7 +68,7 @@ namespace uniPoint_backend.Controllers
                 return BadRequest();
             }
 
-            var providerId = User.FindFirstValue(ClaimTypes.NameIdentifier); // Get current provider ID
+            var providerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             service.UserId = providerId;
 
             _uniPointContext.Services.Add(service);
@@ -107,6 +105,8 @@ namespace uniPoint_backend.Controllers
             existingService.Description = service.Description;
             existingService.Address = service.Address;
             existingService.Duration = service.Duration;
+            existingService.OpensAt = service.OpensAt;
+            existingService.ClosesAt = service.ClosesAt;
 
             _uniPointContext.Entry(existingService).State = EntityState.Modified;
             await _uniPointContext.SaveChangesAsync();
