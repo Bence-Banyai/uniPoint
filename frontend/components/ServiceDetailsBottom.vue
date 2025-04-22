@@ -82,27 +82,24 @@
                             class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" />
                     </div>
                     <div class="mb-6">
-                        <label class="block text-gray-700 mb-2">Select Available Appointment</label>
-                        <div v-if="isLoading" class="text-center text-gray-500">Loading...</div>
-                        <div v-else-if="filteredOpenAppointments.length === 0" class="text-center text-gray-500">
-                            No open appointments found for this date.
-                        </div>
-                        <div v-else class="space-y-2 max-h-48 overflow-y-auto">
-                            <button v-for="appt in filteredOpenAppointments" :key="appt.id" :class="[
-                                'w-full text-left px-3 py-2 rounded-md border',
-                                selectedAppointmentId === appt.id
-                                    ? 'bg-purple-100 text-purple-700 border-purple-300'
-                                    : 'bg-gray-50 text-gray-700 hover:bg-purple-50 border-gray-200'
-                            ]" @click="selectAppointment(appt.id)">
-                                {{ formatAppointmentTime(appt.appointmentDate) }}
-                            </button>
+                        <label class="block text-gray-700 mb-2">Select Appointment</label>
+                        <select v-model="selectedAppointmentId"
+                            class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            :disabled="filteredOpenAppointments.length === 0">
+                            <option disabled value="">Select appointment</option>
+                            <option v-for="appt in filteredOpenAppointments" :key="appt.id" :value="appt.id">
+                                {{ new Date(appt.appointmentDate).toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' }) }}
+                            </option>
+                        </select>
+                        <div v-if="filteredOpenAppointments.length === 0" class="text-gray-500 text-sm mt-2">
+                            No open appointments for this date.
                         </div>
                     </div>
                     <button
                         class="w-full px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         :disabled="!selectedAppointmentId || isBooking" @click="bookSelectedAppointment">
                         <span v-if="isBooking">Booking...</span>
-                        <span v-else>Book Selected Appointment</span>
+                        <span v-else>Book Appointment</span>
                     </button>
                     <p v-if="bookingError" class="text-red-500 text-sm mt-2">{{ bookingError }}</p>
                     <p v-if="bookingSuccess" class="text-green-500 text-sm mt-2">{{ bookingSuccess }}</p>
@@ -152,13 +149,13 @@ const appointmentsApi = useAppointmentsApi();
 
 const todayDate = new Date().toISOString().split('T')[0];
 const selectedDate = ref(todayDate);
+const selectedAppointmentId = ref<number | null>(null);
 const isLoading = ref(false);
 const isBooking = ref(false);
 const bookingError = ref<string | null>(null);
 const bookingSuccess = ref<string | null>(null);
 
 const allOpenAppointments = ref<Appointment[]>([]);
-const selectedAppointmentId = ref<number | null>(null);
 
 // Mocked reviews data - in a real app, this would come from the API
 const reviews = ref([
@@ -168,19 +165,16 @@ const reviews = ref([
 
 const similarServices = ref<Service[]>([]);
 
-// Computed property to filter open appointments for the current service and selected date
+// Filter open appointments for the current service and selected date (ignore hour)
 const filteredOpenAppointments = computed(() => {
-    if (!props.service?.serviceId || !selectedDate.value) {
-        return [];
-    }
-    const targetDate = selectedDate.value;
+    if (!props.service?.serviceId || !selectedDate.value) return [];
     return allOpenAppointments.value.filter(appt => {
-        const apptDate = appt.appointmentDate.split('T')[0]; // Compare only the date part
-        return appt.serviceId === props.service.serviceId && apptDate === targetDate;
-    });
+        if (appt.serviceId !== props.service.serviceId) return false;
+        const [apptDate] = appt.appointmentDate.split('T');
+        return apptDate === selectedDate.value;
+    }).sort((a, b) => a.appointmentDate.localeCompare(b.appointmentDate));
 });
 
-// Methods
 const formatPrice = (price: number) => {
     return new Intl.NumberFormat('hu-HU', { style: 'currency', currency: 'HUF' }).format(price);
 };
@@ -276,12 +270,11 @@ watch(() => props.service, () => {
     }
 }, { immediate: true });
 
-// Watch for date changes to potentially clear selection (optional, but good UX)
+// Watch for date changes to clear selection
 watch(selectedDate, () => {
-    selectedAppointmentId.value = null; // Reset selection when date changes
+    selectedAppointmentId.value = null;
     bookingError.value = null;
     bookingSuccess.value = null;
-    // No need to re-fetch all appointments, just rely on the computed property to filter
 });
 
 // Fetch all open appointments when component mounts

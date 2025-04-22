@@ -1,9 +1,24 @@
 import useApiClient from "./useApiClient";
 import type { Appointment } from '~/models/Appointment'; // Assuming you have this model defined
+import { useRuntimeConfig } from 'nuxt/app';
+import { useAuthStore } from '../stores/auth';
 
 // Update your appointment API client with all necessary endpoints
 export default function useAppointmentsApi() {
     const apiClient = useApiClient();
+    const config = useRuntimeConfig();
+    const apiBaseUrl = config.public.apiBaseUrl;
+    const authStore = useAuthStore();
+
+    async function createAsProvider({ serviceId, appointmentDate }: { serviceId: number, appointmentDate: string }) {
+        return $fetch(`${apiBaseUrl}/api/Appointment`, {
+            method: 'POST',
+            body: { serviceId, appointmentDate },
+            headers: {
+                Authorization: `Bearer ${authStore.token}`,
+            },
+        });
+    }
 
     return {
         getAll() {
@@ -41,6 +56,6 @@ export default function useAppointmentsApi() {
             return apiClient.delete(`/api/Appointment/${id}`);
         },
 
-        // getTimeSlots is removed as we are fetching open appointments directly
+        createAsProvider,
     };
 }
