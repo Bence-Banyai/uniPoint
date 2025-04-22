@@ -178,19 +178,9 @@ namespace uniPoint_backend.Controllers
 
             appointment.Status = AppointmentStatus.OPEN;
 
-            Console.WriteLine($"[CreateAppointment] Received appointmentDate: {appointment.appointmentDate:O}");
-
             _uniPointContext.Appointments.Add(appointment);
             await _uniPointContext.SaveChangesAsync();
-
-            var savedAppointment = await _uniPointContext.Appointments
-                .Include(a => a.Booker)
-                .Include(a => a.Service)
-                .ThenInclude(s => s.Provider)
-                .FirstOrDefaultAsync(a => a.Id == appointment.Id);
-
-            var dto = _mapper.Map<AppointmentDto>(savedAppointment);
-            return CreatedAtAction("GetAppointment", new { id = appointment.Id }, dto);
+            return CreatedAtAction("GetAppointment", new { id = appointment.Id }, appointment);
         }
 
         // PUT api/<AppointmentController>/5
