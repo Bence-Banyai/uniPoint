@@ -178,11 +178,8 @@ namespace uniPoint_backend
             }
 
             // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
+            app.UseSwagger();
+            app.UseSwaggerUI();
 
             // For development, comment out HTTPS redirection to allow HTTP requests
             if (!app.Environment.IsDevelopment())
@@ -200,7 +197,7 @@ namespace uniPoint_backend
 
             await app.RunAsync();
         }
-        
+
         static async Task SeedRolesAsync(IServiceProvider serviceProvider, RoleManager<IdentityRole> roleManager)
         {
             string[] roles = { "Admin", "Provider", "User" };
