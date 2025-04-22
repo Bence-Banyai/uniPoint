@@ -242,18 +242,21 @@ async function createAppointment() {
     }
     isSubmitting.value = true;
     try {
-        // Parse date and time as local time
+        // Parse date and time as local time (user's timezone)
         const [year = 0, month = 1, day = 0] = newAppointment.value.date.split('-').map(Number);
         const [hour = 0, minute = 0] = newAppointment.value.time.split(':').map(Number);
-        // JS Date: months are 0-based
         const localDate = new Date(year, month - 1, day, hour, minute, 0, 0);
 
-        // Log input and constructed date for debugging
-        console.log('Input date:', newAppointment.value.date);
-        console.log('Input time:', newAppointment.value.time);
-        console.log('Parsed year:', year, 'month:', month, 'day:', day, 'hour:', hour, 'minute:', minute);
-        console.log('Constructed localDate:', localDate);
-        console.log('localDate.toISOString():', localDate.toISOString());
+        // Prevent creating appointments in the past
+        const now = new Date();
+        if (localDate < now) {
+            formError.value = 'Cannot create an appointment in the past.';
+            isSubmitting.value = false;
+            return;
+        }
+
+        // Log for debugging
+        console.log('Sending appointmentDate to backend:', localDate.toISOString());
 
         if (isNaN(localDate.getTime())) {
             formError.value = 'Invalid date or time.';
@@ -262,7 +265,7 @@ async function createAppointment() {
         }
         await appointmentsApi.createAsProvider({
             serviceId: Number(newAppointment.value.serviceId),
-            appointmentDate: localDate.toISOString() // This will be UTC, but based on the local time you selected
+            appointmentDate: localDate.toISOString() // Always UTC, backend should store as-is
         });
         successMessage.value = 'Appointment created successfully!';
         closeAddModal();
