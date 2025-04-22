@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using uniPoint_backend.Models;
 using Microsoft.AspNetCore.Http.Extensions;
+using Microsoft.OpenApi.Models;
 
 namespace uniPoint_backend
 {
@@ -132,7 +133,31 @@ namespace uniPoint_backend
             builder.Services.AddAutoMapper(typeof(MappingProfile));
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+            builder.Services.AddSwaggerGen(options => {
+                options.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                            new string[] {}
+                    }
+                });
+                options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT",
+                    In = ParameterLocation.Header,
+                    Description = "Enter 'Bearer' followed by your token.\nExample: Bearer eyJhbGciOiJIUzI1NiIsInR..."
+                });
+            });
 
             var app = builder.Build();
 

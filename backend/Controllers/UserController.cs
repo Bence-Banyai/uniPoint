@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 using AutoMapper;
-using Microsoft.AspNetCore.Authentication.JwtBearer; // <-- Add this
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -14,7 +14,6 @@ namespace uniPoint_backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    // Explicitly specify JWT Bearer scheme for authorization
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class UserController : ControllerBase
     {
@@ -48,7 +47,6 @@ namespace uniPoint_backend.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetUser(string id)
         {
-            // Verify the user is accessing their own data or is an admin
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var isAdmin = User.IsInRole("Admin");
 
