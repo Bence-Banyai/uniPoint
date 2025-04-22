@@ -1,9 +1,28 @@
 #+title: UniPoint backend dokumentáció
+#+author: Tiszolczi Jácint
+#+LATEX_COMPILER: xelatex
+#+LATEX_HEADER: \usepackage[a4paper,margin=1in]{geometry}
+#+LATEX_HEADER: \usepackage{minted}
+#+LATEX_HEADER: \usemintedstyle{friendly}
+#+LATEX_HEADER: \pagestyle{empty}
+#+LATEX_HEADER: \usepackage{graphicx}
+#+LATEX_HEADER: \usepackage{url}
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Liberation Serif}
+#+LATEX_HEADER: \setsansfont{Liberation Sans}
+#+LATEX_HEADER: \setmonofont{Liberation Mono}
+#+OPTIONS: toc:nil
 
 * Mysql Szerver
+- Szolgáltató
+  - Azure Database for MySQL flexible server
+  - Config: Burstable, B1ms, 1 vCores, 2 GiB RAM, 20 storage, 360 IOPS
+  - Hely: Poland Central
 - Admin login
   - Username: uniPointAdmin
-  - Password: AK$p9r-))p@HD^+
+  - Password: appsettings.json-ben
+- Tűzfal
+  - Csak az Azureon lévő backend érhetné el az adatbázist, de jelenleg minden IP elérheti hogy lokálisan is lehessen futtatni a backendet.
 
 * Adatbázis felépítése
 
@@ -14,7 +33,8 @@ Az adatbázis elkészítését az EntityFramework kezeli, tehát a model osztál
 - UserName: LONGTEXT, not null, 1-30 hosszú
 - Email: VARCHAR(255), email validáció
 - PhoneNumber: LONGTEXT, telefonszám validáció
-- ProfilePictureUrl: VARCHAR(255), not null, default: "https://tiszolczijacint.blob.core.windows.net/img/63cf316b-35a1-432e-92fe-0f2d0b2029c3.jpg"
+- ProfilePictureUrl: VARCHAR(255), not null,
+     default: ="https://tiszolczijacint.blob.core.windows.net/img/63cf316b-35a1-432e-92fe-0f2d0b2029c3.jpg"=
 - CreatedAt: DATETIME(6), not null, timestamp validáció, default: létrehozás dátuma UTC
 - PasswordHash: LONGTEXT, not null, automatikus titkosítás
 - Location: VARCHAR(255)
@@ -47,7 +67,8 @@ IdentityUser által létrehozott, közvetlenül nem használt
 - OpensAt: TIME(6)
 
 ** categories tábla
-- CategoryId: PK, INT, not null, default: "https://tiszolczijacint.blob.core.windows.net/img/63cf316b-35a1-432e-92fe-0f2d0b2029c3.jpg"
+- CategoryId: PK, INT, not null,
+   default: ="https://tiszolczijacint.blob.core.windows.net/img/63cf316b-35a1-432e-92fe-0f2d0b2029c3.jpg"=
 - Name: VARCHAR(255), not null
 - IconUrl: LONGTEXT
 
@@ -102,26 +123,33 @@ IdentityUser által létrehozott, közvetlenül nem használt
   - MigrationId: PK, VARCHAR(150), not null, unique
   - ProductVersion: VARCHAR(32), not null
 
-* Végpontok
 
+* Végpontok
+Swagger: [[[[https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net/swagger/index.html]]]]
+- A hitelesítéshez a bejelentkezéskor kapott JWT tokent be kell másolni az Authorize részbe.
 ** Auth
 *** Register
 - url: /api/Auth/register
 - POST request:
-#+begin_src json
+#+begin_src json :eval no-export :wrap breaklines
 {
   "userName": "jeno",
   "email": "jeno@example.com",
-  "phoneNumber": "06701323454",
+  "location": "Gyor",
   "password": "Jeno123",
   "role": "User"
 }
 #+end_src
 - Response:
   - StatusCode: 200
-#+begin_src json
+#+begin_src json :eval no-export :wrap breaklines
 {
-  "message": "User registered successfully!"
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1YmM1MDk3Mi01M2RmLTQ1NmEtOGU2MC1jMzcyMjJhZDEwM2QiLCJlbWFpbCI6Implbm9AZXhhbXBsZS5jb20iLCJ1bmlxdWVfbmFtZSI6Implbm8iLCJsb2NhdGlvbiI6Ikd5b3IiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJVc2VyIiwiZXhwIjoxNzQ1OTE3MjUyLCJpc3MiOiJodHRwczovL3VuaXBvaW50LWI2aDZoNGN1Ym5jbWFmaGgucG9sYW5kY2VudHJhbC0wMS5henVyZXdlYnNpdGVzLm5ldCIsImF1ZCI6Imh0dHBzOi8vdW5pcG9pbnQtYjZoNmg0Y3VibmNtYWZoaC5wb2xhbmRjZW50cmFsLTAxLmF6dXJld2Vic2l0ZXMubmV0In0.pSL_OrSHcPK8fZqlmHTtLBclXwlL4o7wyKBwgEkjIho",
+  "message": "User registered successfully!",
+  "userId": "5bc50972-53df-456a-8e60-c37222ad103d",
+  "userName": "jeno",
+  "email": "jeno@example.com",
+  "location": "Gyor"
 }
 #+end_src
 *** Login
@@ -129,8 +157,12 @@ IdentityUser által létrehozott, közvetlenül nem használt
 - POST request:
 #+begin_src json
 {
-  "userNameOrEmail": "jeno",
-  "password": "Jeno123"
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1YmM1MDk3Mi01M2RmLTQ1NmEtOGU2MC1jMzcyMjJhZDEwM2QiLCJlbWFpbCI6Implbm9AZXhhbXBsZS5jb20iLCJ1bmlxdWVfbmFtZSI6Implbm8iLCJsb2NhdGlvbiI6Ikd5b3IiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJVc2VyIiwiZXhwIjoxNzQ1OTE3MjUyLCJpc3MiOiJodHRwczovL3VuaXBvaW50LWI2aDZoNGN1Ym5jbWFmaGgucG9sYW5kY2VudHJhbC0wMS5henVyZXdlYnNpdGVzLm5ldCIsImF1ZCI6Imh0dHBzOi8vdW5pcG9pbnQtYjZoNmg0Y3VibmNtYWZoaC5wb2xhbmRjZW50cmFsLTAxLmF6dXJld2Vic2l0ZXMubmV0In0.pSL_OrSHcPK8fZqlmHTtLBclXwlL4o7wyKBwgEkjIho",
+  "message": "Login successful",
+  "userId": "5bc50972-53df-456a-8e60-c37222ad103d",
+  "userName": "jeno",
+  "email": "jeno@example.com",
+  "location": "Gyor"
 }
 #+end_src
 - Response:
@@ -147,8 +179,349 @@ IdentityUser által létrehozott, közvetlenül nem használt
 - POST request
 - Response:
   - StatusCode: 200
-#+begin_src json
+#+begin_src json :eval no-export :wrap breaklines
 {
   "message": "Logout successful."
 }
 #+end_src
+** User
+- Roles: User, Provider
+*** Get Users
+- url: /api/User
+- GET request
+- Response:
+  - StatusCode: 200
+#+begin_src json :eval no-export :wrap breaklines
+  [
+    {
+      "userName": "HabosBabos",
+      "email": "habos@babos.com",
+      "location": "habos",
+      "profilePictureUrl": "https://tiszolczijacint.blob.core.windows.net/img/63cf316b-35a1-432e-92fe-0f2d0b2029c3.jpg"
+    },
+    {
+      "userName": "KisJeno",
+      "email": "kisjeno@example.com",
+      "location": "Budapest Váci út 93",
+      "profilePictureUrl": "https://tiszolczijacint.blob.core.windows.net/img/20055bcd-ed28-4e8c-acbe-9be90e14f4d3.jpg"
+    },
+   ...
+  ]
+#+end_src
+*** Get User by ID
+- url: /api/User/{id}
+- GET request (/api/User/5bc50972-53df-456a-8e60-c37222ad103d)
+- Response:
+  - StatusCode: 200
+#+begin_src json :eval no-export :wrap breaklines
+{
+  "userName": "jeno",
+  "email": "jeno@example.com",
+  "location": "Gyor",
+  "role": "User",
+  "createdAt": "2025-04-22T09:00:52.015807"
+}
+#+end_src
+*** Update User
+- Role: Current User
+- url: /api/User/{id}
+- PUT request (/api/User/5bc50972-53df-456a-8e60-c37222ad103d)
+#+begin_src json :eval no-export :wrap breaklines
+{
+  "userName": "jeno",
+  "email": "jeno@example.com",
+  "location": "Budapest",
+  "isPushNotificationsEnabled": true,
+  "userSelectedLanguage": "magyar"
+}
+#+end_src
+- Response:
+   - StatusCode: 200
+#+begin_src json :eval no-export :wrap breaklines
+{
+  "userName": "jeno",
+  "email": "jeno@example.com",
+  "location": "Budapest",
+  "profilePictureUrl": "https://tiszolczijacint.blob.core.windows.net/img/20055bcd-ed28-4e8c-acbe-9be90e14f4d3.jpg"
+}
+#+end_src
+*** Change User Profile Picture
+- Role: Current User
+- url: /api/User/{id}/upload-profile-picture
+- POST request (/api/User/5bc50972-53df-456a-8e60-c37222ad103d/upload-profile-picture)
+#+begin_src json :eval no-export :wrap breaklines
+{
+  "headers": {
+    "accept": "*/*",
+    "Authorization": "Bearer [token]",
+    "Content-Type": "multipart/form-data"
+  },
+  "body": {
+    "file": {
+      "value": "@pfp.jpg",
+      "options": {
+        "filename": "pfp.jpg",
+        "contentType": "image/jpeg"
+      }
+    }
+  }
+}
+#+end_src
+- Response:
+  - StatusCode: 200
+#+begin_src json :eval no-export :wrap breaklines
+{
+  "userName": "jeno",
+  "email": "jeno@example.com",
+  "location": "Budapest",
+  "profilePictureUrl": "https://tiszolczijacint.blob.core.windows.net/img/bb405441-c3af-4c21-9757-7ed00a7b40f1.jpg"
+}
+#+end_src
+*** Delete User
+- Role: Current User
+- url: /api/User/{id}
+- DELETE request (/api/User/5bc50972-53df-456a-8e60-c37222ad103d/
+- Response:
+  - StatusCode: 200
+#+begin_src json :eval no-export :wrap breaklines
+{
+  message: User deleted successfully.
+}
+#+end_src
+** Service
+*** Get Services
+- url: /api/Service
+- GET request
+- Response:
+  - StatusCode: 200
+#+begin_src json :eval no-export :wrap breaklines
+  [
+    {
+      "serviceId": 1,
+      "userId": "5b02dd18-efa6-49e4-bb14-72956dfd92fb",
+      "provider": {
+        "userName": "NagyFerenc",
+        "email": "nagyferenc@example.com",
+        "location": "Győr Budai Út 23",
+        "profilePictureUrl": "https://tiszolczijacint.blob.core.windows.net/img/ab68b3c7-6e09-4a8b-a9c0-f587cc95d214.jpg"
+      },
+      "category": {
+        "categoryId": 1,
+        "name": "Hajvágás",
+        "iconUrl": "https://tiszolczijacint.blob.core.windows.net/img/7addb194-b06e-492f-8be0-47a1f03de298.png"
+      },
+      "categoryId": 1,
+      "serviceName": "Férfi hajvágás",
+      "price": 5000,
+      "description": "Donec pretium posuere tellus.  Nullam rutrum.  Praesent augue.  Aliquam erat volutpat.  Nunc eleifend leo vitae magna.  In id erat non orci commodo lobortis.  Proin neque massa, cursus ut, gravida ut, lobortis eget, lacus.  Sed diam.  Praesent fermentum tempor tellus.  Nullam tempus.  Mauris ac felis vel velit tristique imperdiet.  Donec at pede.  Etiam vel neque nec dui dignissim bibendum.  Vivamus id enim.  Phasellus neque orci, porta a, aliquet quis, semper a, massa.  Phasellus purus.  Pellentesque tristique imperdiet tortor.  Nam euismod tellus id erat.",
+      "address": "Győr Budai Út 83",
+      "duration": 20,
+      "openingHours": 0,
+      "imageUrls": [
+        "https://tiszolczijacint.blob.core.windows.net/img/cda0f295-d78b-40f0-a5cc-d2b224b5cc46.jpg",
+        "https://tiszolczijacint.blob.core.windows.net/img/3edda464-8ae6-481d-ba57-7b271cce2ec4.jpg"
+      ]
+    },
+    {
+      "serviceId": 2,
+      "userId": "35a3407f-5d3f-4715-a6b6-51f154c40511",
+      "provider": {
+        "userName": "KisJeno",
+        "email": "kisjeno@example.com",
+        "location": "Budapest Váci út 93",
+        "profilePictureUrl": "https://tiszolczijacint.blob.core.windows.net/img/20055bcd-ed28-4e8c-acbe-9be90e14f4d3.jpg"
+      },
+      "category": {
+        "categoryId": 2,
+        "name": "Szerelés",
+        "iconUrl": "https://tiszolczijacint.blob.core.windows.net/img/ef1431cf-2236-4214-b261-46b83a4fcc9a.png"
+      },
+      "categoryId": 2,
+      "serviceName": "Mobiltelefon szerelés",
+      "price": 20000,
+      "description": "Donec pretium posuere tellus.  Nullam rutrum.  Praesent augue.  Aliquam erat volutpat.  Nunc eleifend leo vitae magna.  In id erat non orci commodo lobortis.  Proin neque massa, cursus ut, gravida ut, lobortis eget, lacus.  Sed diam.  Praesent fermentum tempor tellus.  Nullam tempus.  Mauris ac felis vel velit tristique imperdiet.  Donec at pede.  Etiam vel neque nec dui dignissim bibendum.  Vivamus id enim.  Phasellus neque orci, porta a, aliquet quis, semper a, massa.  Phasellus purus.  Pellentesque tristique imperdiet tortor.  Nam euismod tellus id erat.",
+      "address": "Budapest Váci út 93",
+      "duration": 100,
+      "openingHours": 0,
+      "imageUrls": [
+        "https://tiszolczijacint.blob.core.windows.net/img/b351255a-1ad5-48dd-b6ef-8c15a1644b81.jpg",
+        "https://tiszolczijacint.blob.core.windows.net/img/f1771efb-a476-4e48-a52f-f8c5c211669a.jpg"
+      ]
+    },
+    ...
+  ]
+#+end_src
+*** Get Service by ID
+- url: /api/Service/{id}
+- GET request (/api/Service/1)
+- Response:
+  - StatusCode: 200
+#+begin_src json :eval no-export :wrap breaklines
+{
+  "serviceId": 1,
+  "userId": "5b02dd18-efa6-49e4-bb14-72956dfd92fb",
+  "provider": {
+    "userName": "NagyFerenc",
+    "email": "nagyferenc@example.com",
+    "location": "Győr Budai Út 23",
+    "profilePictureUrl": "https://tiszolczijacint.blob.core.windows.net/img/ab68b3c7-6e09-4a8b-a9c0-f587cc95d214.jpg"
+  },
+  "category": {
+    "categoryId": 1,
+    "name": "Hajvágás",
+    "iconUrl": "https://tiszolczijacint.blob.core.windows.net/img/7addb194-b06e-492f-8be0-47a1f03de298.png"
+  },
+  "categoryId": 1,
+  "serviceName": "Férfi hajvágás",
+  "price": 5000,
+  "description": "Donec pretium posuere tellus.  Nullam rutrum.  Praesent augue.  Aliquam erat volutpat.  Nunc eleifend leo vitae magna.  In id erat non orci commodo lobortis.  Proin neque massa, cursus ut, gravida ut, lobortis eget, lacus.  Sed diam.  Praesent fermentum tempor tellus.  Nullam tempus.  Mauris ac felis vel velit tristique imperdiet.  Donec at pede.  Etiam vel neque nec dui dignissim bibendum.  Vivamus id enim.  Phasellus neque orci, porta a, aliquet quis, semper a, massa.  Phasellus purus.  Pellentesque tristique imperdiet tortor.  Nam euismod tellus id erat.",
+  "address": "Győr Budai Út 83",
+  "duration": 20,
+  "openingHours": 0,
+  "imageUrls": [
+    "https://tiszolczijacint.blob.core.windows.net/img/cda0f295-d78b-40f0-a5cc-d2b224b5cc46.jpg",
+    "https://tiszolczijacint.blob.core.windows.net/img/3edda464-8ae6-481d-ba57-7b271cce2ec4.jpg"
+  ]
+}
+#+end_src
+*** Post new Service
+- Role: Provider
+- url: /api/Service
+- POST request:
+#+begin_src json :eval no-export :wrap breaklines
+{
+  "userId": "677e7b94-d191-4db7-8af8-ab22b32ff2ed",
+  "categoryId": 2,
+  "serviceName": "Autó szerelés",
+  "price": 30000,
+  "description": "Praesent a eros sit amet eros hendrerit semper in quis purus. Aenean sagittis felis vitae iaculis fermentum. Etiam tempus imperdiet mollis. Vivamus pretium mi non nibh iaculis venenatis. Donec pellentesque, felis a pharetra ultricies, ante enim consectetur lectus, nec vestibulum nisi augue sit amet dolor. Aenean vitae tempor mauris. Cras volutpat hendrerit neque id ultrices. ",
+  "address": "Gyor Szent Istvan ut 95",
+  "duration": 120,
+  "opensAt": "08:00:00",
+  "closesAt": "17:00:00"
+}
+#+end_src json
+- Response:
+  - StatusCode: 201
+#+begin_src json :eval no-export :wrap breaklines
+{
+  "serviceId": 3,
+  "userId": "677e7b94-d191-4db7-8af8-ab22b32ff2ed",
+  "provider": null,
+  "category": null,
+  "categoryId": 2,
+  "serviceName": "Autó szerelés",
+  "price": 30000,
+  "description": "Praesent a eros sit amet eros hendrerit semper in quis purus. Aenean sagittis felis vitae iaculis fermentum. Etiam tempus imperdiet mollis. Vivamus pretium mi non nibh iaculis venenatis. Donec pellentesque, felis a pharetra ultricies, ante enim consectetur lectus, nec vestibulum nisi augue sit amet dolor. Aenean vitae tempor mauris. Cras volutpat hendrerit neque id ultrices. ",
+  "address": "Gyor Szent Istvan ut 95",
+  "duration": 120,
+  "opensAt": "08:00:00",
+  "closesAt": "17:00:00",
+  "imageUrls": null
+}
+#+end_src
+
+*** Update Service
+- Role: Provider of service
+- url: /api/Service/{id}
+- PUT request (/api/Service/3)
+#+begin_src json :eval no-export :wrap breaklines
+{
+  "serviceId": 3,
+  "userId": "677e7b94-d191-4db7-8af8-ab22b32ff2ed",
+  "serviceName": "Autó szerelés",
+  "price": 40000,
+  "description": "Praesent a eros sit amet eros hendrerit semper in quis purus. Aenean sagittis felis vitae iaculis fermentum. Etiam tempus imperdiet mollis. Vivamus pretium mi non nibh iaculis venenatis. Donec pellentesque, felis a pharetra ultricies, ante enim consectetur lectus, nec vestibulum nisi augue sit amet dolor. Aenean vitae tempor mauris. Cras volutpat hendrerit neque id ultrices. ",
+  "address": "Gyor Szent Istvan ut 95",
+  "duration": 120,
+  "opensAt": "08:00:00",
+  "closesAt": "17:30:00"
+}
+#+end_src
+- Response:
+   - StatusCode: 200
+#+begin_src json :eval no-export :wrap breaklines
+{
+  "serviceId": 3,
+  "userId": "677e7b94-d191-4db7-8af8-ab22b32ff2ed",
+  "provider": null,
+  "category": null,
+  "categoryId": 2,
+  "serviceName": "Autó szerelés",
+  "price": 40000,
+  "description": "Praesent a eros sit amet eros hendrerit semper in quis purus. Aenean sagittis felis vitae iaculis fermentum. Etiam tempus imperdiet mollis. Vivamus pretium mi non nibh iaculis venenatis. Donec pellentesque, felis a pharetra ultricies, ante enim consectetur lectus, nec vestibulum nisi augue sit amet dolor. Aenean vitae tempor mauris. Cras volutpat hendrerit neque id ultrices. ",
+  "address": "Gyor Szent Istvan ut 95",
+  "duration": 120,
+  "opensAt": "08:00:00",
+  "closesAt": "17:30:00",
+  "imageUrls": null
+}
+#+end_src
+*** Add Images to Service
+- Role: Provider of service
+- url: /api/Service/{id}/upload-service-picture
+- POST request (/api/Service/3/upload-service-picture)
+#+begin_src json :eval no-export :wrap breaklines
+{
+  "headers": {
+    "accept": "*/*",
+    "Authorization": "Bearer [token]",
+    "Content-Type": "multipart/form-data"
+  },
+  "body": {
+    "files": [
+      {
+        "value": "@car1.jpg",
+        "options": {
+          "filename": "car1.jpg",
+          "contentType": "image/jpeg"
+        }
+      },
+      {
+        "value": "@car2.jpg",
+        "options": {
+          "filename": "car2.jpg",
+          "contentType": "image/jpeg"
+        }
+      },
+      {
+        "value": "@car3.jpg",
+        "options": {
+          "filename": "car3.jpg",
+          "contentType": "image/jpeg"
+        }
+      }
+    ]
+  }
+}
+
+#+end_src
+- Response:
+  - StatusCode: 200
+#+begin_src json :eval no-export :wrap breaklines
+{
+  "serviceId": 3,
+  "userId": "677e7b94-d191-4db7-8af8-ab22b32ff2ed",
+  "provider": null,
+  "category": null,
+  "categoryId": 2,
+  "serviceName": "Autó szerelés",
+  "price": 40000,
+  "description": "Praesent a eros sit amet eros hendrerit semper in quis purus. Aenean sagittis felis vitae iaculis fermentum. Etiam tempus imperdiet mollis. Vivamus pretium mi non nibh iaculis venenatis. Donec pellentesque, felis a pharetra ultricies, ante enim consectetur lectus, nec vestibulum nisi augue sit amet dolor. Aenean vitae tempor mauris. Cras volutpat hendrerit neque id ultrices. ",
+  "address": "Gyor Szent Istvan ut 95",
+  "duration": 120,
+  "opensAt": "08:00:00",
+  "closesAt": "17:00:00",
+  "imageUrls": [
+    "https://tiszolczijacint.blob.core.windows.net/img/2136ae16-7f2d-47c0-b30a-737c3c255500.jpg",
+    "https://tiszolczijacint.blob.core.windows.net/img/6e143f27-6257-4df2-8471-887d9a92ec9e.jpg",
+    "https://tiszolczijacint.blob.core.windows.net/img/1f148c9b-4341-494b-8219-56046bec830d.jpg"
+  ]
+}
+#+end_src
+*** Delete Service
+- Role: Provider of service
+- url: /api/Service/{id}
+- DELETE request (/api/Service/3/
+- Response:
+  - StatusCode: 200
