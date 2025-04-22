@@ -67,6 +67,7 @@ namespace uniPoint_backend.Controllers
                 email = user.Email,
                 location = user.Location,
                 role = (await _userManager.GetRolesAsync(user)).FirstOrDefault() ?? "User",
+                profilePictureUrl = user.ProfilePictureUrl,
                 createdAt = user.CreatedAt
             };
 
@@ -92,10 +93,9 @@ namespace uniPoint_backend.Controllers
                 return Forbid();
             }
 
-            user.UserName = model.Name;
-            user.Email = model.Email;
-            user.Location = model.Location;
-            user.ProfilePictureUrl = model.ProfilePictureUrl;
+            user.UserName = model.userName;
+            user.Email = model.email;
+            user.Location = model.location;
 
             var result = await _userManager.UpdateAsync(user);
             if (!result.Succeeded)
@@ -103,7 +103,8 @@ namespace uniPoint_backend.Controllers
                 return BadRequest(result.Errors);
             }
 
-            return Ok(user);
+            var dto = _mapper.Map<UserDto>(user);
+            return Ok(dto);
         }
 
         // DELETE api/<UserController>/5
@@ -174,8 +175,8 @@ namespace uniPoint_backend.Controllers
             {
                 return BadRequest(result.Errors);
             }
-
-            return Ok(user);
+            var dto = _mapper.Map<UserDto>(user);
+            return Ok(dto);
         }
     }
 }

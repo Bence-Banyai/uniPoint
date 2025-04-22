@@ -95,16 +95,15 @@ namespace uniPoint_backend_tests
 
             var model = new UpdateUserModel
             {
-                Name = "new",
-                Email = "new@test.com",
-                Location = "New City",
-                ProfilePictureUrl = "url"
+                userName = "new",
+                email = "new@test.com",
+                location = "New City"
             };
 
             var result = await _controller.UpdateUser("1", model);
             var ok = Assert.IsType<OkObjectResult>(result);
-            var updatedUser = Assert.IsType<User>(ok.Value);
-            Assert.Equal("new", updatedUser.UserName);
+            var updatedUser = Assert.IsType<UserDto>(ok.Value);
+            Assert.Equal("new", updatedUser.userName);
         }
 
         [Fact]

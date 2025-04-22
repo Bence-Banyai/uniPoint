@@ -2,11 +2,10 @@
 {
     public class UpdateUserModel
     {
-        public string? Name { get; set; }
-        public string? Email { get; set; }
-        public string? Location { get; set; }
-        public bool? IsPushNotificationsEnabled { get; set; }
-        public string? UserSelectedLanguage { get; set; }
-        public string? ProfilePictureUrl { get; set; }
+        public string? userName { get; set; }
+        public string? email { get; set; }
+        public string? location { get; set; }
+        public bool? isPushNotificationsEnabled { get; set; }
+        public string? userSelectedLanguage { get; set; }
     }
 }
