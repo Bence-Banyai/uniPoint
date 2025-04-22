@@ -30,7 +30,6 @@ namespace uniPoint_backend.Models
 
 
         [Required]
-        [Timestamp]
         public DateTime appointmentDate { get; set; }
 
         [Required]
