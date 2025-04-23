@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using uniPoint_backend;
 
@@ -11,9 +12,11 @@ using uniPoint_backend;
 namespace uniPoint_backend.Migrations
 {
     [DbContext(typeof(uniPointContext))]
-    partial class uniPointContextModelSnapshot : ModelSnapshot
+    [Migration("20250423104805_AppointmentDateNullable5")]
+    partial class AppointmentDateNullable5
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

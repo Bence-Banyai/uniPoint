@@ -29,8 +29,7 @@ namespace uniPoint_backend.Models
         public int ServiceId { get; set; }
 
 
-        [Required]
-        public DateTime appointmentDate { get; set; }
+        public DateTime? appointmentDate { get; set; }
 
         [Required]
         [EnumDataType(typeof(AppointmentStatus))]
