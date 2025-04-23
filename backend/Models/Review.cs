@@ -27,7 +27,6 @@ namespace uniPoint_backend.Models
         public string? Description { get; set; }
 
         [Required]
-        [Timestamp]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

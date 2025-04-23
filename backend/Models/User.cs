@@ -17,7 +17,6 @@ namespace uniPoint_backend.Models
         public string? UserSelectedLanguage { get; set; } = "magyar"; // magyar vagy angol
 
         [Required]
-        [Timestamp]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

@@ -37,7 +37,7 @@ namespace uniPoint_backend.Models
 
         public TimeOnly OpensAt { get; set; }
         public TimeOnly ClosesAt { get; set; }
-        
+
         public List<string>? ImageUrls { get; set; }
     }
 }
