@@ -8,16 +8,20 @@ import {
   Platform,
   FlatList,
   Text,
-  ActivityIndicator
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { router } from 'expo-router';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../context/AuthContext';
 import { fetchCategories, Category as CategoryType } from '../../services/categoryApi';
+import { fetchUserAppointments, AppointmentStatus, cancelAppointment } from '../../services/appointmentApi';
 import { Image as ExpoImage } from 'expo-image';
+import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -37,82 +41,6 @@ const fontFamilies = {
   text: Platform.select({ ios: "Avenir", android: "sans-serif" }),
   button: Platform.select({ ios: "Avenir-Heavy", android: "sans-serif-medium" }),
 };
-
-const upcomingAppointments = [
-  {
-    id: '1',
-    title: 'General Checkup',
-    provider: 'Dr. Sarah Johnson',
-    time: '10:00 AM',
-    date: 'Today, 18 Mar',
-    location: 'Grand Medical Center',
-    status: 'confirmed',
-    category: 'doctor'
-  },
-  {
-    id: '2',
-    title: 'Haircut & Styling',
-    provider: 'Michael Chen',
-    time: '02:30 PM',
-    date: 'Tomorrow, 19 Mar',
-    location: 'City Style Salon',
-    status: 'pending',
-    category: 'barber'
-  },
-  {
-    id: '3',
-    title: 'Personal Training',
-    provider: 'Emily Wilson',
-    time: '09:15 AM',
-    date: 'Friday, 21 Mar',
-    location: 'Fitness Center',
-    status: 'confirmed',
-    category: 'trainer'
-  },
-];
-
-const pastAppointments = [
-  {
-    id: 'p1',
-    title: 'Dental Cleaning',
-    provider: 'Dr. Robert Miller',
-    time: '11:30 AM',
-    date: 'March 12, 2025',
-    location: 'Downtown Dental Clinic',
-    status: 'completed',
-    category: 'dentist'
-  },
-  {
-    id: 'p2',
-    title: 'Full Body Massage',
-    provider: 'Lisa Wong',
-    time: '04:00 PM',
-    date: 'March 5, 2025',
-    location: 'Serenity Spa & Wellness',
-    status: 'completed',
-    category: 'massage'
-  },
-  {
-    id: 'p3',
-    title: 'Haircut',
-    provider: 'James Rodriguez',
-    time: '10:15 AM',
-    date: 'February 28, 2025',
-    location: 'City Style Salon',
-    status: 'cancelled',
-    category: 'barber'
-  },
-  {
-    id: 'p4',
-    title: 'Eye Examination',
-    provider: 'Dr. Emma Thompson',
-    time: '09:00 AM',
-    date: 'February 20, 2025',
-    location: 'Vision Care Center',
-    status: 'completed',
-    category: 'doctor'
-  },
-];
 
 type CategoryProps = {
   category: CategoryType;
@@ -315,7 +243,6 @@ function AppointmentCard({ appointment, onReschedule, onCancel, isPast = false }
   );
 }
 
-
 export default function AppointmentsScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
@@ -323,9 +250,43 @@ export default function AppointmentsScreen() {
   const { userName, email } = useAuth();
   const [categories, setCategories] = useState<CategoryType[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
-  
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [loadingAppointments, setLoadingAppointments] = useState(true);
+  const [showAllAppointments, setShowAllAppointments] = useState(false);
+  const navigation = useNavigation();
+
+  const filteredAppointments = useMemo(() => {
+    if (activeTab === 'upcoming') {
+      return appointments.filter(appt => 
+        appt.status === AppointmentStatus.SCHEDULED
+      );
+    } else {
+      return appointments.filter(appt => 
+        appt.status === AppointmentStatus.DONE ||
+        appt.status === AppointmentStatus.CANCELLED_BY_USER ||
+        appt.status === AppointmentStatus.CANCELLED_BY_SERVICE
+      );
+    }
+  }, [appointments, activeTab]);
+
+  const displayedAppointments = useMemo(() => {
+    return showAllAppointments ? filteredAppointments : filteredAppointments.slice(0, 3);
+  }, [filteredAppointments, showAllAppointments]);
+
+  const loadUserAppointments = async () => {
+    try {
+      setLoadingAppointments(true);
+      const userAppointments = await fetchUserAppointments();
+      setAppointments(userAppointments);
+    } catch (err) {
+      console.error('Failed to load user appointments:', err);
+    } finally {
+      setLoadingAppointments(false);
+    }
+  };
+
   useEffect(() => {
-    const loadCategories = async () => {
+    const loadData = async () => {
       try {
         setLoadingCategories(true);
         const categoriesData = await fetchCategories();
@@ -335,35 +296,64 @@ export default function AppointmentsScreen() {
       } finally {
         setLoadingCategories(false);
       }
+      
+      await loadUserAppointments();
     };
 
-    loadCategories();
+    loadData();
   }, []);
-  
-  const screenWidth = Dimensions.get('window').width;
-  const isSmallDevice = screenWidth < 380;
-  const isLargeDevice = screenWidth >= 768;
-  
-  const handleReschedule = (id: string) => {
-    console.log(`Reschedule appointment ${id}`);
+
+  useEffect(() => {
+    setShowAllAppointments(false);
+  }, [activeTab]);
+
+  const handleCancel = async (id: number) => {
+    try {
+      await cancelAppointment(id);
+      
+      // Refresh the appointments data
+      await loadUserAppointments();
+      
+      // Instead of trying to update params immediately, set a flag in AsyncStorage
+      // that will be checked when the user returns to the index tab
+      try {
+        await AsyncStorage.setItem('shouldRefreshHomeScreen', 'true');
+      } catch (error) {
+        console.log('Error setting refresh flag:', error);
+      }
+      
+      // Show a success message
+      Alert.alert(
+        "Appointment Cancelled", 
+        "Your appointment has been successfully cancelled."
+      );
+      
+    } catch (error) {
+      console.error('Failed to cancel appointment:', error);
+      Alert.alert(
+        "Cancellation Failed", 
+        "There was an error cancelling your appointment. Please try again."
+      );
+    }
   };
-  
-  const handleCancel = (id: string) => {
-    console.log(`Cancel appointment ${id}`);
-  };
-  
+
   const handleCategoryPress = (categoryId: number) => {
-    console.log(`Selected category: ${categoryId}`);
+    router.push({
+      pathname: '/(tabs)/search',
+      params: { categoryId: categoryId.toString() }
+    });
   };
-  
+
   const handleBookNew = () => {
-    console.log('Book new appointment');
     router.push('/(tabs)/search');
   };
-  
-  const displayedAppointments = activeTab === 'upcoming' ? upcomingAppointments : pastAppointments;
-  
+
+  const toggleShowAllAppointments = () => {
+    setShowAllAppointments(prev => !prev);
+  };
+
   const hasAppointments = displayedAppointments.length > 0;
+  const hasMoreAppointments = filteredAppointments.length > 3;
 
   return (
     <LinearGradient
@@ -456,15 +446,20 @@ export default function AppointmentsScreen() {
             >
               Your Appointments
             </ThemedText>
-            <TouchableOpacity style={styles.viewAllButton}>
-              <ThemedText 
-                style={styles.viewAllText}
-                darkColor="#31E1F7" 
-                lightColor="#31E1F7"
+            {hasMoreAppointments && (
+              <TouchableOpacity 
+                style={styles.viewAllButton}
+                onPress={toggleShowAllAppointments}
               >
-                View All
-              </ThemedText>
-            </TouchableOpacity>
+                <ThemedText 
+                  style={styles.viewAllText}
+                  darkColor="#31E1F7" 
+                  lightColor="#31E1F7"
+                >
+                  {showAllAppointments ? 'Show Less' : 'View All'}
+                </ThemedText>
+              </TouchableOpacity>
+            )}
           </View>
           
           <View style={styles.tabContainer}>
@@ -506,22 +501,66 @@ export default function AppointmentsScreen() {
             </TouchableOpacity>
           </View>
           
-          {hasAppointments ? (
+          {loadingAppointments ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#31E1F7" />
+              <ThemedText 
+                style={styles.loadingText}
+                darkColor="#EBD3F8" 
+                lightColor="#EBD3F8"
+              >
+                Loading appointments...
+              </ThemedText>
+            </View>
+          ) : hasAppointments ? (
             <View style={styles.appointmentsList}>
               {displayedAppointments.map((appointment) => (
                 <AppointmentCard 
                   key={appointment.id}
-                  appointment={appointment}
-                  onReschedule={handleReschedule}
-                  onCancel={handleCancel}
+                  appointment={{
+                    id: appointment.id,
+                    title: appointment.service?.serviceName || "Appointment",
+                    provider: appointment.service?.provider?.userName || "Unknown Provider",
+                    time: new Date(appointment.appointmentDate).toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: true
+                    }),
+                    date: new Date(appointment.appointmentDate).toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    }),
+                    location: appointment.service?.address || "No address provided",
+                    status: getStatusLabel(appointment.status),
+                    category: appointment.service?.category?.name || ""
+                  }}
+                  onReschedule={(id) => {}}
+                  onCancel={() => handleCancel(appointment.id)}
                   isPast={activeTab === 'past'}
                 />
               ))}
+              
+              {!showAllAppointments && hasMoreAppointments && (
+                <TouchableOpacity 
+                  style={styles.viewMoreButton}
+                  onPress={toggleShowAllAppointments}
+                >
+                  <ThemedText 
+                    style={styles.viewMoreText}
+                    darkColor="#31E1F7" 
+                    lightColor="#31E1F7"
+                  >
+                    View {filteredAppointments.length - 3} more {activeTab} appointments
+                  </ThemedText>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
             <View style={styles.emptyState}>
               <IconSymbol
-                name="chevron.right"
+                name="calendar.badge.exclamationmark"
                 size={60}
                 color="rgba(235, 211, 248, 0.3)"
               />
@@ -559,6 +598,17 @@ export default function AppointmentsScreen() {
       </ScrollView>
     </LinearGradient>
   );
+}
+
+function getStatusLabel(status: AppointmentStatus): string {
+  switch(status) {
+    case AppointmentStatus.SCHEDULED: return 'confirmed';
+    case AppointmentStatus.DONE: return 'completed';
+    case AppointmentStatus.CANCELLED_BY_USER: return 'cancelled';
+    case AppointmentStatus.CANCELLED_BY_SERVICE: return 'cancelled';
+    case AppointmentStatus.OPEN: return 'open';
+    default: return 'pending';
+  }
 }
 
 const styles = StyleSheet.create({
@@ -822,5 +872,30 @@ const styles = StyleSheet.create({
   bookAgainButton: {
     borderColor: '#4CAF50',
     backgroundColor: 'rgba(76, 175, 80, 0.1)',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    fontSize: responsiveFontSize(16, 14, 18),
+    marginTop: 12,
+    opacity: 0.6,
+    fontFamily: fontFamilies.text,
+  },
+  viewMoreButton: {
+    padding: 12,
+    alignItems: 'center',
+    borderRadius: 16,
+    backgroundColor: 'rgba(49, 225, 247, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(49, 225, 247, 0.3)',
+    marginTop: 8,
+  },
+  viewMoreText: {
+    fontSize: responsiveFontSize(14, 12, 16),
+    fontWeight: '600',
+    fontFamily: fontFamilies.button,
   },
 });

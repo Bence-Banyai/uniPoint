@@ -85,3 +85,18 @@ export const fetchUserAppointments = async () => {
     throw error;
   }
 };
+
+export const rescheduleAppointment = async (appointmentId: number, newDate: string) => {
+  try {
+    // Use the new reschedule endpoint that was added to the backend
+    const response = await api.put(`/api/Appointment/reschedule/${appointmentId}`, {
+      newDate: newDate
+    });
+    
+    console.log('Appointment rescheduled:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error rescheduling appointment:', error);
+    throw error;
+  }
+};

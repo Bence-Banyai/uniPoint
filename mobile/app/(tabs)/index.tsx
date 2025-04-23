@@ -13,11 +13,14 @@ import { Image } from 'expo-image';  // Replace the React Native Image import
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { fetchCategories, Category as CategoryType } from '../../services/categoryApi';
 import { fetchServices, Service } from '../../services/serviceApi';
+import { fetchUserAppointments, AppointmentStatus, Appointment } from '../../services/appointmentApi';
+import { useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -113,18 +116,6 @@ const recommendedServices = [
   },
 ];
 
-const nextAppointment = {
-  id: '1',
-  title: 'General Checkup',
-  provider: 'Dr. Sarah Johnson',
-  time: '10:00 AM',
-  date: 'Today, 18 Mar',
-  location: 'Grand Medical Center',
-  status: 'confirmed',
-  category: 'doctor',
-  color: '#4CAF50'
-};
-
 interface BannerItem {
   id: string;
   title: string;
@@ -168,6 +159,11 @@ interface ServiceCardProps {
   onPress: () => void;
 }
 
+// Define the type for route params
+interface HomeScreenParams {
+  refresh?: number | string;
+}
+
 // Helper function to get gradient colors based on category ID
 const getCategoryGradient = (categoryId: number): [string, string] => {
   const gradients: {[key: number]: [string, string]} = {
@@ -193,8 +189,8 @@ const getCategoryColor = (categoryId: number): string => {
     4: '#FF9800', // Auto
     5: '#9C27B0', // Legal
     6: '#3F51B5', // Education
-    7: '#607D8B', // Tech
-    8: '#009688', // Cleaning
+    7: '#607D8B',   // Tech
+    8: '#009688',   // Cleaning
   };
   
   return colors[categoryId] || '#AE00FF';
@@ -416,6 +412,7 @@ function MyComponent() {
 }
 
 export default function HomeScreen() {
+  const route = useRoute<RouteProp<{ params: HomeScreenParams }, 'params'>>();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { userName } = useAuth();
@@ -424,14 +421,37 @@ export default function HomeScreen() {
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [services, setServices] = useState<Service[]>([]);
   const [loadingServices, setLoadingServices] = useState(true);
+  const [nextAppointment, setNextAppointment] = useState<any | null>(null);
+  const [loadingNextAppointment, setLoadingNextAppointment] = useState(true);
   
+  const loadNextAppointment = async () => {
+    try {
+      setLoadingNextAppointment(true);
+      const userAppointments = await fetchUserAppointments();
+      
+      const scheduledAppointments = userAppointments.filter((appt: Appointment) => 
+        appt.status === AppointmentStatus.SCHEDULED
+      );
+      
+      const sortedAppointments = scheduledAppointments.sort((a: Appointment, b: Appointment) => 
+        new Date(a.appointmentDate).getTime() - new Date(b.appointmentDate).getTime()
+      );
+      
+      const nextScheduled = sortedAppointments.length > 0 ? sortedAppointments[0] : null;
+      setNextAppointment(nextScheduled);
+    } catch (err) {
+      console.error('Failed to load next appointment:', err);
+    } finally {
+      setLoadingNextAppointment(false);
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoadingCategories(true);
         setLoadingServices(true);
         
-        // Load categories and services in parallel
         const [categoriesData, servicesData] = await Promise.all([
           fetchCategories(),
           fetchServices()
@@ -439,10 +459,12 @@ export default function HomeScreen() {
         
         setCategories(categoriesData);
         
-        // Sort services by something (since we don't have ratings yet, we'll use price as a proxy)
-        // In the future, you could sort by actual ratings once implemented
         const sortedServices = servicesData.sort((a, b) => b.price - a.price);
-        setServices(sortedServices.slice(0, 5)); // Take top 5 services
+        setServices(sortedServices.slice(0, 5));
+        
+        // Always reload the next appointment data when the effect runs
+        await loadNextAppointment();
+        
       } catch (err) {
         console.error('Failed to load data:', err);
       } finally {
@@ -452,7 +474,32 @@ export default function HomeScreen() {
     };
 
     loadData();
-  }, []);
+  }, [route.params]); // Use route.params directly without drilling into it
+
+  useFocusEffect(
+    useCallback(() => {
+      // Check if we should refresh when tab becomes focused
+      const checkRefreshFlag = async () => {
+        try {
+          const shouldRefresh = await AsyncStorage.getItem('shouldRefreshHomeScreen');
+          if (shouldRefresh === 'true') {
+            // Clear the flag
+            await AsyncStorage.setItem('shouldRefreshHomeScreen', 'false');
+            // Refresh the appointment data
+            loadNextAppointment();
+          }
+        } catch (error) {
+          console.log('Error checking refresh flag:', error);
+        }
+      };
+
+      checkRefreshFlag();
+      
+      return () => {
+        // Cleanup if needed
+      };
+    }, [])
+  );
 
   const screenWidth = Dimensions.get('window').width;
   const isSmallDevice = screenWidth < 380;
@@ -490,14 +537,12 @@ export default function HomeScreen() {
   };
 
   const handleBannerPress = (banner: BannerItem) => {
-    // Always navigate to search screen with the category parameter if available
     if (banner.categoryId) {
       router.push({
         pathname: '/(tabs)/search',
         params: { categoryId: banner.categoryId.toString() }
       });
     } else {
-      // Fall back to the route if no categoryId is specified
       const route = banner.route === '/appointments' ? '/(tabs)/search' : banner.route;
       
       if (isWeb) {
@@ -508,6 +553,123 @@ export default function HomeScreen() {
         router.push(route);
       }
     }
+  };
+
+  const renderNextAppointment = () => {
+    if (loadingNextAppointment) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#31E1F7" />
+          <ThemedText 
+            style={styles.loadingText}
+            darkColor="#EBD3F8" 
+            lightColor="#EBD3F8"
+          >
+            Loading next appointment...
+          </ThemedText>
+        </View>
+      );
+    }
+
+    if (!nextAppointment) {
+      return (
+        <View style={styles.emptyAppointmentContainer}>
+          <IconSymbol name="calendar.badge.exclamationmark" size={40} color="rgba(235, 211, 248, 0.3)" />
+          <ThemedText 
+            style={styles.emptyAppointmentText}
+            darkColor="#EBD3F8" 
+            lightColor="#EBD3F8"
+          >
+            No upcoming appointments
+          </ThemedText>
+          <TouchableOpacity 
+            style={styles.bookNowButton}
+            onPress={() => router.push('/(tabs)/search')}
+          >
+            <ThemedText 
+              style={styles.bookNowText}
+              darkColor="#31E1F7" 
+              lightColor="#31E1F7"
+            >
+              Book Now
+            </ThemedText>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    const categoryColor = getCategoryColor(nextAppointment.service?.categoryId || 0);
+    
+    const appointmentDate = new Date(nextAppointment.appointmentDate);
+    const dateStr = appointmentDate.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+    
+    const timeStr = appointmentDate.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+
+    return (
+      <TouchableOpacity 
+        style={styles.nextAppointmentCard}
+        activeOpacity={0.7}
+        onPress={() => router.push('/(tabs)/appointments')}
+      >
+        <View style={[styles.appointmentColorBar, { backgroundColor: categoryColor }]} />
+        <View style={styles.appointmentContent}>
+          <View style={styles.appointmentHeader}>
+            <ThemedText 
+              style={styles.appointmentTitle}
+              darkColor="#fff" 
+              lightColor="#fff"
+            >
+              {nextAppointment.service?.serviceName || "Appointment"}
+            </ThemedText>
+            <View style={[styles.statusIndicator, { backgroundColor: categoryColor }]} />
+          </View>
+          
+          <View style={styles.appointmentDetails}>
+            <View style={styles.appointmentInfo}>
+              <IconSymbol name="chevron.right" size={16} color="#31E1F7" />
+              <ThemedText 
+                style={styles.appointmentText}
+                darkColor="#EBD3F8" 
+                lightColor="#EBD3F8"
+              >
+                {nextAppointment.service?.provider?.userName || "Unknown Provider"}
+              </ThemedText>
+            </View>
+            
+            <View style={styles.appointmentInfo}>
+              <IconSymbol name="chevron.right" size={16} color="#31E1F7" />
+              <ThemedText 
+                style={styles.appointmentText}
+                darkColor="#EBD3F8" 
+                lightColor="#EBD3F8"
+              >
+                {dateStr} • {timeStr}
+              </ThemedText>
+            </View>
+            
+            <View style={styles.appointmentInfo}>
+              <IconSymbol name="chevron.right" size={16} color="#31E1F7" />
+              <ThemedText 
+                style={styles.appointmentText}
+                darkColor="#EBD3F8" 
+                lightColor="#EBD3F8"
+              >
+                {nextAppointment.service?.address || "No location specified"}
+              </ThemedText>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
   };
 
   return (
@@ -576,61 +738,7 @@ export default function HomeScreen() {
           >
             Next Appointment
           </ThemedText>
-          
-          <TouchableOpacity 
-            style={styles.nextAppointmentCard}
-            activeOpacity={0.7}
-            onPress={() => router.push('/appointments')}
-          >
-            <View style={[styles.appointmentColorBar, { backgroundColor: nextAppointment.color }]} />
-            <View style={styles.appointmentContent}>
-              <View style={styles.appointmentHeader}>
-                <ThemedText 
-                  style={styles.appointmentTitle}
-                  darkColor="#fff" 
-                  lightColor="#fff"
-                >
-                  {nextAppointment.title}
-                </ThemedText>
-                <View style={[styles.statusIndicator, { backgroundColor: nextAppointment.color }]} />
-              </View>
-              
-              <View style={styles.appointmentDetails}>
-                <View style={styles.appointmentInfo}>
-                  <IconSymbol name="chevron.right" size={16} color="#31E1F7" />
-                  <ThemedText 
-                    style={styles.appointmentText}
-                    darkColor="#EBD3F8" 
-                    lightColor="#EBD3F8"
-                  >
-                    {nextAppointment.provider}
-                  </ThemedText>
-                </View>
-                
-                <View style={styles.appointmentInfo}>
-                  <IconSymbol name="chevron.right" size={16} color="#31E1F7" />
-                  <ThemedText 
-                    style={styles.appointmentText}
-                    darkColor="#EBD3F8" 
-                    lightColor="#EBD3F8"
-                  >
-                    {nextAppointment.date} • {nextAppointment.time}
-                  </ThemedText>
-                </View>
-                
-                <View style={styles.appointmentInfo}>
-                  <IconSymbol name="chevron.right" size={16} color="#31E1F7" />
-                  <ThemedText 
-                    style={styles.appointmentText}
-                    darkColor="#EBD3F8" 
-                    lightColor="#EBD3F8"
-                  >
-                    {nextAppointment.location}
-                  </ThemedText>
-                </View>
-              </View>
-            </View>
-          </TouchableOpacity>
+          {renderNextAppointment()}
         </View>
         
         <View style={styles.categoriesContainer}>
@@ -1116,6 +1224,48 @@ const styles = StyleSheet.create({
     fontSize: responsiveFontSize(16, 14, 18),
     fontWeight: 'bold',
     letterSpacing: 0.5,
+    fontFamily: fontFamilies.button,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+    backgroundColor: 'rgba(174, 0, 255, 0.1)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(235, 211, 248, 0.2)',
+  },
+  loadingText: {
+    fontSize: responsiveFontSize(14, 13, 16),
+    marginTop: 10,
+    fontFamily: fontFamilies.text,
+  },
+  emptyAppointmentContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 30,
+    backgroundColor: 'rgba(174, 0, 255, 0.1)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(235, 211, 248, 0.2)',
+  },
+  emptyAppointmentText: {
+    fontSize: responsiveFontSize(15, 14, 17),
+    marginTop: 10,
+    marginBottom: 15,
+    fontFamily: fontFamilies.text,
+  },
+  bookNowButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(49, 225, 247, 0.1)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(49, 225, 247, 0.3)',
+  },
+  bookNowText: {
+    fontSize: responsiveFontSize(14, 12, 16),
+    fontWeight: '600',
     fontFamily: fontFamilies.button,
   },
 });
