@@ -6,20 +6,25 @@ import {
   Dimensions,
   Platform,
   ActivityIndicator,
-  Alert
+  Alert,
+  RefreshControl,
+  Modal
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams, Stack } from 'expo-router';
 import { useState, useEffect } from 'react';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { fetchServiceById, fetchServices, Service } from '@/services/serviceApi';
-import { bookAppointment } from '@/services/appointmentApi';
+import { fetchServiceById, Service } from '@/services/serviceApi';
+import { fetchAppointments, bookAppointment, AppointmentStatus } from '@/services/appointmentApi';
 import { fetchCategories, Category as CategoryType } from '@/services/categoryApi';
+import { useAuth } from './context/AuthContext';
+
 
 const responsiveFontSize = (size: number, minSize: number, maxSize: number) => {
   const { width, height } = Dimensions.get('window');
@@ -52,79 +57,162 @@ const getCategoryColor = (categoryId: number): string => {
   return colors[categoryId] || '#AE00FF';
 };
 
-// Available time slots for booking (in a real app, these would come from the API)
-const availableTimeSlots = [
-  { id: '1', time: '9:00 AM', available: true },
-  { id: '2', time: '10:00 AM', available: true },
-  { id: '3', time: '11:00 AM', available: false },
-  { id: '4', time: '1:00 PM', available: true },
-  { id: '5', time: '2:00 PM', available: true },
-  { id: '6', time: '3:00 PM', available: false },
-  { id: '7', time: '4:00 PM', available: true }
-];
-
 export default function ServiceDetailsScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const serviceId = params.id as string;
+  const { isAuthenticated } = useAuth();
   
   const [service, setService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [category, setCategory] = useState<CategoryType | null>(null);
   const [isBooking, setIsBooking] = useState(false);
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>(
+    new Date().toISOString().split('T')[0]
+  );
+  const [availableSlots, setAvailableSlots] = useState<{id: number, time: string, available: boolean}[]>([]);
+  const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [tempDate, setTempDate] = useState(new Date());
   
   useEffect(() => {
-    const loadService = async () => {
-      try {
-        setLoading(true);
-        // Fetch the service details using the ID from params
-        const serviceData = await fetchServiceById(parseInt(serviceId, 10));
-        setService(serviceData);
-        
-        // Fetch categories to get the service's category
-        const categoriesData = await fetchCategories();
-        const serviceCategory = categoriesData.find(c => c.categoryId === serviceData.categoryId);
-        setCategory(serviceCategory || null);
-        
-      } catch (error) {
-        console.error('Failed to load service details:', error);
-        Alert.alert(
-          "Loading Error", 
-          "Failed to load service details. Please try again later."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    if (serviceId) {
-      loadService();
-    }
+    loadServiceData();
   }, [serviceId]);
+
+  useEffect(() => {
+    if (service) {
+      fetchAvailableTimeSlots();
+    }
+  }, [service, selectedDate]);
+  
+  const loadServiceData = async () => {
+    try {
+      setLoading(true);
+      // Fetch the service details using the ID from params
+      const serviceData = await fetchServiceById(parseInt(serviceId, 10));
+      setService(serviceData);
+      
+      // Fetch categories to get the service's category
+      const categoriesData = await fetchCategories();
+      const serviceCategory = categoriesData.find(c => c.categoryId === serviceData.categoryId);
+      setCategory(serviceCategory || null);
+      
+    } catch (error) {
+      console.error('Failed to load service details:', error);
+      Alert.alert(
+        "Loading Error", 
+        "Failed to load service details. Please try again later."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadServiceData();
+    await fetchAvailableTimeSlots();
+    setRefreshing(false);
+  };
+  
+  // Function to calculate available time slots based on service opening/closing times and duration
+  const fetchAvailableTimeSlots = async () => {
+    if (!service) return;
+
+    setLoadingSlots(true);
+    try {
+      // Fetch all open appointments for this service
+      const appointments = await fetchAppointments();
+      
+      // Filter just the open appointments for this service
+      const openAppointments = appointments.filter(
+        (appointment: {serviceId: number; status: AppointmentStatus; appointmentDate: string}) => 
+          appointment.serviceId === parseInt(serviceId, 10) && 
+          appointment.status === AppointmentStatus.OPEN &&
+          appointment.appointmentDate.split('T')[0] === selectedDate
+      );
+      
+      // Format the appointments into usable time slots
+      const slots = openAppointments.map((appointment: {id: number; appointmentDate: string}) => {
+        const date = new Date(appointment.appointmentDate);
+        return {
+          id: appointment.id,
+          time: date.toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit',
+            hour12: true 
+          }),
+          available: true
+        };
+      });
+      
+      setAvailableSlots(slots.sort((a: {time: string}, b: {time: string}) => {
+        // Sort by time
+        return new Date('1/1/1970 ' + a.time).getTime() - new Date('1/1/1970 ' + b.time).getTime();
+      }));
+    } catch (error) {
+      console.error('Failed to fetch available time slots:', error);
+      Alert.alert(
+        "Loading Error", 
+        "Failed to load available time slots. Please try again."
+      );
+    } finally {
+      setLoadingSlots(false);
+    }
+  };
   
   const handleBookAppointment = async () => {
-    if (!selectedTimeSlot) {
-      Alert.alert("Please Select Time", "Please select a time slot for your appointment.");
+    if (!isAuthenticated) {
+      Alert.alert(
+        "Authentication Required",
+        "Please log in to book an appointment.",
+        [
+          {
+            text: "Cancel",
+            style: "cancel"
+          },
+          { 
+            text: "Login", 
+            onPress: () => router.push('/login')
+          }
+        ]
+      );
+      return;
+    }
+    
+    if (!selectedSlot) {
+      Alert.alert("Please Select Time", "Please select an available time slot for your appointment.");
       return;
     }
     
     try {
       setIsBooking(true);
-      await bookAppointment(parseInt(serviceId, 10));
+      await bookAppointment(selectedSlot);
       
-      Alert.alert(
-        "Booking Successful", 
-        `Your appointment for ${service?.serviceName} has been booked.`,
-        [{ text: "OK", onPress: () => router.push('/appointments') }]
-      );
+      // Show success message and redirect to search screen
+      if (Platform.OS === 'web') {
+        // For web: Show an alert and then redirect
+        window.alert('Your appointment has been successfully booked!');
+        router.replace('/(tabs)/search');
+      } else {
+        // For mobile: Use the existing Alert.alert with callback
+        Alert.alert(
+          "Booking Successful", 
+          `Your appointment for ${service?.serviceName} has been booked.`,
+          [{ text: "OK", onPress: () => router.push('/(tabs)/appointments') }]
+        );
+      }
     } catch (error) {
       console.error('Failed to book appointment:', error);
       Alert.alert(
         "Booking Failed", 
-        "There was an error booking your appointment. Please try again."
+        "There was an error booking your appointment. It may have been booked by someone else. Please try another time slot."
       );
+      // Refresh the available slots to get the latest status
+      fetchAvailableTimeSlots();
     } finally {
       setIsBooking(false);
     }
@@ -141,14 +229,47 @@ export default function ServiceDetailsScreen() {
   };
   
   const handleGoBack = () => {
-    // Skip the router.back() that's causing errors and go directly to search screen
     router.replace('/(tabs)/search');
   };
   
-  const handleTimeSlotSelect = (slotId: string) => {
-    setSelectedTimeSlot(slotId);
+  const handleDateChange = (date: string) => {
+    setSelectedDate(date);
+    setSelectedSlot(null);
+  };
+
+  const handleSlotSelect = (slotId: number) => {
+    setSelectedSlot(slotId);
+  };
+
+  const handleDatePickerChange = (event: any, selectedDate?: Date) => {
+    // For web, prevent default behavior and stop propagation
+    if (Platform.OS === 'web' && event.nativeEvent) {
+      event.stopPropagation?.();
+      event.preventDefault?.();
+    }
+
+    // Close the picker immediately on iOS and Android
+    if (Platform.OS !== 'web') {
+      setShowDatePicker(false);
+    }
+    
+    if (event.type === 'dismissed') {
+      return;
+    }
+    
+    if (selectedDate) {
+      setTempDate(selectedDate);
+      
+      // Only update the selected date if we're on web or if confirm is pressed on mobile
+      if (Platform.OS === 'web' || event.type === 'set') {
+        const dateStr = selectedDate.toISOString().split('T')[0];
+        handleDateChange(dateStr);
+      }
+    }
   };
   
+  const noAvailableSlots = availableSlots.length === 0 && !loadingSlots;
+
   return (
     <ThemedView style={styles.container}>
       <Stack.Screen 
@@ -180,6 +301,14 @@ export default function ServiceDetailsScreen() {
             { paddingTop: insets.top + 10 }
           ]}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={["#31E1F7"]}
+              tintColor="#31E1F7"
+            />
+          }
         >
           {/* Back button */}
           <TouchableOpacity 
@@ -427,6 +556,216 @@ export default function ServiceDetailsScreen() {
                 </ThemedText>
                 
                 <ThemedText 
+                  style={styles.dateLabel}
+                  darkColor="#EBD3F8" 
+                  lightColor="#EBD3F8"
+                >
+                  Select Date
+                </ThemedText>
+                
+                {/* Date selection - improved implementation */}
+                <View style={styles.dateContainer}>
+                  {/* Date picker button */}
+                  <TouchableOpacity 
+                    style={styles.dateItem}
+                    onPress={() => setShowDatePicker(true)}
+                  >
+                    <View style={styles.dateDisplay}>
+                      <IconSymbol name="calendar" size={20} color="#31E1F7" />
+                      <ThemedText
+                        style={styles.dateText}
+                        darkColor="#EBD3F8"
+                        lightColor="#EBD3F8"
+                      >
+                        {new Date(selectedDate).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric', 
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </ThemedText>
+                    </View>
+                    <IconSymbol name="chevron.right" size={16} color="#EBD3F8" />
+                  </TouchableOpacity>
+                  
+                  {/* Quick date selection options */}
+                  <View style={styles.quickDateContainer}>
+                    {[0, 1, 2, 3, 7, 14].map((dayOffset) => {
+                      const date = new Date();
+                      date.setDate(date.getDate() + dayOffset);
+                      const dateStr = date.toISOString().split('T')[0];
+                      const isSelected = selectedDate === dateStr;
+                      const dayLabel = dayOffset === 0 ? 'Today' : 
+                                       dayOffset === 1 ? 'Tomorrow' : 
+                                       dayOffset === 7 ? 'Next week' :
+                                       dayOffset === 14 ? '+2 weeks' :
+                                       date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
+                      
+                      return (
+                        <TouchableOpacity 
+                          key={dateStr}
+                          style={[
+                            styles.quickDateItem,
+                            isSelected && styles.selectedDateItem
+                          ]}
+                          onPress={() => handleDateChange(dateStr)}
+                        >
+                          <ThemedText 
+                            style={[
+                              styles.dateText,
+                              isSelected && styles.selectedDateText
+                            ]}
+                            darkColor={isSelected ? "#31E1F7" : "#EBD3F8"}
+                            lightColor={isSelected ? "#31E1F7" : "#EBD3F8"}
+                          >
+                            {dayLabel}
+                          </ThemedText>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
+                  {/* Platform-specific date pickers */}
+                  {showDatePicker && Platform.OS === 'ios' && (
+                    <Modal
+                      transparent={true}
+                      animationType="slide"
+                      visible={showDatePicker}
+                      onRequestClose={() => setShowDatePicker(false)}
+                    >
+                      <TouchableOpacity 
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => setShowDatePicker(false)}
+                      >
+                        <View style={styles.modalContent}>
+                          <View style={styles.datePickerHeader}>
+                            <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                              <ThemedText style={styles.datePickerCancel} darkColor="#E91E63" lightColor="#E91E63">
+                                Cancel
+                              </ThemedText>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => {
+                              handleDateChange(tempDate.toISOString().split('T')[0]);
+                              setShowDatePicker(false);
+                            }}>
+                              <ThemedText style={styles.datePickerConfirm} darkColor="#31E1F7" lightColor="#31E1F7">
+                                Confirm
+                              </ThemedText>
+                            </TouchableOpacity>
+                          </View>
+                          <DateTimePicker
+                            value={tempDate}
+                            mode="date"
+                            display="spinner"
+                            onChange={(event, date) => {
+                              if (date) setTempDate(date);
+                            }}
+                            minimumDate={new Date()}
+                            style={[styles.datePicker, { marginBottom: 20 }]}
+                            themeVariant="dark" // Add this for dark mode support
+                            textColor="#EBD3F8" // Add this to set text color
+                          />
+                        </View>
+                      </TouchableOpacity>
+                    </Modal>
+                  )}
+
+                  {showDatePicker && Platform.OS === 'android' && (
+                    <DateTimePicker
+                      value={tempDate}
+                      mode="date"
+                      display="default"
+                      onChange={(event, selectedDate) => {
+                        setShowDatePicker(false);
+                        if (event.type !== 'dismissed' && selectedDate) {
+                          setTempDate(selectedDate);
+                          handleDateChange(selectedDate.toISOString().split('T')[0]);
+                        }
+                      }}
+                      minimumDate={new Date()}
+                    />
+                  )}
+
+                  {/* Web date picker */}
+                  {showDatePicker && Platform.OS === 'web' && (
+                    <Modal
+                      transparent={true}
+                      animationType="fade"
+                      visible={showDatePicker}
+                      onRequestClose={() => setShowDatePicker(false)}
+                    >
+                      <TouchableOpacity 
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => setShowDatePicker(false)}
+                      >
+                        <View style={styles.modalContent}>
+                          <TouchableOpacity 
+                            activeOpacity={1} 
+                            onPress={(event) => {
+                              // This will stop the event from propagating to the parent TouchableOpacity
+                              event.stopPropagation();
+                            }}
+                          >
+                            <View style={styles.datePickerHeader}>
+                              <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                                <ThemedText style={styles.datePickerCancel} darkColor="#E91E63" lightColor="#E91E63">
+                                  Cancel
+                                </ThemedText>
+                              </TouchableOpacity>
+                              <TouchableOpacity onPress={() => {
+                                handleDateChange(tempDate.toISOString().split('T')[0]);
+                                setShowDatePicker(false);
+                              }}>
+                                <ThemedText style={styles.datePickerConfirm} darkColor="#31E1F7" lightColor="#31E1F7">
+                                  Confirm
+                                </ThemedText>
+                              </TouchableOpacity>
+                            </View>
+                            
+                            {/* For web, we'll use an HTML input type="date" with improved styling */}
+                            <input
+                              type="date"
+                              value={tempDate.toISOString().split('T')[0]}
+                              min={new Date().toISOString().split('T')[0]}
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  setTempDate(new Date(e.target.value));
+                                }
+                              }}
+                              style={{
+                                backgroundColor: 'rgba(46, 2, 73, 0.8)',
+                                color: '#EBD3F8',
+                                border: '1px solid rgba(235, 211, 248, 0.3)',
+                                borderRadius: 12,
+                                padding: 12,
+                                fontSize: 16,
+                                width: '100%',
+                                boxSizing: 'border-box',
+                                marginTop: 10,
+                                cursor: 'pointer',
+                                maxWidth: '100%',
+                                overflow: 'hidden',
+                                outline: 'none',
+                                fontFamily: 'sans-serif',
+                                appearance: 'none',
+                                WebkitAppearance: 'none',
+                                MozAppearance: 'none'
+                              }}
+                              className="custom-datepicker"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                              }}
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      </TouchableOpacity>
+                    </Modal>
+                  )}
+                </View>
+                
+                <ThemedText 
                   style={styles.timeSlotLabel}
                   darkColor="#EBD3F8" 
                   lightColor="#EBD3F8"
@@ -434,38 +773,65 @@ export default function ServiceDetailsScreen() {
                   Select Time
                 </ThemedText>
                 
-                <View style={styles.timeSlotsContainer}>
-                  {availableTimeSlots.map((slot) => (
-                    <TouchableOpacity 
-                      key={slot.id}
-                      style={[
-                        styles.timeSlot,
-                        selectedTimeSlot === slot.id && styles.selectedTimeSlot,
-                        !slot.available && styles.unavailableTimeSlot
-                      ]}
-                      onPress={() => slot.available && handleTimeSlotSelect(slot.id)}
-                      disabled={!slot.available}
+                {loadingSlots ? (
+                  <View style={styles.loadingSlotsContainer}>
+                    <ActivityIndicator size="small" color="#31E1F7" />
+                    <ThemedText 
+                      style={styles.loadingSlotsText}
+                      darkColor="#EBD3F8" 
+                      lightColor="#EBD3F8"
                     >
-                      <ThemedText 
+                      Loading available times...
+                    </ThemedText>
+                  </View>
+                ) : noAvailableSlots ? (
+                  <View style={styles.emptySlotContainer}>
+                    <IconSymbol name="calendar.badge.exclamationmark" size={24} color="rgba(235, 211, 248, 0.5)" />
+                    <ThemedText 
+                      style={styles.emptySlotText}
+                      darkColor="#EBD3F8" 
+                      lightColor="#EBD3F8"
+                    >
+                      No appointments available for this date.
+                    </ThemedText>
+                  </View>
+                ) : (
+                  <View style={styles.timeSlotsContainer}>
+                    {availableSlots.map((slot) => (
+                      <TouchableOpacity 
+                        key={slot.id}
                         style={[
-                          styles.timeSlotText,
-                          selectedTimeSlot === slot.id && styles.selectedTimeSlotText,
-                          !slot.available && styles.unavailableTimeSlotText
+                          styles.timeSlot,
+                          selectedSlot === slot.id && styles.selectedTimeSlot,
+                          !slot.available && styles.unavailableTimeSlot
                         ]}
-                        darkColor="#EBD3F8" 
-                        lightColor="#EBD3F8"
+                        onPress={() => handleSlotSelect(slot.id)}
+                        disabled={!slot.available}
                       >
-                        {slot.time}
-                      </ThemedText>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                        <ThemedText 
+                          style={[
+                            styles.timeSlotText,
+                            selectedSlot === slot.id && styles.selectedTimeSlotText,
+                            !slot.available && styles.unavailableTimeSlotText
+                          ]}
+                          darkColor="#EBD3F8" 
+                          lightColor="#EBD3F8"
+                        >
+                          {slot.time}
+                        </ThemedText>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
                 
                 <TouchableOpacity 
-                  style={styles.bookButton}
+                  style={[
+                    styles.bookButton,
+                    (isBooking || !selectedSlot) && styles.disabledBookButton
+                  ]}
                   activeOpacity={0.7}
                   onPress={handleBookAppointment}
-                  disabled={isBooking || !selectedTimeSlot}
+                  disabled={isBooking || !selectedSlot}
                 >
                   <LinearGradient
                     colors={["#31E1F7", "#6EDCD9"]}
@@ -514,6 +880,96 @@ export default function ServiceDetailsScreen() {
           )}
         </ScrollView>
       </LinearGradient>
+
+      {/* Add global styles for date input customization */}
+      {Platform.OS === 'web' && (
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              /* Custom styling for the date picker on web */
+              .custom-datepicker {
+                background-color: rgba(46, 2, 73, 0.8) !important;
+                color: #EBD3F8 !important;
+                border: 1px solid rgba(235, 211, 248, 0.3) !important;
+                border-radius: 12px !important;
+                font-family: sans-serif !important;
+                width: 100% !important;
+                padding: 12px !important;
+                box-sizing: border-box !important;
+                outline: none !important;
+                appearance: none !important;
+                -webkit-appearance: none !important;
+                -moz-appearance: none !important;
+              }
+
+              /* Calendar icon styling - make it match the app's color scheme */
+              .custom-datepicker::-webkit-calendar-picker-indicator {
+                filter: invert(1) brightness(80%) sepia(100%) saturate(300%) hue-rotate(160deg);
+                opacity: 0.7;
+                cursor: pointer;
+                background-color: transparent !important;
+                padding: 6px !important;
+                border-radius: 6px !important;
+                margin-right: 0 !important;
+                transition: all 0.2s ease !important;
+              }
+              
+              .custom-datepicker::-webkit-calendar-picker-indicator:hover {
+                opacity: 1;
+                filter: invert(1) brightness(80%) sepia(100%) saturate(400%) hue-rotate(140deg);
+              }
+              
+              /* Text styling inside the date picker */
+              .custom-datepicker::-webkit-datetime-edit {
+                color: #EBD3F8 !important;
+                padding: 0 8px !important;
+              }
+              
+              .custom-datepicker::-webkit-datetime-edit-fields-wrapper {
+                color: #EBD3F8 !important;
+              }
+              
+              .custom-datepicker::-webkit-datetime-edit-text {
+                color: rgba(235, 211, 248, 0.7) !important;
+              }
+              
+              .custom-datepicker::-webkit-datetime-edit-month-field,
+              .custom-datepicker::-webkit-datetime-edit-day-field,
+              .custom-datepicker::-webkit-datetime-edit-year-field {
+                color: #31E1F7 !important;
+                font-weight: 500 !important;
+                padding: 2px !important;
+              }
+              
+              /* Focus state - give it a nice glow effect like other elements */
+              .custom-datepicker:focus {
+                border-color: #31E1F7 !important;
+                box-shadow: 0 0 0 3px rgba(49, 225, 247, 0.2) !important;
+              }
+              
+              /* Make sure our calendar doesn't get cut off */
+              input[type="date"]::-webkit-calendar-picker-indicator {
+                margin-left: 8px !important;
+              }
+              
+              /* Browser-specific overrides */
+              @-moz-document url-prefix() {
+                .custom-datepicker {
+                  background-image: none !important;
+                  padding-right: 12px !important;
+                }
+              }
+              
+              /* Dark mode calendar support */
+              @media (prefers-color-scheme: dark) {
+                .custom-datepicker {
+                  background-color: rgba(46, 2, 73, 0.9) !important;
+                }
+              }
+            `
+          }}
+        />
+      )}
     </ThemedView>
   );
 }
@@ -830,5 +1286,136 @@ const styles = StyleSheet.create({
     fontSize: responsiveFontSize(16, 14, 18),
     fontWeight: '600',
     fontFamily: fontFamilies.button,
+  },
+  dateLabel: {
+    fontSize: responsiveFontSize(14, 12, 16),
+    fontFamily: fontFamilies.text,
+    marginBottom: 12,
+  },
+  datePickerContainer: {
+    marginBottom: 20,
+  },
+  datePickerButton: {
+    backgroundColor: 'rgba(174, 0, 255, 0.1)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(235, 211, 248, 0.2)',
+    padding: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dateDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  dateText: {
+    fontSize: responsiveFontSize(14, 12, 16),
+    fontFamily: fontFamilies.text,
+  },
+  loadingSlotsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  loadingSlotsText: {
+    fontSize: responsiveFontSize(14, 12, 16),
+    fontFamily: fontFamilies.text,
+    marginTop: 8,
+  },
+  emptySlotContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+    opacity: 0.6,
+  },
+  emptySlotText: {
+    fontSize: responsiveFontSize(14, 12, 16),
+    fontFamily: fontFamilies.text,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  disabledBookButton: {
+    opacity: 0.5,
+  },
+  dateContainer: {
+    marginBottom: 20,
+  },
+  dateItem: {
+    backgroundColor: 'rgba(174, 0, 255, 0.1)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(235, 211, 248, 0.2)',
+    padding: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  quickDateContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 10,
+    gap: 10,
+  },
+  quickDateItem: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(174, 0, 255, 0.1)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(235, 211, 248, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectedDateItem: {
+    backgroundColor: 'rgba(49, 225, 247, 0.2)',
+    borderColor: '#31E1F7',
+  },
+  selectedDateText: {
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'rgba(64, 13, 81, 0.95)',
+    borderRadius: 16,
+    padding: 20,
+    width: '90%',
+    maxWidth: 400,
+    borderWidth: 1,
+    borderColor: 'rgba(235, 211, 248, 0.3)',
+    alignItems: 'center',
+  },
+  datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  datePickerCancel: {
+    fontSize: responsiveFontSize(16, 14, 18),
+    fontWeight: '600',
+    fontFamily: fontFamilies.button,
+  },
+  datePickerConfirm: {
+    fontSize: responsiveFontSize(16, 14, 18),
+    fontWeight: '600',
+    fontFamily: fontFamilies.button,
+  },
+  datePicker: {
+    height: 260,
+    width: '100%',
+    ...(Platform.OS === 'web' ? { 
+      backgroundColor: 'transparent',
+      color: '#EBD3F8',
+    } : {
+      marginHorizontal: 0,
+      width: '95%',
+    }),
   },
 });

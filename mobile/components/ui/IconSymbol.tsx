@@ -25,6 +25,7 @@ const MAPPING = {
   'tag.fill': 'local-offer',
   'mappin.and.ellipse': 'pin-drop',
   'exclamationmark.triangle.fill': 'warning',
+  'calendar.badge.exclamationmark': 'event-busy',
 };
 
 export type SFSymbols6_0 = 
@@ -46,7 +47,8 @@ export type SFSymbols6_0 =
   | 'clock.fill'
   | 'tag.fill'
   | 'mappin.and.ellipse'
-  | 'exclamationmark.triangle.fill';
+  | 'exclamationmark.triangle.fill'
+  | 'calendar.badge.exclamationmark';
 
 interface IconSymbolProps {
   name: SFSymbols6_0;
@@ -71,7 +73,8 @@ export function IconSymbol({
       {name === 'chevron.right' ? '›' : 
        name === 'chevron.left' ? '‹' : 
        name === 'photo' ? '📷' : 
-       name === 'exclamationmark.triangle.fill' ? '⚠️' : '•'}
+       name === 'exclamationmark.triangle.fill' ? '⚠️' : 
+       name === 'calendar.badge.exclamationmark' ? '📅❗' : '•'}
     </Text>
   );
 }

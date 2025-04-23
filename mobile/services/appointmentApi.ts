@@ -9,16 +9,22 @@ export enum AppointmentStatus {
 }
 
 export interface Appointment {
-  id?: number;
+  id: number;
   userId?: string;
   serviceId: number;
   appointmentDate: string;
   status: AppointmentStatus;
+  service?: {
+    serviceId: number;
+    serviceName: string;
+    price: number;
+    // other service fields
+  };
 }
 
-export const bookAppointment = async (serviceId: number) => {
+export const bookAppointment = async (appointmentId: number) => {
   try {
-    const response = await api.post(`/api/Appointment/book/${serviceId}`, {});
+    const response = await api.post(`/api/Appointment/book/${appointmentId}`, {});
     console.log('Appointment booked:', response.data);
     return response.data;
   } catch (error) {
@@ -60,10 +66,22 @@ export const cancelAppointment = async (appointmentId: number) => {
 
 export const fetchAppointments = async () => {
   try {
-    const response = await api.get('/api/Appointment');
+    // Get all open appointments
+    const response = await api.get('/api/Appointment/open');
     return response.data;
   } catch (error) {
     console.error('Error fetching appointments:', error);
+    throw error;
+  }
+};
+
+export const fetchUserAppointments = async () => {
+  try {
+    // Get the current user's appointments
+    const response = await api.get('/api/Appointment/myappointments');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user appointments:', error);
     throw error;
   }
 };
