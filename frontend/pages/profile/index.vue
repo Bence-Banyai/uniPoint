@@ -207,8 +207,9 @@ const formatDateTime = (dateString) => {
 const fetchAppointments = async () => {
     try {
         const appointmentsApi = useAppointmentsApi();
-        const response = await appointmentsApi.getAll();
-        appointments.value = response.data;
+        // Only fetch appointments for the current user
+        const response = await appointmentsApi.getMyAppointments();
+        appointments.value = response || [];
     } catch (error) {
         console.error("Error fetching appointments:", error);
     }
