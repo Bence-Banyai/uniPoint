@@ -35,32 +35,34 @@
                     <div class="mb-8">
                         <div class="flex items-center mb-4">
                             <div class="flex">
-                                <Icon name="entypo:star" class="h-5 w-5 text-yellow-400" />
-                                <Icon name="entypo:star" class="h-5 w-5 text-yellow-400" />
-                                <Icon name="entypo:star" class="h-5 w-5 text-yellow-400" />
-                                <Icon name="entypo:star" class="h-5 w-5 text-yellow-400" />
-                                <Icon name="entypo:star" class="h-5 w-5 text-gray-300" />
+                                <Icon v-for="i in 5" :key="i"
+                                    :name="i <= averageScore ? 'entypo:star' : 'entypo:star-outlined'"
+                                    :class="i <= averageScore ? 'text-yellow-400' : 'text-gray-300'" class="h-5 w-5" />
                             </div>
-                            <span class="ml-2 text-gray-600">4.0 out of 5</span>
+                            <span class="ml-2 text-gray-600">{{ averageScore.toFixed(1) }} out of 5</span>
+                            <span class="ml-4 text-gray-500 text-sm">({{ reviews.length }} reviews)</span>
                         </div>
                         <div v-if="reviews.length > 0" class="space-y-4">
-                            <div v-for="(review, index) in reviews" :key="index" class="border-b pb-4">
+                            <div v-for="review in reviews" :key="review.reviewId" class="border-b pb-4">
                                 <div class="flex items-center mb-2">
                                     <div class="w-10 h-10 rounded-full bg-gray-200 mr-3 overflow-hidden">
-                                        <img v-if="review.profilePicture" :src="review.profilePicture" alt="Reviewer"
+                                        <img v-if="review.reviewer?.profilePictureUrl"
+                                            :src="review.reviewer.profilePictureUrl" alt="Reviewer"
                                             class="w-full h-full object-cover">
                                     </div>
                                     <div>
-                                        <h4 class="font-semibold">{{ review.name }}</h4>
+                                        <h4 class="font-semibold">{{ review.reviewer?.userName || 'User' }}</h4>
                                         <div class="flex">
-                                            <Icon v-for="i in 5" :key="i" name="entypo:star"
-                                                :class="i <= review.rating ? 'text-yellow-400' : 'text-gray-300'"
+                                            <Icon v-for="i in 5" :key="i"
+                                                :name="i <= review.score ? 'entypo:star' : 'entypo:star-outlined'"
+                                                :class="i <= review.score ? 'text-yellow-400' : 'text-gray-300'"
                                                 class="h-4 w-4" />
                                         </div>
                                     </div>
-                                    <span class="ml-auto text-sm text-gray-500">{{ review.date }}</span>
+                                    <span class="ml-auto text-sm text-gray-500">{{ formatReviewDate(review.createdAt)
+                                        }}</span>
                                 </div>
-                                <p class="text-gray-600">{{ review.comment }}</p>
+                                <p class="text-gray-600">{{ review.description }}</p>
                             </div>
                         </div>
                         <div v-else class="text-gray-500 text-center py-4">
@@ -68,8 +70,42 @@
                         </div>
                     </div>
 
-                    <button class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700">Write a
-                        Review</button>
+                    <div v-if="canWriteReview" class="mt-6 border-t pt-6">
+                        <h3 class="text-lg font-semibold mb-2">Write a Review</h3>
+                        <form @submit.prevent="submitReview" class="space-y-4">
+                            <div>
+                                <label class="block text-gray-700 mb-1">Your Rating</label>
+                                <div class="flex items-center space-x-1">
+                                    <button v-for="i in 5" :key="i" type="button" @click="reviewForm.score = i"
+                                        :aria-label="`${i} star`">
+                                        <Icon :name="i <= reviewForm.score ? 'iconoir:star-solid' : 'iconoir:star'"
+                                            :class="i <= reviewForm.score ? 'text-yellow-400' : 'text-gray-300'"
+                                            class="h-6 w-6" />
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 mb-1">Your Review</label>
+                                <textarea v-model="reviewForm.description" rows="3"
+                                    class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    maxlength="2000" placeholder="Share your experience..."></textarea>
+                            </div>
+                            <div>
+                                <button type="submit"
+                                    class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                                    :disabled="isSubmitting || reviewForm.score < 1 || !reviewForm.description">
+                                    <span v-if="isSubmitting">Submitting...</span>
+                                    <span v-else>Submit Review</span>
+                                </button>
+                                <span v-if="reviewError" class="ml-4 text-red-500 text-sm">{{ reviewError }}</span>
+                                <span v-if="reviewSuccess" class="ml-4 text-green-600 text-sm">{{ reviewSuccess
+                                    }}</span>
+                            </div>
+                        </form>
+                    </div>
+                    <div v-else-if="userAlreadyReviewed" class="mt-6 text-green-700 text-sm">
+                        You have already reviewed this service.
+                    </div>
                 </div>
             </div>
 
@@ -88,7 +124,10 @@
                             :disabled="filteredOpenAppointments.length === 0">
                             <option disabled value="">Select appointment</option>
                             <option v-for="appt in filteredOpenAppointments" :key="appt.id" :value="appt.id">
-                                {{ new Date(appt.appointmentDate).toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' }) }}
+                                {{ new Date(appt.appointmentDate).toLocaleTimeString('hu-HU', {
+                                    hour: '2-digit', minute:
+                                        '2-digit'
+                                }) }}
                             </option>
                         </select>
                         <div v-if="filteredOpenAppointments.length === 0" class="text-gray-500 text-sm mt-2">
@@ -136,8 +175,9 @@ import { useRouter } from 'vue-router';
 import type { Service } from '~/services/serviceApi';
 import { serviceApi } from '~/services/serviceApi';
 import useAppointmentsApi from '../composables/useAppointmentsApi';
+import useReviewsApi from '../composables/useReviewsApi';
 import { useAuthStore } from '../stores/auth';
-import type { Appointment } from '~/models/Appointment'; // Assuming you have this model defined
+import type { Appointment } from '~/models/Appointment';
 
 const props = defineProps<{
     service: Service
@@ -146,6 +186,7 @@ const props = defineProps<{
 const router = useRouter();
 const authStore = useAuthStore();
 const appointmentsApi = useAppointmentsApi();
+const reviewsApi = useReviewsApi();
 
 const todayDate = new Date().toISOString().split('T')[0];
 const selectedDate = ref(todayDate);
@@ -157,15 +198,19 @@ const bookingSuccess = ref<string | null>(null);
 
 const allOpenAppointments = ref<Appointment[]>([]);
 
-// Mocked reviews data - in a real app, this would come from the API
-const reviews = ref([
-    { name: "Jane Doe", rating: 4, comment: "Great service! Would highly recommend.", date: "2 months ago", profilePicture: null },
-    { name: "John Smith", rating: 5, comment: "Excellent service and very professional.", date: "1 month ago", profilePicture: null }
-]);
+const reviews = ref<any[]>([]);
+const isLoadingReviews = ref(false);
+const reviewError = ref('');
+const reviewSuccess = ref('');
+const isSubmitting = ref(false);
+
+const reviewForm = ref({
+    score: 0,
+    description: ''
+});
 
 const similarServices = ref<Service[]>([]);
 
-// Filter open appointments for the current service and selected date (ignore hour)
 const filteredOpenAppointments = computed(() => {
     if (!props.service?.serviceId || !selectedDate.value) return [];
     return allOpenAppointments.value.filter(appt => {
@@ -180,7 +225,7 @@ const formatPrice = (price: number) => {
 };
 
 const formatOpeningHours = (hours: number | undefined) => {
-    return hours ? `${hours}:00 - 18:00` : 'N/A'; // Handle undefined case
+    return hours ? `${hours}:00 - 18:00` : 'N/A';
 };
 
 const formatAppointmentTime = (dateTimeString: string) => {
@@ -188,44 +233,63 @@ const formatAppointmentTime = (dateTimeString: string) => {
     return date.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
 };
 
-const selectAppointment = (id: number) => {
-    selectedAppointmentId.value = id;
-    bookingError.value = null; // Clear previous errors on new selection
-    bookingSuccess.value = null;
+const formatReviewDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('hu-HU', { year: 'numeric', month: 'short', day: 'numeric' });
 };
+
+const averageScore = computed(() => {
+    if (!reviews.value.length) return 0;
+    return (
+        reviews.value.reduce((sum, r) => sum + (r.score || 0), 0) / reviews.value.length
+    );
+});
+
+const userAlreadyReviewed = computed(() => {
+    if (!authStore.isAuthenticated) return false;
+    return reviews.value.some(r => r.userId === authStore.userId);
+});
+
+const canWriteReview = computed(() => {
+    return authStore.isAuthenticated && !userAlreadyReviewed.value;
+});
 
 const truncateText = (text: string, maxLength: number) => {
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
 };
 
-const navigateToService = (serviceId: number) => {
-    router.push(`/services/${serviceId}`);
-};
-
-const fetchSimilarServices = async () => {
-    try {
-        if (!props.service || !props.service.categoryId) return;
-        const services = await serviceApi.getServicesByCategory(props.service.categoryId);
-        similarServices.value = services
-            .filter(s => s.serviceId !== props.service.serviceId)
-            .slice(0, 3);
-    } catch (error) {
-        console.error("Error fetching similar services:", error);
+// Fetch reviews for the current service
+async function fetchReviews() {
+    if (!props.service?.serviceId) {
+        reviews.value = [];
+        return;
     }
-};
-
-// Fetch ALL open appointments initially and store them
-const fetchAllOpenAppointments = async () => {
-    isLoading.value = true;
-    selectedAppointmentId.value = null; // Reset selection when fetching
     try {
-        const response = await appointmentsApi.getOpen();
-        allOpenAppointments.value = response || [];
+        // Use the reviews API composable to fetch all reviews, then filter by serviceId
+        const response = await reviewsApi.getAll();
+        reviews.value = (Array.isArray(response) ? response : []).filter(r => r.serviceId === props.service.serviceId);
     } catch (error) {
-        console.error("Error fetching open appointments:", error);
-        allOpenAppointments.value = []; // Clear on error
+        reviews.value = [];
+    }
+}
+
+const submitReview = async () => {
+    isSubmitting.value = true;
+    reviewError.value = '';
+    reviewSuccess.value = '';
+    try {
+        // TODO: Call your review API here
+        // await apiClient.post('/api/Review', { ...reviewForm.value, serviceId: props.service.serviceId });
+        reviewSuccess.value = 'Review submitted successfully!';
+        // Optionally reset form
+        reviewForm.value.score = 0;
+        reviewForm.value.description = '';
+        // Reload reviews after successful submission
+        await fetchReviews();
+    } catch (error: any) {
+        reviewError.value = error?.message || 'Failed to submit review.';
     } finally {
-        isLoading.value = false;
+        isSubmitting.value = false;
     }
 };
 
@@ -262,11 +326,30 @@ const bookSelectedAppointment = async () => {
     }
 };
 
-// Fetch similar services when the component mounts or service changes
+const fetchAllOpenAppointments = async () => {
+    isLoading.value = true;
+    selectedAppointmentId.value = null; // Reset selection when fetching
+    try {
+        const response = await appointmentsApi.getOpen();
+        allOpenAppointments.value = response || [];
+    } catch (error) {
+        console.error("Error fetching open appointments:", error);
+        allOpenAppointments.value = []; // Clear on error
+    } finally {
+        isLoading.value = false;
+    }
+};
+
+const navigateToService = (serviceId: number) => {
+    router.push(`/services/${serviceId}`);
+};
+
+// Fetch reviews and similar services when the component mounts or service changes
 watch(() => props.service, () => {
     if (props.service && props.service.serviceId) {
         fetchSimilarServices();
-        fetchAllOpenAppointments(); // Fetch open appointments when service changes
+        fetchAllOpenAppointments();
+        fetchReviews(); // Fetch reviews for the current service
     }
 }, { immediate: true });
 
@@ -280,5 +363,23 @@ watch(selectedDate, () => {
 // Fetch all open appointments when component mounts
 onMounted(() => {
     // fetchAllOpenAppointments is already called by the service watcher on immediate: true
+    // fetchReviews is also called by the watcher
 });
+
+function fetchSimilarServices() {
+    // Example: fetch services from the same category, excluding the current one
+    if (!props.service?.categoryId) {
+        similarServices.value = [];
+        return;
+    }
+    serviceApi.getServicesByCategory(props.service.categoryId)
+        .then(services => {
+            similarServices.value = (services || []).filter(
+                s => s.serviceId !== props.service.serviceId
+            ).slice(0, 5); // Limit to 5 similar services
+        })
+        .catch(() => {
+            similarServices.value = [];
+        });
+}
 </script>
