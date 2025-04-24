@@ -1,0 +1,21 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{p}{\PYGZob{}}
+\PYG{+w}{  }\PYG{n+nt}{\PYGZdq{}serviceId\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+m+mi}{3}\PYG{p}{,}
+\PYG{+w}{  }\PYG{n+nt}{\PYGZdq{}userId\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}677e7b94\PYGZhy{}d191\PYGZhy{}4db7\PYGZhy{}8af8\PYGZhy{}ab22b32ff2ed\PYGZdq{}}\PYG{p}{,}
+\PYG{+w}{  }\PYG{n+nt}{\PYGZdq{}provider\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{k+kc}{null}\PYG{p}{,}
+\PYG{+w}{  }\PYG{n+nt}{\PYGZdq{}category\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{k+kc}{null}\PYG{p}{,}
+\PYG{+w}{  }\PYG{n+nt}{\PYGZdq{}categoryId\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+m+mi}{2}\PYG{p}{,}
+\PYG{+w}{  }\PYG{n+nt}{\PYGZdq{}serviceName\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}Autó szerelés\PYGZdq{}}\PYG{p}{,}
+\PYG{+w}{  }\PYG{n+nt}{\PYGZdq{}price\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+m+mi}{40000}\PYG{p}{,}
+\PYG{+w}{  }\PYG{n+nt}{\PYGZdq{}description\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}Praesent a eros sit amet eros hendrerit semper in quis purus. Aenean sagittis felis vitae iaculis fermentum. Etiam tempus imperdiet mollis. Vivamus pretium mi non nibh iaculis venenatis. Donec pellentesque, felis a pharetra ultricies, ante enim consectetur lectus, nec vestibulum nisi augue sit amet dolor. Aenean vitae tempor mauris. Cras volutpat hendrerit neque id ultrices. \PYGZdq{}}\PYG{p}{,}
+\PYG{+w}{  }\PYG{n+nt}{\PYGZdq{}address\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}Gyor Szent Istvan ut 95\PYGZdq{}}\PYG{p}{,}
+\PYG{+w}{  }\PYG{n+nt}{\PYGZdq{}duration\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+m+mi}{120}\PYG{p}{,}
+\PYG{+w}{  }\PYG{n+nt}{\PYGZdq{}opensAt\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}08:00:00\PYGZdq{}}\PYG{p}{,}
+\PYG{+w}{  }\PYG{n+nt}{\PYGZdq{}closesAt\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}17:00:00\PYGZdq{}}\PYG{p}{,}
+\PYG{+w}{  }\PYG{n+nt}{\PYGZdq{}imageUrls\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{p}{[}
+\PYG{+w}{    }\PYG{l+s+s2}{\PYGZdq{}https://tiszolczijacint.blob.core.windows.net/img/2136ae16\PYGZhy{}7f2d\PYGZhy{}47c0\PYGZhy{}b30a\PYGZhy{}737c3c255500.jpg\PYGZdq{}}\PYG{p}{,}
+\PYG{+w}{    }\PYG{l+s+s2}{\PYGZdq{}https://tiszolczijacint.blob.core.windows.net/img/6e143f27\PYGZhy{}6257\PYGZhy{}4df2\PYGZhy{}8471\PYGZhy{}887d9a92ec9e.jpg\PYGZdq{}}\PYG{p}{,}
+\PYG{+w}{    }\PYG{l+s+s2}{\PYGZdq{}https://tiszolczijacint.blob.core.windows.net/img/1f148c9b\PYGZhy{}4341\PYGZhy{}494b\PYGZhy{}8219\PYGZhy{}56046bec830d.jpg\PYGZdq{}}
+\PYG{+w}{  }\PYG{p}{]}
+\PYG{p}{\PYGZcb{}}
+\end{MintedVerbatim}
