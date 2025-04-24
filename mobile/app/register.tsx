@@ -1072,6 +1072,7 @@ const styles = StyleSheet.create({
   passwordInput: {
     flex: 1,
     fontFamily: fontFamilies.text,
+    borderRadius: 28,
   },
   eyeButton: {
     paddingHorizontal: 10,

@@ -21,6 +21,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as SecureStore from 'expo-secure-store';
 import { useAuth } from '../context/AuthContext';
 import api from '../../services/api';
+import { fetchUserAppointments, AppointmentStatus, Appointment } from '../../services/appointmentApi';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -149,6 +150,11 @@ export default function ProfileScreen() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [settings, setSettings] = useState(settingsData);
   const { logout, userId, isAuthenticated, getUserInfo, userName } = useAuth();
+  const [appointmentStats, setAppointmentStats] = useState({
+    completed: 0,
+    upcoming: 0,
+    cancelled: 0
+  });
   
   // Initialize with safer default values
   const [profileData, setProfileData] = useState({
@@ -210,6 +216,42 @@ export default function ProfileScreen() {
       isMounted = false;
     };
   }, [userId, isAuthenticated]);
+
+  useEffect(() => {
+    const loadAppointmentStats = async () => {
+      if (!isAuthenticated) return;
+      
+      try {
+        const userAppointments = await fetchUserAppointments();
+        
+        // Calculate appointment counts by status
+        const stats = {
+          completed: 0,
+          upcoming: 0,
+          cancelled: 0
+        };
+        
+        userAppointments.forEach((appointment: Appointment) => {
+          if (appointment.status === AppointmentStatus.DONE) {
+            stats.completed++;
+          } else if (appointment.status === AppointmentStatus.SCHEDULED) {
+            stats.upcoming++;
+          } else if (
+            appointment.status === AppointmentStatus.CANCELLED_BY_USER || 
+            appointment.status === AppointmentStatus.CANCELLED_BY_SERVICE
+          ) {
+            stats.cancelled++;
+          }
+        });
+        
+        setAppointmentStats(stats);
+      } catch (error) {
+        console.error('Failed to load appointment statistics:', error);
+      }
+    };
+    
+    loadAppointmentStats();
+  }, [isAuthenticated]);
 
   const screenWidth = Dimensions.get('window').width;
   const isSmallDevice = screenWidth < 380;
@@ -500,7 +542,7 @@ export default function ProfileScreen() {
               darkColor="#fff" 
               lightColor="#fff"
             >
-              12
+              {appointmentStats.completed}
             </ThemedText>
             <ThemedText
               style={styles.statLabel}
@@ -517,7 +559,7 @@ export default function ProfileScreen() {
               darkColor="#fff" 
               lightColor="#fff"
             >
-              2
+              {appointmentStats.upcoming}
             </ThemedText>
             <ThemedText
               style={styles.statLabel}
@@ -534,7 +576,7 @@ export default function ProfileScreen() {
               darkColor="#fff" 
               lightColor="#fff"
             >
-              1
+              {appointmentStats.cancelled}
             </ThemedText>
             <ThemedText
               style={styles.statLabel}
