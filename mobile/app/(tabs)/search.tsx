@@ -120,8 +120,13 @@ function ProviderCard({ provider, onPress, categories }: {
         <View style={[styles.providerImageContainer, { borderColor: provider.color }]}>
           <Image 
             source={provider.image}
-            style={styles.providerImage}
-            contentFit="cover"
+            style={{
+              width: 56, // Almost the full width of container (60px minus 2px border on each side)
+              height: 56, // Almost the full height of container
+              borderRadius: 28, // Half of width/height for perfect circle
+              overflow: 'hidden'
+            }}
+            contentFit="cover" // This ensures image fills the space
           />
         </View>
         <View style={styles.providerInfo}>
@@ -696,15 +701,11 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     borderWidth: 2,
-    overflow: 'hidden',
+    overflow: 'hidden', // This is important to ensure the image doesn't overflow
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'transparent', // Change from rgba(255, 255, 255, 0.1) to transparent
     marginRight: 12,
-  },
-  providerImage: {
-    width: 36,
-    height: 36,
   },
   providerInfo: {
     flex: 1,

@@ -75,8 +75,13 @@ function CategoryCard({ category, onPress }: CategoryProps) {
         {category.iconUrl ? (
           <ExpoImage 
             source={{ uri: category.iconUrl }}
-            style={styles.categoryIconImage}
-            contentFit="contain"
+            style={{
+              width: 36, // Increase from 24 to better fill the 40px container
+              height: 36, // Increase from 24 to better fill the 40px container
+              borderRadius: 18, // Half of width/height
+              overflow: 'hidden'
+            }}
+            contentFit="cover"
           />
         ) : (
           <IconSymbol name="chevron.right" size={20} color={color} />
@@ -705,10 +710,6 @@ const styles = StyleSheet.create({
     fontSize: responsiveFontSize(14, 12, 16),
     fontFamily: fontFamilies.text,
     textAlign: 'center',
-  },
-  categoryIconImage: {
-    width: 24,
-    height: 24,
   },
   appointmentsContainer: {
     marginBottom: 24,

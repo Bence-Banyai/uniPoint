@@ -375,7 +375,12 @@ function ServiceCard({ service, onPress }: { service: Service; onPress: () => vo
         {service.imageUrls && service.imageUrls.length > 0 ? (
           <Image 
             source={{ uri: service.imageUrls[0] }}
-            style={styles.serviceImage}
+            style={{
+              width: 66, // Increase from 40 to better fill the 70px container
+              height: 66, // Increase from 40 to better fill the 70px container
+              borderRadius: 33, // Half of width/height for perfect circle
+              overflow: 'hidden'
+            }}
             contentFit="cover"
           />
         ) : (
@@ -783,8 +788,13 @@ export default function HomeScreen() {
                     <View style={styles.iconContainer}>
                       <Image 
                         source={{ uri: category.iconUrl }}
-                        style={styles.categoryIconImage}
-                        contentFit="contain"
+                        style={{
+                          width: 60, // Increase from 32 to better fill the 64px container
+                          height: 60, // Increase from 32 to better fill the 64px container
+                          borderRadius: 30, // Half of width/height
+                          overflow: 'hidden'
+                        }}
+                        contentFit="cover"
                         contentPosition="center"
                       />
                     </View>
@@ -1033,10 +1043,6 @@ const styles = StyleSheet.create({
   iconContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  categoryIconImage: {
-    width: 24,
-    height: 24,
   },
   
   container: {
