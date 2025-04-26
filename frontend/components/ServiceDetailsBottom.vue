@@ -60,7 +60,7 @@
                                         </div>
                                     </div>
                                     <span class="ml-auto text-sm text-gray-500">{{ formatReviewDate(review.createdAt)
-                                        }}</span>
+                                    }}</span>
                                 </div>
                                 <p class="text-gray-600">{{ review.description }}</p>
                             </div>
@@ -78,7 +78,8 @@
                                 <div class="flex items-center space-x-1">
                                     <button v-for="i in 5" :key="i" type="button" @click="reviewForm.score = i"
                                         :aria-label="`${i} star`">
-                                        <Icon :name="i <= reviewForm.score ? 'iconoir:star-solid' : 'iconoir:star'"
+                                        <Icon
+                                            :name="i <= reviewForm.score ? 'material-symbols-light:kid-star' : 'material-symbols-light:kid-star-outline'"
                                             :class="i <= reviewForm.score ? 'text-yellow-400' : 'text-gray-300'"
                                             class="h-6 w-6" />
                                     </button>
@@ -99,7 +100,7 @@
                                 </button>
                                 <span v-if="reviewError" class="ml-4 text-red-500 text-sm">{{ reviewError }}</span>
                                 <span v-if="reviewSuccess" class="ml-4 text-green-600 text-sm">{{ reviewSuccess
-                                    }}</span>
+                                }}</span>
                             </div>
                         </form>
                     </div>
@@ -274,12 +275,22 @@ async function fetchReviews() {
 }
 
 const submitReview = async () => {
+    if (!authStore.isAuthenticated) {
+        router.push('/login?redirect=' + encodeURIComponent(router.currentRoute.value.fullPath));
+        return;
+    }
+
     isSubmitting.value = true;
     reviewError.value = '';
     reviewSuccess.value = '';
     try {
-        // TODO: Call your review API here
-        // await apiClient.post('/api/Review', { ...reviewForm.value, serviceId: props.service.serviceId });
+        // Call the review API to create a new review
+        const payload = {
+            score: reviewForm.value.score,
+            description: reviewForm.value.description,
+            serviceId: props.service.serviceId
+        };
+        await reviewsApi.create(payload);
         reviewSuccess.value = 'Review submitted successfully!';
         // Optionally reset form
         reviewForm.value.score = 0;
@@ -287,7 +298,7 @@ const submitReview = async () => {
         // Reload reviews after successful submission
         await fetchReviews();
     } catch (error: any) {
-        reviewError.value = error?.message || 'Failed to submit review.';
+        reviewError.value = error?.response?.data?.message || error?.message || 'Failed to submit review.';
     } finally {
         isSubmitting.value = false;
     }
@@ -364,6 +375,12 @@ watch(selectedDate, () => {
 onMounted(() => {
     // fetchAllOpenAppointments is already called by the service watcher on immediate: true
     // fetchReviews is also called by the watcher
+});
+
+onMounted(async () => {
+    if (!authStore.isAuthenticated) {
+        await authStore.getUserInfo();
+    }
 });
 
 function fetchSimilarServices() {

@@ -64,6 +64,14 @@ export default defineNuxtConfig({
 		"@pinia/nuxt",
 	],
 
+	icon: {
+		// Preload these icon sets to avoid runtime CDN fetches and failures
+		collections: [
+			'entypo',
+			'iconoir'
+		]
+	},
+
 	googleFonts: {
 		families: {
 			Montserrat: true,
