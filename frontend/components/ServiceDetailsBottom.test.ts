@@ -2,11 +2,7 @@ import { mount } from "@vue/test-utils";
 import ServiceDetailsBottom from "./ServiceDetailsBottom.vue";
 import { describe, it, expect, vi } from "vitest";
 
-vi.mock("#app", () => ({
-	useRuntimeConfig: () => ({
-		public: { apiBaseUrl: "http://localhost" },
-	}),
-}));
+// Remove Nuxt test utils usage, use only Vue Test Utils
 
 vi.mock("vue-router", () => ({
 	useRouter: () => ({
@@ -66,7 +62,6 @@ describe("ServiceDetailsBottom", () => {
 				stubs: ["Icon"],
 			},
 		});
-
 		expect(wrapper.text()).toContain("Test service description");
 		expect(wrapper.text()).toContain("Duration: 60 minutes");
 		expect(wrapper.text()).toContain("Price:");

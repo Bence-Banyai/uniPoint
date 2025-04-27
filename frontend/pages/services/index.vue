@@ -63,7 +63,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { serviceApi, type Service, type Category } from '~/services/serviceApi';
+import { serviceApi, type Service, type Category } from '../../services/serviceApi';
 
 definePageMeta({
     layout: "default",

@@ -83,9 +83,7 @@ describe("RegisterPage", () => {
 		await wrapper.vm.$nextTick();
 		await wrapper.vm.$nextTick();
 		expect(wrapper.text()).toContain("Registration successful! You can now log in.");
-		// Simulate auto-login and redirect
 		expect(loginMock).toHaveBeenCalled();
-		// Either /profile or /login redirect is possible, so check for at least one
 		expect(pushMock).toHaveBeenCalled();
 	});
 });

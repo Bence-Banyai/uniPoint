@@ -24,9 +24,7 @@ vi.mock("../stores/auth.ts", () => ({
 	}),
 }));
 
-beforeEach(() => {
-	pushMock = vi.fn();
-});
+beforeEach(() => {});
 
 describe("LoginPage", () => {
 	it("renders login form", () => {
