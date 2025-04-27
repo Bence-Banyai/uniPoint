@@ -19,12 +19,6 @@
                     <NuxtLink to="/services"
                         class="text-gray-700 hover:text-primary-purple transition-colors duration-300 relative nav-link">
                         Services</NuxtLink>
-                    <NuxtLink to="/about"
-                        class="text-gray-700 hover:text-primary-purple transition-colors duration-300 relative nav-link">
-                        About</NuxtLink>
-                    <NuxtLink to="/contact"
-                        class="text-gray-700 hover:text-primary-purple transition-colors duration-300 relative nav-link">
-                        Contact</NuxtLink>
                 </div>
             </div>
 
@@ -61,19 +55,6 @@
                     </NuxtLink>
                 </template>
 
-                <!-- Language Selector with Dropdown -->
-                <div class="relative">
-                    <button
-                        class="flex items-center space-x-1 text-primary-purple hover:text-accent-blue focus:outline-none transition-colors duration-300">
-                        <span>EN</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform duration-300"
-                            :class="{ 'rotate-180': isOpen }" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 111.414 1.414l-4 4a1 1 01-1.414 0l-4-4a1 1 010-1.414z"
-                                clip-rule="evenodd" />
-                        </svg>
-                    </button>
-                </div>
 
                 <!-- Mobile menu button -->
                 <button class="md:hidden bg-purple-glass p-2 rounded-lg">

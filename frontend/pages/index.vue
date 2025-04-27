@@ -1,8 +1,6 @@
 <template>
     <div class="min-h-screen">
-        <!-- Hero Section: Enhanced with gradients and animations -->
         <section class="bg-gradient-purple py-24 text-white relative overflow-hidden">
-            <!-- Background decorative elements -->
             <div class="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-accent-blue opacity-20 blur-3xl"></div>
             <div class="absolute -bottom-32 -left-20 w-80 h-80 rounded-full bg-accent-pink opacity-20 blur-3xl"></div>
 
@@ -29,7 +27,7 @@
             </div>
         </section>
 
-        <!-- How It Works Section: Enhanced with cards and transitions -->
+        <!-- How It Works Section -->
         <section class="py-20 bg-gray-50">
             <div class="container mx-auto px-4">
                 <h2 class="text-3xl md:text-4xl font-bold text-center mb-4 text-dark-purple">How It Works</h2>
@@ -37,7 +35,6 @@
                     six simple steps</p>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <!-- Process steps with enhanced cards -->
                     <div
                         class="bg-white p-6 rounded-2xl shadow-soft hover:shadow-raised transition-all duration-600 group">
                         <div
@@ -101,7 +98,7 @@
             </div>
         </section>
 
-        <!-- Featured Services Section: New section to highlight key services -->
+        <!-- Featured Services Section -->
         <section class="py-20 bg-white">
             <div class="container mx-auto px-4">
                 <h2 class="text-3xl md:text-4xl font-bold text-center mb-4 text-dark-purple">Featured Services</h2>
@@ -181,7 +178,7 @@
             </div>
         </section>
 
-        <!-- Testimonial Section: New section to build trust -->
+        <!-- Testimonial Section -->
         <section class="py-20 bg-gray-50">
             <div class="container mx-auto px-4">
                 <h2 class="text-3xl md:text-4xl font-bold text-center mb-4 text-dark-purple">What Our Users Say</h2>
@@ -255,7 +252,7 @@
             </div>
         </section>
 
-        <!-- CTA Section: Enhanced call to action -->
+        <!-- CTA Section -->
         <section class="py-20 bg-gradient-purple text-white">
             <div class="container mx-auto px-4 text-center">
                 <h2 class="text-3xl md:text-4xl font-bold mb-6">Ready to Get Started?</h2>
@@ -279,7 +276,6 @@ definePageMeta({
     description: 'Transforming Education Through Innovation'
 });
 
-// Add SEO metadata for better optimization
 useSeoMeta({
     title: 'UniPoint - Transforming Education Through Innovation',
     ogTitle: 'UniPoint - Connect with Educational Services',

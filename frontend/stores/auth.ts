@@ -8,7 +8,7 @@ export interface AuthState {
 	user: {
 		userName: string | null;
 		email: string | null;
-		location: string | null; // Add location
+		location: string | null;
 		role: string | null;
 	};
 }
@@ -21,7 +21,7 @@ export const useAuthStore = defineStore("auth", {
 		user: {
 			userName: null,
 			email: null,
-			location: null, // Initialize location as null
+			location: null,
 			role: null,
 		},
 	}),
@@ -42,7 +42,7 @@ export const useAuthStore = defineStore("auth", {
 						this.setUser({
 							userName: response.userName || null,
 							email: response.email || null,
-							location: response.location || null, // Add location
+							location: response.location || null,
 							role: response.role || null,
 						});
 					}
@@ -76,7 +76,7 @@ export const useAuthStore = defineStore("auth", {
 		async register(userData: {
 			userName: string;
 			email: string;
-			location: string; // Changed from phoneNumber to location
+			location: string;
 			password: string;
 			role: string;
 		}) {
@@ -102,10 +102,8 @@ export const useAuthStore = defineStore("auth", {
 				const authApi = useAuthApi();
 				await authApi.logout();
 
-				// Clear auth state
 				this.clearAuth();
 
-				// Remove the cookie
 				const cookie = useCookie("auth-token");
 				cookie.value = null;
 
@@ -121,7 +119,6 @@ export const useAuthStore = defineStore("auth", {
 			}
 		},
 
-		// Add this to the actions section of useAuthStore
 		async getUserInfo() {
 			try {
 				if (!this.token || !this.userId) {
@@ -135,7 +132,6 @@ export const useAuthStore = defineStore("auth", {
 				const userData = await authApi.getUserInfo();
 
 				if (userData) {
-					// Make sure we update all user properties, including location
 					this.setUser({
 						userName: userData.userName || null,
 						email: userData.email || null,
@@ -143,7 +139,6 @@ export const useAuthStore = defineStore("auth", {
 						role: userData.role || null,
 					});
 
-					// For debugging purpose
 					console.log("Updated user info:", {
 						userName: userData.userName,
 						email: userData.email,
@@ -193,7 +188,7 @@ export const useAuthStore = defineStore("auth", {
 			this.user = {
 				userName: null,
 				email: null,
-				location: null, // Clear the location
+				location: null,
 				role: null,
 			};
 		},
@@ -237,12 +232,11 @@ export const useAuthStore = defineStore("auth", {
 					this.setUser({
 						userName: "User",
 						email: "",
-						location: null, // Add the missing location property
+						location: null,
 						role: "User",
 					});
 				}
 
-				// You can also try to fetch fresh user data if needed
 				this.getUserInfo().catch((err) => {
 					console.error("Failed to refresh user data:", err);
 				});

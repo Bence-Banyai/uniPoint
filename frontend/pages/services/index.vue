@@ -85,20 +85,17 @@ const sortByPopularity = ref(false);
 const currentPage = ref(1);
 const itemsPerPage = 9;
 
-// Fetch data
 const fetchServices = async () => {
     loading.value = true;
     error.value = null;
 
     try {
-        // First, fix the Promise.all call - you were only fetching categories
         const servicesData = await serviceApi.getAllServices();
         const categoriesData = await serviceApi.getAllCategories();
 
         console.log('Fetched services:', servicesData);
         console.log('Fetched categories:', categoriesData);
 
-        // Update state
         services.value = servicesData || [];
         categories.value = categoriesData || [];
 
@@ -112,11 +109,10 @@ const fetchServices = async () => {
     }
 };
 
-// Filter and sort services
+
 const filteredServices = computed(() => {
     let result = [...services.value];
 
-    // Filter by search query
     if (searchQuery.value) {
         const query = searchQuery.value.toLowerCase();
         result = result.filter(service =>
@@ -126,12 +122,10 @@ const filteredServices = computed(() => {
         );
     }
 
-    // Filter by category
     if (activeCategory.value !== null) {
         result = result.filter(service => service.categoryId === activeCategory.value);
     }
 
-    // Sort by popularity (simulated with price for now - you could use ratings in the future)
     if (sortByPopularity.value) {
         result.sort((a, b) => b.price - a.price);
     }
@@ -139,7 +133,6 @@ const filteredServices = computed(() => {
     return result;
 });
 
-// Pagination
 const totalPages = computed(() => Math.ceil(filteredServices.value.length / itemsPerPage));
 
 const displayedServices = computed(() => {
@@ -148,14 +141,13 @@ const displayedServices = computed(() => {
     return filteredServices.value.slice(startIndex, endIndex);
 });
 
-// Methods
 const toggleSortByPopularity = () => {
     sortByPopularity.value = !sortByPopularity.value;
 };
 
 const setActiveCategory = (categoryId: number) => {
     activeCategory.value = categoryId;
-    currentPage.value = 1; // Reset to first page when changing category
+    currentPage.value = 1;
 };
 
 const handlePageChange = (page: number) => {
@@ -163,12 +155,10 @@ const handlePageChange = (page: number) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
-// Reset page when filters change
 watch([searchQuery, activeCategory], () => {
     currentPage.value = 1;
 });
 
-// Fetch data on component mount
 onMounted(() => {
     console.log('Component mounted, fetching services...');
     fetchServices();

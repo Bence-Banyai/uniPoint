@@ -1,4 +1,3 @@
-// composables/useCategoriesApi.ts
 export default function useCategoriesApi() {
 	const apiClient = useApiClient();
 

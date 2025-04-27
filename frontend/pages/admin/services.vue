@@ -92,7 +92,7 @@
                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
                             <option disabled value="">Select category</option>
                             <option v-for="cat in categories" :key="cat.categoryId" :value="cat.categoryId">{{ cat.name
-                            }}</option>
+                                }}</option>
                         </select>
                     </div>
                     <div>
@@ -147,7 +147,7 @@
             <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
                 <h2 class="text-xl font-bold mb-4">Confirm Delete</h2>
                 <p class="mb-6">Are you sure you want to delete service <strong>{{ serviceToDelete?.serviceName
-                }}</strong>? This action cannot be undone.</p>
+                        }}</strong>? This action cannot be undone.</p>
                 <div class="flex justify-end space-x-3">
                     <button @click="showDeleteModal = false"
                         class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">Cancel</button>
@@ -173,7 +173,6 @@ definePageMeta({
     middleware: ['admin']
 });
 
-// You may want to create a composable for admin service API, but for now use fetch directly
 const loading = ref(true);
 const isSubmitting = ref(false);
 const showAddModal = ref(false);

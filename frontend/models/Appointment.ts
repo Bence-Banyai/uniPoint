@@ -10,9 +10,8 @@ export interface Appointment {
 	id: number;
 	userId?: string | null;
 	serviceId: number;
-	appointmentDate: string; // ISO string
+	appointmentDate: string;
 	status: AppointmentStatus;
-	// Optionally, for expanded API responses:
-	booker?: any; // User object, if included
-	service?: any; // Service object, if included
+	booker?: any;
+	service?: any;
 }

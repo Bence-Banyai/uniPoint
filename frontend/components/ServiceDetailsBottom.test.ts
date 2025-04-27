@@ -2,8 +2,6 @@ import { mount } from "@vue/test-utils";
 import ServiceDetailsBottom from "./ServiceDetailsBottom.vue";
 import { describe, it, expect, vi } from "vitest";
 
-// Remove Nuxt test utils usage, use only Vue Test Utils
-
 vi.mock("vue-router", () => ({
 	useRouter: () => ({
 		push: vi.fn(),

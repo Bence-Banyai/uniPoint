@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// No imports needed, use type casting directly
 const props = defineProps({
     type: {
         type: String as unknown as PropType<'submit' | 'button' | 'reset'>,

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// No need to import defineProps, it's auto-imported by Nuxt
 const props = defineProps({
     title: {
         type: String,

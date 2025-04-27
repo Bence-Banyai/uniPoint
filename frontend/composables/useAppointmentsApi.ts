@@ -1,9 +1,9 @@
 import useApiClient from "./useApiClient";
-import type { Appointment } from "~/models/Appointment"; // Assuming you have this model defined
+import type { Appointment } from "~/models/Appointment";
 import { useRuntimeConfig } from "nuxt/app";
 import { useAuthStore } from "../stores/auth";
 
-// Update your appointment API client with all necessary endpoints
+
 export default function useAppointmentsApi() {
 	const apiClient = useApiClient();
 	const config = useRuntimeConfig();

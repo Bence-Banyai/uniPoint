@@ -68,7 +68,7 @@
                                         </div>
                                     </div>
                                     <span class="ml-auto text-sm text-gray-500">{{ formatReviewDate(review.createdAt)
-                                    }}</span>
+                                        }}</span>
                                 </div>
                                 <p class="text-gray-600">{{ review.description }}</p>
                             </div>
@@ -107,7 +107,7 @@
                                 </button>
                                 <span v-if="reviewError" class="ml-4 text-red-500 text-sm">{{ reviewError }}</span>
                                 <span v-if="reviewSuccess" class="ml-4 text-green-600 text-sm">{{ reviewSuccess
-                                }}</span>
+                                    }}</span>
                             </div>
                         </form>
                     </div>
@@ -293,12 +293,11 @@ const submitReview = async () => {
     reviewError.value = '';
     reviewSuccess.value = '';
     try {
-        // Add createdAt to the payload as a workaround
         const payload = {
             score: reviewForm.value.score,
             description: reviewForm.value.description,
             serviceId: props.service.serviceId,
-            createdAt: new Date().toISOString() // <-- Add this line
+            createdAt: new Date().toISOString()
         };
         await reviewsApi.create(payload);
         reviewSuccess.value = 'Review submitted successfully!';
@@ -332,9 +331,7 @@ const bookSelectedAppointment = async () => {
         bookingSuccess.value = response?.data?.message || "Appointment booked successfully!";
         // Refresh the list of open appointments as the booked one is no longer open
         await fetchAllOpenAppointments();
-        selectedAppointmentId.value = null; // Clear selection after successful booking
-        // Optionally redirect to profile/appointments page
-        // router.push('/profile');
+        selectedAppointmentId.value = null;
     } catch (error: any) {
         console.error("Error booking appointment:", error);
         bookingError.value = error?.response?.data?.message || error?.response?.data || "Failed to book appointment. It might have been taken.";
@@ -381,8 +378,6 @@ watch(selectedDate, () => {
 
 // Fetch all open appointments when component mounts
 onMounted(() => {
-    // fetchAllOpenAppointments is already called by the service watcher on immediate: true
-    // fetchReviews is also called by the watcher
 });
 
 onMounted(async () => {

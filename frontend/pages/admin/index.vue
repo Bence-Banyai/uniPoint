@@ -56,7 +56,7 @@
             </NuxtLink>
         </div>
 
-        <!-- System statistics unavailable -->
+        <!-- Did not implement -->
         <div class="bg-white shadow-md rounded-lg p-6 text-center text-gray-500">
             <p>System statistics and recent activity are not available in this version.</p>
         </div>
@@ -66,6 +66,6 @@
 <script setup>
 definePageMeta({
     layout: 'admin',
-    middleware: ['admin'] // Create this middleware to check for admin role
+    middleware: ['admin']
 });
 </script>

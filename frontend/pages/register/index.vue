@@ -187,7 +187,6 @@ const register = async () => {
         success.value = '';
         isLoading.value = true;
 
-        // Validate form (location is now required)
         if (!form.userName || !form.email || !form.password || !form.location) {
             error.value = 'Please fill in all required fields';
             isLoading.value = false;
@@ -205,31 +204,26 @@ const register = async () => {
         if (result.success) {
             success.value = 'Registration successful! You can now log in.';
 
-            // Try to automatically log in the user
             try {
                 await authStore.login({
                     userNameOrEmail: form.userName,
                     password: form.password
                 });
 
-                // Reset form after successful login and redirect
                 form.userName = '';
                 form.email = '';
                 form.password = '';
                 form.location = '';
 
-                // Redirect to profile page
                 router.push('/profile');
             } catch (loginError) {
                 console.error('Auto-login after registration failed:', loginError);
 
-                // Reset form
                 form.userName = '';
                 form.email = '';
                 form.password = '';
                 form.location = '';
 
-                // Redirect to login after a short delay
                 setTimeout(() => {
                     router.push('/login');
                 }, 1500);

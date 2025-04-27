@@ -14,7 +14,7 @@ export default function useServicesApi() {
 			return apiClient.get(`/api/Service/${id}`);
 		},
 
-		// Create a new service (for providers)
+		// Create a new service
 		create(serviceData: {
 			serviceName: string;
 			price: number;

@@ -1,5 +1,3 @@
-// Using Nuxt 3's built-in fetch capabilities instead of axios
-
 export interface Category {
 	categoryId: number;
 	name: string;
@@ -15,8 +13,8 @@ export interface Service {
 	description: string;
 	address: string;
 	duration: number;
-	opensAt: string; // <-- add
-	closesAt: string; // <-- add
+	opensAt: string;
+	closesAt: string;
 	imageUrls?: string[];
 	provider?: {
 		userName: string;
@@ -37,7 +35,6 @@ export const serviceApi = {
 			const config = useRuntimeConfig();
 			const apiBaseUrl = config.public.apiBaseUrl;
 
-			// Use the full URL instead of relying on the proxy
 			const { data, error } = await useFetch<Service[]>(`${apiBaseUrl}/api/Service`);
 
 			if (error.value) {
@@ -57,11 +54,9 @@ export const serviceApi = {
 		try {
 			console.log(`Fetching service with ID: ${id}`);
 
-			// Get the runtime config to use the API base URL
 			const config = useRuntimeConfig();
 			const apiBaseUrl = config.public.apiBaseUrl;
 
-			// Use the full URL instead of relying on the proxy
 			const { data, error } = await useFetch<Service>(`${apiBaseUrl}/api/Service/${id}`);
 
 			if (error.value) {
@@ -81,16 +76,13 @@ export const serviceApi = {
 		try {
 			console.log("Fetching all categories...");
 
-			// Get the runtime config to use the API base URL
 			const config = useRuntimeConfig();
 			const apiBaseUrl = config.public.apiBaseUrl;
 
-			// Use the full URL instead of relying on the proxy
 			const { data, error } = await useFetch<Category[]>(`${apiBaseUrl}/api/Category`);
 
 			if (error.value) {
 				console.error("Error fetching categories:", error.value);
-				// Return empty array instead of throwing error so the page can still load
 				return [];
 			}
 
@@ -98,7 +90,6 @@ export const serviceApi = {
 			return data.value || [];
 		} catch (error) {
 			console.error("Error fetching categories:", error);
-			// Return empty array instead of throwing error
 			return [];
 		}
 	},
@@ -107,11 +98,9 @@ export const serviceApi = {
 		try {
 			console.log(`Fetching services for category ID: ${categoryId}`);
 
-			// Get the runtime config to use the API base URL
 			const config = useRuntimeConfig();
 			const apiBaseUrl = config.public.apiBaseUrl;
 
-			// Use the full URL instead of relying on the proxy
 			const { data, error } = await useFetch<Service[]>(`${apiBaseUrl}/api/Service`);
 
 			if (error.value) {

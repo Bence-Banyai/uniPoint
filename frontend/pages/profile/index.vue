@@ -203,7 +203,6 @@ const formatDateTime = (dateString) => {
 const fetchAppointments = async () => {
     try {
         const appointmentsApi = useAppointmentsApi();
-        // Only fetch appointments for the current user
         const response = await appointmentsApi.getMyAppointments();
         appointments.value = response || [];
     } catch (error) {
@@ -215,14 +214,12 @@ onMounted(async () => {
     isLoading.value = true;
 
     try {
-        // First get user info
         const userResult = await authStore.getUserInfo();
 
         if (!userResult.success) {
             console.error("Failed to fetch user info:", userResult.message);
         }
 
-        // For debugging purposes
         console.log("Profile loaded user data:", {
             userName: authStore.user.userName,
             email: authStore.user.email,
@@ -230,16 +227,13 @@ onMounted(async () => {
             role: authStore.user.role
         });
 
-        // If location is still null after getUserInfo, try to get it from localStorage (for web) or another source
         if (!authStore.user.location) {
             console.warn("Location still null, checking alternative sources");
 
-            // For web platforms, check localStorage
             if (process.client && window.localStorage) {
                 const storedLocation = localStorage.getItem('userLocation');
                 if (storedLocation) {
                     console.log("Found location in localStorage:", storedLocation);
-                    // Update the user in the store with this location
                     authStore.setUser({
                         ...authStore.user,
                         location: storedLocation
@@ -248,14 +242,12 @@ onMounted(async () => {
             }
         }
 
-        // Then try to get appointments if user role is appropriate
         const appointmentsApi = useAppointmentsApi();
         try {
             const appointmentsResponse = await appointmentsApi.getAll();
             appointments.value = appointmentsResponse || [];
         } catch (appointmentsError) {
             console.error("Error fetching appointments:", appointmentsError);
-            // Continue without appointments
         }
     } catch (error) {
         console.error("Error fetching user data:", error);
