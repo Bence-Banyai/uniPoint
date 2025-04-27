@@ -5,6 +5,7 @@ import { SymbolWeight } from 'expo-symbols';
 import React from 'react';
 import { OpaqueColorValue, StyleProp, TextStyle, Text, StyleSheet, Platform } from 'react-native';
 
+// Update the MAPPING object
 const MAPPING = {
   'house.fill': 'home',
   'magnifyingglass': 'search',
@@ -26,6 +27,8 @@ const MAPPING = {
   'mappin.and.ellipse': 'pin-drop',
   'exclamationmark.triangle.fill': 'warning',
   'calendar.badge.exclamationmark': 'event-busy',
+  'star.fill': 'star',
+  'text.bubble': 'chat', // Change to a valid Material icon
 };
 
 export type SFSymbols6_0 = 
@@ -48,7 +51,9 @@ export type SFSymbols6_0 =
   | 'tag.fill'
   | 'mappin.and.ellipse'
   | 'exclamationmark.triangle.fill'
-  | 'calendar.badge.exclamationmark';
+  | 'calendar.badge.exclamationmark'
+  | 'star.fill'
+  | 'text.bubble';
 
 interface IconSymbolProps {
   name: SFSymbols6_0;
@@ -74,7 +79,10 @@ export function IconSymbol({
        name === 'chevron.left' ? '‹' : 
        name === 'photo' ? '📷' : 
        name === 'exclamationmark.triangle.fill' ? '⚠️' : 
-       name === 'calendar.badge.exclamationmark' ? '📅❗' : '•'}
+       name === 'calendar.badge.exclamationmark' ? '📅❗' :
+       name === 'star.fill' ? '★' :
+       name === 'text.bubble' ? '💬' :
+       '•'}
     </Text>
   );
 }

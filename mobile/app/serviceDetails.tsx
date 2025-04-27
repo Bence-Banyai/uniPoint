@@ -8,7 +8,8 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
-  Modal
+  Modal,
+  TextInput
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,7 +25,8 @@ import { fetchServiceById, Service } from '@/services/serviceApi';
 import { fetchAppointments, bookAppointment, AppointmentStatus } from '@/services/appointmentApi';
 import { fetchCategories, Category as CategoryType } from '@/services/categoryApi';
 import { useAuth } from './context/AuthContext';
-
+import { fetchReviews, submitReview, Review } from '../services/reviewsApi';
+import api from '../services/api';
 
 const responsiveFontSize = (size: number, minSize: number, maxSize: number) => {
   const { width, height } = Dimensions.get('window');
@@ -61,7 +63,7 @@ export default function ServiceDetailsScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const serviceId = params.id as string;
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, userId } = useAuth();
   
   const [service, setService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(true);
@@ -77,9 +79,18 @@ export default function ServiceDetailsScreen() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [tempDate, setTempDate] = useState(new Date());
+
+  // Add these state variables inside ServiceDetailsScreen component
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(true);
+  const [userReview, setUserReview] = useState({ rating: 0, comment: '' });
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [userHasReviewed, setUserHasReviewed] = useState(false);
   
   useEffect(() => {
     loadServiceData();
+    // Moving loadReviews to a separate effect since it depends on service being loaded
   }, [serviceId]);
 
   useEffect(() => {
@@ -87,7 +98,13 @@ export default function ServiceDetailsScreen() {
       fetchAvailableTimeSlots();
     }
   }, [service, selectedDate]);
-  
+
+  useEffect(() => {
+    if (service) {
+      loadReviews();
+    }
+  }, [service, isAuthenticated]);
+
   const loadServiceData = async () => {
     try {
       setLoading(true);
@@ -108,6 +125,26 @@ export default function ServiceDetailsScreen() {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadReviews = async () => {
+    if (!service) return;
+    
+    try {
+      setLoadingReviews(true);
+      const serviceReviews = await fetchReviews(parseInt(serviceId, 10));
+      setReviews(serviceReviews);
+      
+      // Check if the current user already left a review
+      if (isAuthenticated && userId) {
+        const hasReviewed = serviceReviews.some(review => review.userId === userId);
+        setUserHasReviewed(hasReviewed);
+      }
+    } catch (error) {
+      console.error('Failed to load reviews:', error);
+    } finally {
+      setLoadingReviews(false);
     }
   };
 
@@ -223,9 +260,14 @@ export default function ServiceDetailsScreen() {
     return price.toLocaleString() + " HUF";
   };
   
-  const formatOpeningHours = (hours: number | undefined) => {
-    if (hours === undefined) return "Hours not available";
-    return `${hours}:00 - 18:00`;
+  const formatOpeningHours = (opensAt: string | undefined, closesAt: string | undefined) => {
+    if (!opensAt || !closesAt) return "Hours not available";
+    // Expecting format: HH:mm:ss or HH:mm
+    const formatTime = (t: string) => {
+      const [h, m] = t.split(":");
+      return `${h}:${m}`;
+    };
+    return `${formatTime(opensAt)} - ${formatTime(closesAt)}`;
   };
   
   const handleGoBack = () => {
@@ -269,6 +311,97 @@ export default function ServiceDetailsScreen() {
   };
   
   const noAvailableSlots = availableSlots.length === 0 && !loadingSlots;
+
+  // Add this function to handle review submission
+  const handleSubmitReview = async () => {
+    if (!isAuthenticated) {
+      Alert.alert(
+        "Authentication Required",
+        "Please log in to leave a review.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Login", onPress: () => router.push('/login') }
+        ]
+      );
+      return;
+    }
+    
+    if (userReview.rating === 0) {
+      Alert.alert("Rating Required", "Please select a star rating before submitting.");
+      return;
+    }
+    
+    try {
+      setIsSubmittingReview(true);
+      setReviewError(null);
+      
+      // Check if user's token is valid
+      const tokenValid = await checkAuthToken();
+      
+      if (!tokenValid) {
+        Alert.alert(
+          "Session Expired",
+          "Your login session has expired. Please log in again.",
+          [
+            { text: "OK", onPress: () => router.push('/login') }
+          ]
+        );
+        return;
+      }
+      
+      await submitReview({
+        serviceId: parseInt(serviceId, 10),
+        score: userReview.rating,
+        description: userReview.comment
+      });
+      
+      // Reset the form and refresh reviews
+      setUserReview({ rating: 0, comment: '' });
+      await loadReviews();
+      
+      Alert.alert("Success", "Your review has been submitted successfully.");
+    } catch (error: any) { // Type the error as any to access potential properties
+      console.error('Failed to submit review:', error);
+      
+      // Enhanced error handling
+      if (error.response && error.response.status === 401) {
+        setReviewError("Authentication error. Please log in again.");
+        // Optionally redirect to login
+        setTimeout(() => router.push('/login'), 1500);
+      } else {
+        setReviewError("Failed to submit your review. Please try again later.");
+      }
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
+  // Add this helper function to check if the auth token is still valid
+  const checkAuthToken = async () => {
+    try {
+      // Instead of /api/User/info, use current user ID to check token validity
+      // First get the user ID from context
+      const currentUserId = userId;
+      
+      if (!currentUserId) {
+        console.log('No user ID available, authentication required');
+        return false;
+      }
+      
+      // Make a lightweight request to verify token using the GET user endpoint
+      await api.get(`/api/User/${currentUserId}`);
+      return true;
+    } catch (error: any) {
+      // Only log the error if it's not an auth error
+      if (!error.response || (error.response.status !== 401 && error.response.status !== 403)) {
+        console.error('Auth token validation failed:', error);
+      }
+      return false;
+    }
+  };
+
+  // Calculate average rating
+  const averageRating = reviews.length > 0 ? (reviews.reduce((sum, r) => sum + (r.score || 0), 0) / reviews.length) : 0;
 
   return (
     <ThemedView style={styles.container}>
@@ -528,7 +661,7 @@ export default function ServiceDetailsScreen() {
                       darkColor="#EBD3F8" 
                       lightColor="#EBD3F8"
                     >
-                      Open: {formatOpeningHours(service.openingHours)}
+                      Open: {formatOpeningHours(service.opensAt, service.closesAt)}
                     </ThemedText>
                   </View>
                   
@@ -852,6 +985,222 @@ export default function ServiceDetailsScreen() {
                     )}
                   </LinearGradient>
                 </TouchableOpacity>
+              </View>
+
+              {/* Reviews Section */}
+              <View style={styles.reviewsCard}>
+                <ThemedText 
+                  style={styles.cardTitle}
+                  darkColor="#fff" 
+                  lightColor="#fff"
+                >
+                  Reviews
+                </ThemedText>
+                
+                {/* Average Rating Display */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                  <View style={{ flexDirection: 'row', marginRight: 8 }}>
+                    {[1,2,3,4,5].map(i => (
+                      <IconSymbol
+                        key={i}
+                        name="star.fill"
+                        size={18}
+                        color={i <= Math.round(averageRating) ? '#FFC107' : 'rgba(255,255,255,0.2)'}
+                      />
+                    ))}
+                  </View>
+                  <ThemedText style={{ fontSize: 16, color: '#FFC107', fontWeight: 'bold', marginRight: 8 }}>
+                    {averageRating.toFixed(1)}
+                  </ThemedText>
+                  <ThemedText style={{ fontSize: 14, color: '#EBD3F8' }}>
+                    ({reviews.length} review{reviews.length === 1 ? '' : 's'})
+                  </ThemedText>
+                </View>
+
+                {loadingReviews ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="small" color="#31E1F7" />
+                    <ThemedText 
+                      style={styles.loadingText}
+                      darkColor="#EBD3F8" 
+                      lightColor="#EBD3F8"
+                    >
+                      Loading reviews...
+                    </ThemedText>
+                  </View>
+                ) : reviews.length > 0 ? (
+                  <View style={styles.reviewsList}>
+                    {reviews.map((review) => (
+                      <View key={review.reviewId} style={styles.reviewItem}>
+                        <View style={styles.reviewHeader}>
+                          <View style={styles.reviewerInfo}>
+                            <View style={styles.avatarContainer}>
+                              {review.reviewer?.profilePictureUrl ? (
+                                <Image 
+                                  source={{ uri: review.reviewer.profilePictureUrl }}
+                                  style={styles.avatarImage}
+                                  contentFit="cover"
+                                />
+                              ) : (
+                                <IconSymbol name="person.fill" size={16} color="#EBD3F8" />
+                              )}
+                            </View>
+                            <ThemedText 
+                              style={styles.reviewerName}
+                              darkColor="#fff" 
+                              lightColor="#fff"
+                            >
+                              {review.reviewer?.userName || 'Anonymous User'}
+                            </ThemedText>
+                          </View>
+                          <View style={styles.ratingContainer}>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <IconSymbol 
+                                key={star}
+                                name="star.fill"
+                                size={14}
+                                color={star <= review.score ? '#FFC107' : 'rgba(255, 255, 255, 0.2)'}
+                              />
+                            ))}
+                          </View>
+                        </View>
+                        <ThemedText 
+                          style={styles.reviewText}
+                          darkColor="#EBD3F8" 
+                          lightColor="#EBD3F8"
+                        >
+                          {review.description}
+                        </ThemedText>
+                        <ThemedText 
+                          style={styles.reviewDate}
+                          darkColor="rgba(235, 211, 248, 0.5)" 
+                          lightColor="rgba(235, 211, 248, 0.5)"
+                        >
+                          {new Date(review.createdAt).toLocaleDateString()}
+                        </ThemedText>
+                      </View>
+                    ))}
+                  </View>
+                ) : (
+                  <View style={styles.emptyReviewsContainer}>
+                    <IconSymbol name="text.bubble" size={24} color="rgba(235, 211, 248, 0.5)" />
+                    <ThemedText 
+                      style={styles.emptyReviewsText}
+                      darkColor="#EBD3F8" 
+                      lightColor="#EBD3F8"
+                    >
+                      No reviews yet. Be the first to review this service!
+                    </ThemedText>
+                  </View>
+                )}
+                
+                {!userHasReviewed && isAuthenticated && (
+                  <View style={styles.writeReviewContainer}>
+                    <ThemedText 
+                      style={styles.writeReviewTitle}
+                      darkColor="#fff" 
+                      lightColor="#fff"
+                    >
+                      Write a Review
+                    </ThemedText>
+                    
+                    <View style={styles.ratingInputContainer}>
+                      <ThemedText 
+                        style={styles.ratingLabel}
+                        darkColor="#EBD3F8" 
+                        lightColor="#EBD3F8"
+                      >
+                        Your Rating
+                      </ThemedText>
+                      <View style={styles.starsContainer}>
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <TouchableOpacity
+                            key={star}
+                            onPress={() => setUserReview(prev => ({ ...prev, rating: star }))}
+                          >
+                            <IconSymbol 
+                              name="star.fill"
+                              size={24}
+                              color={star <= userReview.rating ? '#FFC107' : 'rgba(255, 255, 255, 0.2)'}
+                              style={styles.starIcon}
+                            />
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
+                    
+                    <View style={styles.commentInputContainer}>
+                      <ThemedText 
+                        style={styles.commentLabel}
+                        darkColor="#EBD3F8" 
+                        lightColor="#EBD3F8"
+                      >
+                        Your Review
+                      </ThemedText>
+                      <TextInput 
+                        style={styles.commentInput}
+                        value={userReview.comment}
+                        onChangeText={(text) => setUserReview(prev => ({ ...prev, comment: text }))}
+                        placeholder="Share your experience with this service..."
+                        placeholderTextColor="rgba(235, 211, 248, 0.5)"
+                        multiline
+                        numberOfLines={4}
+                        selectionColor="#31E1F7"
+                      />
+                    </View>
+                    
+                    {reviewError && (
+                      <ThemedText 
+                        style={styles.errorText}
+                        darkColor="#E91E63" 
+                        lightColor="#E91E63"
+                      >
+                        {reviewError}
+                      </ThemedText>
+                    )}
+                    
+                    <TouchableOpacity 
+                      style={[
+                        styles.submitReviewButton,
+                        (isSubmittingReview || userReview.rating === 0) && styles.disabledBookButton
+                      ]}
+                      activeOpacity={0.7}
+                      onPress={handleSubmitReview}
+                      disabled={isSubmittingReview || userReview.rating === 0}
+                    >
+                      <LinearGradient
+                        colors={["#31E1F7", "#6EDCD9"]}
+                        style={styles.bookButtonGradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                      >
+                        {isSubmittingReview ? (
+                          <ActivityIndicator size="small" color="#400D51" />
+                        ) : (
+                          <ThemedText 
+                            style={styles.bookButtonText}
+                            darkColor="#400D51" 
+                            lightColor="#400D51"
+                          >
+                            Submit Review
+                          </ThemedText>
+                        )}
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  </View>
+                )}
+                
+                {userHasReviewed && (
+                  <View style={styles.alreadyReviewedContainer}>
+                    <ThemedText 
+                      style={styles.alreadyReviewedText}
+                      darkColor="#31E1F7" 
+                      lightColor="#31E1F7"
+                    >
+                      You've already reviewed this service.
+                    </ThemedText>
+                  </View>
+                )}
               </View>
             </>
           ) : (
@@ -1417,5 +1766,145 @@ const styles = StyleSheet.create({
       marginHorizontal: 0,
       width: '95%',
     }),
+  },
+  reviewsCard: {
+    backgroundColor: 'rgba(174, 0, 255, 0.1)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(235, 211, 248, 0.2)',
+    zIndex: 1,
+  },
+  reviewsList: {
+    gap: 20,
+    marginBottom: 24,
+  },
+  reviewItem: {
+    backgroundColor: 'rgba(174, 0, 255, 0.08)',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(235, 211, 248, 0.1)',
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  reviewerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  avatarContainer: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(174, 0, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarImage: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+  },
+  reviewerName: {
+    fontSize: responsiveFontSize(14, 12, 16),
+    fontWeight: '500',
+    fontFamily: fontFamilies.subtitle,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    gap: 2,
+  },
+  reviewText: {
+    fontSize: responsiveFontSize(14, 12, 16),
+    lineHeight: 20,
+    fontFamily: fontFamilies.text,
+    marginBottom: 8,
+  },
+  reviewDate: {
+    fontSize: responsiveFontSize(12, 10, 14),
+    fontFamily: fontFamilies.text,
+    textAlign: 'right',
+  },
+  emptyReviewsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 24,
+    opacity: 0.6,
+  },
+  emptyReviewsText: {
+    fontSize: responsiveFontSize(14, 12, 16),
+    fontFamily: fontFamilies.text,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  writeReviewContainer: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(235, 211, 248, 0.1)',
+    paddingTop: 16,
+    marginTop: 8,
+  },
+  writeReviewTitle: {
+    fontSize: responsiveFontSize(16, 14, 18),
+    fontWeight: '600',
+    fontFamily: fontFamilies.subtitle,
+    marginBottom: 12,
+  },
+  ratingInputContainer: {
+    marginBottom: 16,
+  },
+  ratingLabel: {
+    fontSize: responsiveFontSize(14, 12, 16),
+    fontFamily: fontFamilies.text,
+    marginBottom: 8,
+  },
+  starsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  starIcon: {
+    marginRight: 2,
+  },
+  commentInputContainer: {
+    marginBottom: 16,
+  },
+  commentLabel: {
+    fontSize: responsiveFontSize(14, 12, 16),
+    fontFamily: fontFamilies.text,
+    marginBottom: 8,
+  },
+  commentInput: {
+    backgroundColor: 'rgba(174, 0, 255, 0.08)',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(235, 211, 248, 0.2)',
+    color: '#EBD3F8',
+    fontSize: responsiveFontSize(14, 12, 16),
+    fontFamily: fontFamilies.text,
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  submitReviewButton: {
+    borderRadius: 28,
+    overflow: 'hidden',
+    height: 48,
+    marginTop: 8,
+  },
+  alreadyReviewedContainer: {
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(235, 211, 248, 0.1)',
+    marginTop: 8,
+  },
+  alreadyReviewedText: {
+    fontSize: responsiveFontSize(14, 12, 16),
+    fontFamily: fontFamilies.text,
   },
 });

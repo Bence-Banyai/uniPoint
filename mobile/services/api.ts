@@ -9,15 +9,6 @@ const BASE_URL = Platform.select({
   ios: 'https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net',
 });
 
-const api = axios.create({
-  baseURL: BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  // Add these settings for CORS support
-  withCredentials: false,
-});
-
 // Helper to safely access SecureStore
 const getSecureItem = async (key: string) => {
   if (Platform.OS === 'web') {
@@ -28,74 +19,72 @@ const getSecureItem = async (key: string) => {
   }
 };
 
-// Interceptor to add auth token to requests
+// Helper to safely store in SecureStore
+const storeSecureItem = async (key: string, value: string) => {
+  if (Platform.OS === 'web') {
+    localStorage.setItem(key, value);
+  } else {
+    await SecureStore.setItemAsync(key, value);
+  }
+};
+
+const api = axios.create({
+  baseURL: BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  // Add these settings for CORS support
+  withCredentials: false,
+});
+
+// Request interceptor to add the token
 api.interceptors.request.use(
   async (config) => {
-    try {
-      const token = await getSecureItem('userToken');
-      
-      if (token) {
-        // Make sure the Authorization header is properly formatted
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      
-      // Add debug log to see what URL is being requested
-      console.log(`Making API request to: ${config.baseURL}${config.url}`);
-      
-      // Add CORS headers for web platform
-      if (Platform.OS === 'web') {
-        config.headers['Access-Control-Allow-Origin'] = '*';
-        config.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS';
-        config.headers['Access-Control-Allow-Headers'] = 'Origin, Content-Type, Accept, Authorization';
-      }
-    } catch (error) {
-      console.error('API interceptor error:', error);
+    // Use getAuthToken to find the token from any key
+    const token = await getSecureItem('userToken');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+      console.log('Authorization header added to request'); // Add log
+    } else {
+      console.log('No token found, request sent without Authorization header'); // Add log
     }
+    // Log the request being made
+    console.log(`Making API request to: ${config.baseURL}${config.url}`);
     return config;
   },
   (error) => {
+    console.error('Request interceptor error:', error); // Add log
     return Promise.reject(error);
   }
 );
 
-// Add retry logic with multiple endpoint formats
+// Response interceptor - REMOVE OR COMMENT OUT THE REFRESH LOGIC
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    // If we get a 404 on /api/User/{userId}, try alternative endpoints
     const originalRequest = error.config;
-    
-    // Only retry GET requests to specific endpoints once
-    if (
-      error.response?.status === 404 &&
-      originalRequest.method === 'get' &&
-      originalRequest.url.startsWith('/api/User/') &&
-      !originalRequest._retried
-    ) {
-      originalRequest._retried = true;
-      
-      // Try alternative URL formats - your API might use different conventions
-      const userId = originalRequest.url.split('/').pop();
-      const alternativeEndpoints = [
-        `/api/User/GetUser/${userId}`,
-        `/api/User/getUserById/${userId}`,
-        `/api/User/details/${userId}`,
-        `/api/Auth/user/${userId}`,
-      ];
-      
-      for (const endpoint of alternativeEndpoints) {
-        try {
-          console.log(`Trying alternative endpoint: ${endpoint}`);
-          const response = await api.get(endpoint);
-          if (response.status === 200) {
-            return response;
-          }
-        } catch (retryError) {
-          console.log(`Alternative endpoint ${endpoint} failed too`);
-        }
+    // console.log('Response error status:', error.response?.status); // Log status
+    // console.log('Original request retry status:', originalRequest._retry); // Log retry status
+
+    // REMOVE or COMMENT OUT this block for refresh token logic
+    /*
+    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      console.log('Attempting token refresh...'); // Log refresh attempt
+      const newToken = await refreshToken(); // This function should be removed
+      if (newToken) {
+        console.log('Token refreshed, retrying original request...'); // Log retry
+        originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+        return api(originalRequest);
+      } else {
+        console.log('Token refresh failed.'); // Log refresh failure
+        // Optionally handle logout here if refresh fails
+        // await logout(); // Example: Call logout function from AuthContext
+        // router.replace('/login');
       }
     }
-    
+    */
+    console.error('API Response Error:', error.response?.status, error.message); // Log other errors
     return Promise.reject(error);
   }
 );
