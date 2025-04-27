@@ -76,6 +76,9 @@ export default defineNuxtConfig({
 				prependPath: false,
 			},
 		},
+		prerender: {
+			failOnError: false,
+		},
 	},
 
 	imports: {
