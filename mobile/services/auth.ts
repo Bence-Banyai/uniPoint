@@ -1,21 +1,17 @@
 import axios from 'axios';
 import { Platform } from 'react-native';
 
-// Import SecureStore only for native platforms to avoid web errors
 import * as SecureStoreModule from 'expo-secure-store';
 
-// Use a conditional variable instead of dynamic import
 const SecureStore = Platform.OS !== 'web' ? SecureStoreModule : null;
 
-// Configure API base URL based on platform
 const BASE_URL = Platform.select({
-  web: 'https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net', // For web dev environment
-  android: 'https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net', // For Android emulator (points to host's localhost)
-  ios: 'https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net', // For iOS simulator
-  default: 'https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net', // Default fallback
+  web: 'https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net',
+  android: 'https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net',
+  ios: 'https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net',
+  default: 'https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net',
 });
 
-// Create axios instance with base URL
 const api = axios.create({
   baseURL: BASE_URL,
   headers: {
@@ -25,7 +21,6 @@ const api = axios.create({
   timeout: 10000,
 });
 
-// Add request interceptor for CORS handling on web platform
 api.interceptors.request.use(
   config => {
     if (Platform.OS === 'web') {
@@ -43,7 +38,7 @@ api.interceptors.request.use(
 export interface RegisterData {
   userName: string;
   email: string;
-  location: string;  // Changed from phoneNumber
+  location: string;
   password: string;
   role: string;
 }
@@ -67,7 +62,6 @@ export interface AuthResponse {
   };
 }
 
-// Helper functions for secure storage that work across platforms
 const storeSecureItem = async (key: string, value: string) => {
   if (Platform.OS === 'web') {
     localStorage.setItem(key, value);
@@ -93,7 +87,6 @@ const removeSecureItem = async (key: string) => {
   }
 };
 
-// For development mode, you can use this to create mock data
 const createMockAuthResponse = (userId: string) => {
   return {
     token: `mock-jwt-token-${Date.now()}`,
@@ -107,17 +100,14 @@ export const authService = {
     console.log('Auth service: Attempting to register with data:', userData);
 
     try {
-      // Prepare data for backend
       const backendData = {
         ...userData,
-        // Make sure phoneNumber is set for backend compatibility if needed
         phoneNumber: userData.location
       };
 
       const response = await api.post('/api/Auth/register', backendData);
       console.log('Auth service: Registration success:', response.data);
       
-      // ALWAYS store location after registration regardless of response
       await storeSecureItem('userLocation', userData.location);
       console.log('Stored location during registration:', userData.location);
       
@@ -135,7 +125,6 @@ export const authService = {
       const response = await api.post<AuthResponse>('/api/Auth/login', credentials);
       console.log('Auth service: Login successful');
 
-      // Save the token securely
       if (response.data.token) {
         await storeSecureItem('userToken', response.data.token);
         await storeSecureItem('userId', response.data.userId);
@@ -150,7 +139,6 @@ export const authService = {
 
   async logout() {
     try {
-      // Remove stored credentials regardless of API success
       await removeSecureItem('userToken');
       await removeSecureItem('userId');
       
@@ -159,7 +147,6 @@ export const authService = {
         return response.data;
       } catch (apiError) {
         console.error('API logout failed:', apiError);
-        // Return a successful response even if API fails
         return { message: "Logged out successfully" };
       }
     } catch (error) {

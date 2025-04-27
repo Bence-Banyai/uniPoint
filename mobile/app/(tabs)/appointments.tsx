@@ -255,7 +255,6 @@ export default function AppointmentsScreen() {
         appt.status === AppointmentStatus.SCHEDULED &&
         new Date(appt.appointmentDate) < now
       ) {
-        // If scheduled but date is in the past, treat as done
         return { ...appt, status: AppointmentStatus.DONE };
       }
       return appt;
@@ -314,18 +313,14 @@ export default function AppointmentsScreen() {
     try {
       await cancelAppointment(id);
       
-      // Refresh the appointments data
       await loadUserAppointments();
       
-      // Instead of trying to update params immediately, set a flag in AsyncStorage
-      // that will be checked when the user returns to the index tab
       try {
         await AsyncStorage.setItem('shouldRefreshHomeScreen', 'true');
       } catch (error) {
         console.log('Error setting refresh flag:', error);
       }
       
-      // Show a success message
       Alert.alert(
         "Appointment Cancelled", 
         "Your appointment has been successfully cancelled."
@@ -386,7 +381,7 @@ export default function AppointmentsScreen() {
       >
         <View style={styles.header}>
           <View style={styles.profileContainer}>
-            <ExpoImage // Use ExpoImage for contentFit
+            <ExpoImage
               source={profileImage}
               style={styles.avatar}
               contentFit="cover"

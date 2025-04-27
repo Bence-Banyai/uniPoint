@@ -164,7 +164,7 @@ export default function TabLayout() {
         name="serviceDetails"
         options={{
           title: 'Service Details',
-          href: null,  // This hides it from the tab bar
+          href: null,
         }}
       />
     </Tabs>

@@ -66,16 +66,14 @@ export default function ProfileScreen() {
     cancelled: 0
   });
   
-  // Initialize with safer default values
   const [profileData, setProfileData] = useState({
     name: "Loading...",
     email: "loading@example.com",
-    location: "",  // Empty string instead of undefined
+    location: "",
     memberSince: new Date().toLocaleDateString(),
     profileImage: require("@/assets/images/adaptive-icon.png")
   });
   
-  // Move fetchUserData out of useEffect so it can be called after upload
   const fetchUserData = async () => {
     if (!userId) return;
     try {
@@ -90,7 +88,6 @@ export default function ProfileScreen() {
       }
       try {
         const userInfoData = await refreshUserInfo();
-        // Always use the backend profilePictureUrl if present, with cache-busting
         let profileImage = userInfoData.profilePictureUrl;
         if (profileImage && typeof profileImage === 'string' && profileImage.trim() !== '') {
           const sep = profileImage.includes('?') ? '&' : '?';
@@ -99,11 +96,9 @@ export default function ProfileScreen() {
           profileImage = undefined;
         }
         
-        // Format the memberSince date to only show the date part (not time)
         let formattedDate = new Date().toLocaleDateString();
         if (userInfoData.createdAt) {
           try {
-            // Parse the ISO string and format it as a readable date
             const dateObj = new Date(userInfoData.createdAt);
             formattedDate = dateObj.toLocaleDateString('en-US', { 
               year: 'numeric', 
@@ -145,7 +140,6 @@ export default function ProfileScreen() {
       try {
         const userAppointments = await fetchUserAppointments();
         
-        // Calculate appointment counts by status
         const stats = {
           completed: 0,
           upcoming: 0,
@@ -153,7 +147,6 @@ export default function ProfileScreen() {
         };
         
         userAppointments.forEach((appointment: Appointment) => {
-          // Treat SCHEDULED appointments in the past as DONE
           if (
             (appointment.status === AppointmentStatus.DONE) ||
             (appointment.status === AppointmentStatus.SCHEDULED && new Date(appointment.appointmentDate) < new Date())
@@ -178,10 +171,8 @@ export default function ProfileScreen() {
     loadAppointmentStats();
   }, [isAuthenticated]);
 
-  // Helper to pick image (web and native support)
   const pickImage = async () => {
     if (Platform.OS === 'web') {
-      // Trigger file input click for web
       document.getElementById('web-profile-upload')?.click();
       return;
     }
@@ -201,7 +192,6 @@ export default function ProfileScreen() {
     }
   };
 
-  // Web file input handler
   const handleWebFileChange = (event: any) => {
     const file = event.target.files && event.target.files[0];
     if (file) {
@@ -209,17 +199,15 @@ export default function ProfileScreen() {
     }
   };
 
-  // Helper to upload image (uri for native, File for web)
   const uploadProfilePicture = async (fileOrUri: any) => {
     try {
       setUploading(true);
-      // Use localStorage for token on web, SecureStore on native
       const token = Platform.OS === 'web'
         ? localStorage.getItem('userToken')
         : await SecureStore.getItemAsync('userToken');
       const formData = new FormData();
       if (Platform.OS === 'web') {
-        formData.append('file', fileOrUri); // fileOrUri is a File object
+        formData.append('file', fileOrUri);
       } else {
         formData.append('file', {
           uri: fileOrUri,
@@ -231,7 +219,6 @@ export default function ProfileScreen() {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          // Don't set Content-Type for web, browser will set it with boundary
           ...(Platform.OS !== 'web' ? { 'Content-Type': 'multipart/form-data' } : {}),
           'accept': '*/*',
         },
@@ -241,7 +228,7 @@ export default function ProfileScreen() {
         const err = await response.text();
         throw new Error(err);
       }
-      await fetchUserData(); // Refresh the page/profile after upload
+      await fetchUserData();
       Alert.alert('Success', 'Profile picture updated!');
     } catch (e: any) {
       Alert.alert('Upload failed', e.message || 'Unknown error');
@@ -601,31 +588,31 @@ const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 20,       // Add this line to create space above the stats
+    marginTop: 20,
     marginBottom: 24,
   },
   statCard: {
     backgroundColor: 'rgba(174, 0, 255, 0.1)',
     borderRadius: 16,
-    padding: 14,             // Reduced from 16 to give more space for text
+    padding: 14,
     borderWidth: 1,
     borderColor: 'rgba(235, 211, 248, 0.2)',
     alignItems: 'center',
     width: '31%',
-    justifyContent: 'center', // Add for vertical centering
+    justifyContent: 'center',
   },
   statValue: {
-    fontSize: responsiveFontSize(20, 18, 28), // Reduced minimum size for small devices
+    fontSize: responsiveFontSize(20, 18, 28),
     fontWeight: 'bold',
     fontFamily: fontFamilies.subtitle,
     marginBottom: 4,
-    textAlign: 'center',     // Ensure center alignment
+    textAlign: 'center',
   },
   statLabel: {
-    fontSize: responsiveFontSize(12, 10, 14), // Reduced minimum size for small devices
+    fontSize: responsiveFontSize(12, 10, 14),
     fontFamily: fontFamilies.text,
-    textAlign: 'center',     // Ensure center alignment
-    flexShrink: 1,           // Allow text to shrink if needed
+    textAlign: 'center',
+    flexShrink: 1,
   },
   logoutButton: {
     width: '100%',

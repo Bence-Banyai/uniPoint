@@ -43,7 +43,6 @@ const fontFamilies = {
   button: Platform.select({ ios: "Avenir-Heavy", android: "sans-serif-medium" }),
 };
 
-// Get color based on category ID
 const getCategoryColor = (categoryId: number): string => {
   const colors: {[key: number]: string} = {
     1: '#4CAF50', // Health
@@ -80,7 +79,6 @@ export default function ServiceDetailsScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [tempDate, setTempDate] = useState(new Date());
 
-  // Add these state variables inside ServiceDetailsScreen component
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
   const [userReview, setUserReview] = useState({ rating: 0, comment: '' });
@@ -90,7 +88,6 @@ export default function ServiceDetailsScreen() {
   
   useEffect(() => {
     loadServiceData();
-    // Moving loadReviews to a separate effect since it depends on service being loaded
   }, [serviceId]);
 
   useEffect(() => {
@@ -108,11 +105,9 @@ export default function ServiceDetailsScreen() {
   const loadServiceData = async () => {
     try {
       setLoading(true);
-      // Fetch the service details using the ID from params
       const serviceData = await fetchServiceById(parseInt(serviceId, 10));
       setService(serviceData);
       
-      // Fetch categories to get the service's category
       const categoriesData = await fetchCategories();
       const serviceCategory = categoriesData.find(c => c.categoryId === serviceData.categoryId);
       setCategory(serviceCategory || null);
@@ -136,7 +131,6 @@ export default function ServiceDetailsScreen() {
       const serviceReviews = await fetchReviews(parseInt(serviceId, 10));
       setReviews(serviceReviews);
       
-      // Check if the current user already left a review
       if (isAuthenticated && userId) {
         const hasReviewed = serviceReviews.some(review => review.userId === userId);
         setUserHasReviewed(hasReviewed);
@@ -155,16 +149,13 @@ export default function ServiceDetailsScreen() {
     setRefreshing(false);
   };
   
-  // Function to calculate available time slots based on service opening/closing times and duration
   const fetchAvailableTimeSlots = async () => {
     if (!service) return;
 
     setLoadingSlots(true);
     try {
-      // Fetch all open appointments for this service
       const appointments = await fetchAppointments();
       
-      // Filter just the open appointments for this service
       const openAppointments = appointments.filter(
         (appointment: {serviceId: number; status: AppointmentStatus; appointmentDate: string}) => 
           appointment.serviceId === parseInt(serviceId, 10) && 
@@ -172,7 +163,6 @@ export default function ServiceDetailsScreen() {
           appointment.appointmentDate.split('T')[0] === selectedDate
       );
       
-      // Format the appointments into usable time slots
       const slots = openAppointments.map((appointment: {id: number; appointmentDate: string}) => {
         const date = new Date(appointment.appointmentDate);
         return {
@@ -187,7 +177,6 @@ export default function ServiceDetailsScreen() {
       });
       
       setAvailableSlots(slots.sort((a: {time: string}, b: {time: string}) => {
-        // Sort by time
         return new Date('1/1/1970 ' + a.time).getTime() - new Date('1/1/1970 ' + b.time).getTime();
       }));
     } catch (error) {
@@ -229,13 +218,10 @@ export default function ServiceDetailsScreen() {
       setIsBooking(true);
       await bookAppointment(selectedSlot);
       
-      // Show success message and redirect to search screen
       if (Platform.OS === 'web') {
-        // For web: Show an alert and then redirect
         window.alert('Your appointment has been successfully booked!');
         router.replace('/(tabs)/search');
       } else {
-        // For mobile: Use the existing Alert.alert with callback
         Alert.alert(
           "Booking Successful", 
           `Your appointment for ${service?.serviceName} has been booked.`,
@@ -248,7 +234,6 @@ export default function ServiceDetailsScreen() {
         "Booking Failed", 
         "There was an error booking your appointment. It may have been booked by someone else. Please try another time slot."
       );
-      // Refresh the available slots to get the latest status
       fetchAvailableTimeSlots();
     } finally {
       setIsBooking(false);
@@ -262,7 +247,6 @@ export default function ServiceDetailsScreen() {
   
   const formatOpeningHours = (opensAt: string | undefined, closesAt: string | undefined) => {
     if (!opensAt || !closesAt) return "Hours not available";
-    // Expecting format: HH:mm:ss or HH:mm
     const formatTime = (t: string) => {
       const [h, m] = t.split(":");
       return `${h}:${m}`;
@@ -284,13 +268,11 @@ export default function ServiceDetailsScreen() {
   };
 
   const handleDatePickerChange = (event: any, selectedDate?: Date) => {
-    // For web, prevent default behavior and stop propagation
     if (Platform.OS === 'web' && event.nativeEvent) {
       event.stopPropagation?.();
       event.preventDefault?.();
     }
 
-    // Close the picker immediately on iOS and Android
     if (Platform.OS !== 'web') {
       setShowDatePicker(false);
     }
@@ -302,7 +284,6 @@ export default function ServiceDetailsScreen() {
     if (selectedDate) {
       setTempDate(selectedDate);
       
-      // Only update the selected date if we're on web or if confirm is pressed on mobile
       if (Platform.OS === 'web' || event.type === 'set') {
         const dateStr = selectedDate.toISOString().split('T')[0];
         handleDateChange(dateStr);
@@ -312,7 +293,6 @@ export default function ServiceDetailsScreen() {
   
   const noAvailableSlots = availableSlots.length === 0 && !loadingSlots;
 
-  // Add this function to handle review submission
   const handleSubmitReview = async () => {
     if (!isAuthenticated) {
       Alert.alert(
@@ -335,7 +315,6 @@ export default function ServiceDetailsScreen() {
       setIsSubmittingReview(true);
       setReviewError(null);
       
-      // Check if user's token is valid
       const tokenValid = await checkAuthToken();
       
       if (!tokenValid) {
@@ -355,18 +334,15 @@ export default function ServiceDetailsScreen() {
         description: userReview.comment
       });
       
-      // Reset the form and refresh reviews
       setUserReview({ rating: 0, comment: '' });
       await loadReviews();
       
       Alert.alert("Success", "Your review has been submitted successfully.");
-    } catch (error: any) { // Type the error as any to access potential properties
+    } catch (error: any) { 
       console.error('Failed to submit review:', error);
       
-      // Enhanced error handling
       if (error.response && error.response.status === 401) {
         setReviewError("Authentication error. Please log in again.");
-        // Optionally redirect to login
         setTimeout(() => router.push('/login'), 1500);
       } else {
         setReviewError("Failed to submit your review. Please try again later.");
@@ -376,11 +352,8 @@ export default function ServiceDetailsScreen() {
     }
   };
 
-  // Add this helper function to check if the auth token is still valid
   const checkAuthToken = async () => {
     try {
-      // Instead of /api/User/info, use current user ID to check token validity
-      // First get the user ID from context
       const currentUserId = userId;
       
       if (!currentUserId) {
@@ -388,11 +361,9 @@ export default function ServiceDetailsScreen() {
         return false;
       }
       
-      // Make a lightweight request to verify token using the GET user endpoint
       await api.get(`/api/User/${currentUserId}`);
       return true;
     } catch (error: any) {
-      // Only log the error if it's not an auth error
       if (!error.response || (error.response.status !== 401 && error.response.status !== 403)) {
         console.error('Auth token validation failed:', error);
       }
@@ -400,7 +371,6 @@ export default function ServiceDetailsScreen() {
     }
   };
 
-  // Calculate average rating
   const averageRating = reviews.length > 0 ? (reviews.reduce((sum, r) => sum + (r.score || 0), 0) / reviews.length) : 0;
 
   return (
@@ -796,8 +766,8 @@ export default function ServiceDetailsScreen() {
                             }}
                             minimumDate={new Date()}
                             style={[styles.datePicker, { marginBottom: 20 }]}
-                            themeVariant="dark" // Add this for dark mode support
-                            textColor="#EBD3F8" // Add this to set text color
+                            themeVariant="dark"
+                            textColor="#EBD3F8"
                           />
                         </View>
                       </TouchableOpacity>
@@ -837,7 +807,6 @@ export default function ServiceDetailsScreen() {
                           <TouchableOpacity 
                             activeOpacity={1} 
                             onPress={(event) => {
-                              // This will stop the event from propagating to the parent TouchableOpacity
                               event.stopPropagation();
                             }}
                           >
@@ -857,7 +826,6 @@ export default function ServiceDetailsScreen() {
                               </TouchableOpacity>
                             </View>
                             
-                            {/* For web, we'll use an HTML input type="date" with improved styling */}
                             <input
                               type="date"
                               value={tempDate.toISOString().split('T')[0]}
@@ -1251,7 +1219,6 @@ export default function ServiceDetailsScreen() {
                 -moz-appearance: none !important;
               }
 
-              /* Calendar icon styling - make it match the app's color scheme */
               .custom-datepicker::-webkit-calendar-picker-indicator {
                 filter: invert(1) brightness(80%) sepia(100%) saturate(300%) hue-rotate(160deg);
                 opacity: 0.7;
@@ -1268,7 +1235,6 @@ export default function ServiceDetailsScreen() {
                 filter: invert(1) brightness(80%) sepia(100%) saturate(400%) hue-rotate(140deg);
               }
               
-              /* Text styling inside the date picker */
               .custom-datepicker::-webkit-datetime-edit {
                 color: #EBD3F8 !important;
                 padding: 0 8px !important;
@@ -1290,18 +1256,15 @@ export default function ServiceDetailsScreen() {
                 padding: 2px !important;
               }
               
-              /* Focus state - give it a nice glow effect like other elements */
               .custom-datepicker:focus {
                 border-color: #31E1F7 !important;
                 box-shadow: 0 0 0 3px rgba(49, 225, 247, 0.2) !important;
               }
               
-              /* Make sure our calendar doesn't get cut off */
               input[type="date"]::-webkit-calendar-picker-indicator {
                 margin-left: 8px !important;
               }
               
-              /* Browser-specific overrides */
               @-moz-document url-prefix() {
                 .custom-datepicker {
                   background-image: none !important;
@@ -1309,7 +1272,6 @@ export default function ServiceDetailsScreen() {
                 }
               }
               
-              /* Dark mode calendar support */
               @media (prefers-color-scheme: dark) {
                 .custom-datepicker {
                   background-color: rgba(46, 2, 73, 0.9) !important;

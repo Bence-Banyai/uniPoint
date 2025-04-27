@@ -4,7 +4,6 @@ import { Platform } from 'react-native';
 import { authService, LoginData, RegisterData } from '../../services/auth';
 import api from '../../services/api'; 
 
-// This setting prevents Expo Router from treating this file as a route
 export const unstable_settings = {
   isNotARoute: true,
 };
@@ -13,13 +12,13 @@ interface AuthContextData {
   isAuthenticated: boolean;
   isLoading: boolean;
   userId: string | null;
-  userName: string | null; // Add userName to context
-  email: string | null; // Add email to context
+  userName: string | null;
+  email: string | null;
   login: (data: LoginData) => Promise<any>;
   register: (data: RegisterData) => Promise<any>;
   logout: () => Promise<void>;
   getUserInfo: () => Promise<UserInfo>;
-  refreshUserInfo: () => Promise<UserInfo>; // Add a method to force refresh user info
+  refreshUserInfo: () => Promise<UserInfo>;
 }
 
 interface UserInfo {
@@ -27,12 +26,11 @@ interface UserInfo {
   email: string;
   location?: string;
   createdAt?: string;
-  profilePictureUrl?: string; // Add this line for profile picture support
+  profilePictureUrl?: string;
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
-// Helper functions for secure storage that work across platforms
 const storeSecureItem = async (key: string, value: string) => {
   if (Platform.OS === 'web') {
     localStorage.setItem(key, value);
@@ -61,11 +59,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [userId, setUserId] = useState<string | null>(null);
-  const [userName, setUserName] = useState<string | null>(null); // Add state for userName
-  const [email, setemail] = useState<string | null>(null); // Add state for email
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null); // Update your userInfo state declaration with a more precise type
+  const [userName, setUserName] = useState<string | null>(null);
+  const [email, setemail] = useState<string | null>(null);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
 
-  // Check for existing token on app load
   useEffect(() => {
     const loadToken = async () => {
       try {
@@ -77,10 +74,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (token) {
           setIsAuthenticated(true);
           setUserId(storedUserId);
-          setUserName(storedUserName); // Set username from storage
-          setemail(storedEmail); // Set email from storage
+          setUserName(storedUserName);
+          setemail(storedEmail);
           
-          // Initialize userInfo if we have the necessary data
           if (storedUserName && storedEmail) {
             setUserInfo({
               userName: storedUserName,
@@ -105,57 +101,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await authService.login(credentials);
       console.log('Auth service: Login successful');
 
-      // Save the token securely
       if (response.token) {
         await storeSecureItem('userToken', response.token);
         await storeSecureItem('userId', response.userId);
         
-        // Use type assertion to access properties that might not be defined in the type
         const typedResponse = response as any;
         console.log('Response user data:', typedResponse.userName);
         
-        // Initialize with default value to avoid undefined
         let extractedUserName = credentials.userNameOrEmail.includes('@') ? 
           credentials.userNameOrEmail.split('@')[0] : credentials.userNameOrEmail;
         let extractedEmail = credentials.userNameOrEmail.includes('@') ? 
           credentials.userNameOrEmail : `${credentials.userNameOrEmail}@example.com`;
         
-        // Extract userName and email from response (simpler code)
         if (typedResponse.userName) extractedUserName = typedResponse.userName;
         else if (typedResponse.user?.userName) extractedUserName = typedResponse.user.userName;
         
         if (typedResponse.email) extractedEmail = typedResponse.email;
         else if (typedResponse.user?.email) extractedEmail = typedResponse.user.email;
         
-        // Store extracted values - simplified
         await storeSecureItem('userName', extractedUserName);
         await storeSecureItem('email', extractedEmail);
         
-        // Bypass API calls during login that might be failing
-        // We'll do them later asynchronously
         setUserName(extractedUserName);
         setemail(extractedEmail);
         
-        // Handle location separately with a safety check
-        // Skip API calls for location if already getting stuck in loop
         if (typedResponse.location || typedResponse.user?.location) {
           const loc = typedResponse.location || typedResponse.user?.location;
           await storeSecureItem('userLocation', loc);
         }
 
-        // Update the auth state
         setIsAuthenticated(true);
         setUserId(response.userId);
         
-        // Instead of clearing userInfo which triggers loads of calls
-        // Update it directly
         setUserInfo({
           userName: extractedUserName,
           email: extractedEmail,
           location: typedResponse.location || typedResponse.user?.location || '(Location not provided)'
         });
 
-        // Fetch and store profile picture URL immediately after login
         try {
           const userInfo = await getUserInfo();
           if (userInfo.profilePictureUrl) {
@@ -179,7 +162,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const result = await authService.register(data);
       console.log('Registration successful:', result);
       
-      // Store username and email temporarily for potential future use
       if (data.userName) {
         await storeSecureItem('lastRegisteredUserName', data.userName);
       }
@@ -199,14 +181,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     setIsLoading(true);
     try {
-      // Try to call logout API
       try {
         await authService.logout();
       } catch (error) {
         console.error('API logout failed:', error);
       }
 
-      // Always remove all stored tokens and user info
       await removeSecureItem('userToken');
       await removeSecureItem('userId');
       await removeSecureItem('userName');
@@ -215,12 +195,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setIsAuthenticated(false);
       setUserId(null);
-      setUserName(null); // Clear userName state
-      setemail(null); // Clear email state
-      setUserInfo(null); // Clear the user info state
+      setUserName(null);
+      setemail(null);
+      setUserInfo(null);
     } catch (error) {
       console.error('Logout failed:', error);
-      throw error; // Rethrow so we can handle it in the UI
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -229,13 +209,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const getUserInfo = async (): Promise<UserInfo> => {
     console.log("==== GETTING USER INFO ====");
     
-    // Check for cached data first to prevent infinite loops
     if (userInfo) {
       console.log("Using cached user info");
       return userInfo;
     }
     
-    // Add a timestamp to prevent excessive debug logging
     const now = new Date().toISOString();
     console.log(`${now} - Current storage state:`, {
       userToken: await getSecureItem('userToken') ? "exists" : "missing",
@@ -245,22 +223,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     try {
-      // First, try to get user info from stored values
       const storedUserName = await getSecureItem('userName');
       const storedEmail = await getSecureItem('email');
       let storedLocation = await getSecureItem('userLocation');
       
-      // Only set placeholder location if truly missing
       if (!storedLocation) {
-        // Skip setting a placeholder in storage to prevent loops
-        // Just use in-memory placeholder
         storedLocation = "(Location needs to be set)";
         console.log("Using in-memory location placeholder");
       }
       
       console.log('Stored user info found:', { userName: storedUserName, email: storedEmail });
       
-      // If we have stored values, use them first
       if (storedUserName && storedEmail) {
         const storedUserInfo = {
           userName: storedUserName,
@@ -269,7 +242,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         console.log("Using stored user info");
         
-        // Update state only if it has changed to prevent re-renders
         if (!userInfo || 
             (userInfo as UserInfo).userName !== storedUserName || 
             (userInfo as UserInfo).email !== storedEmail || 
@@ -282,16 +254,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return storedUserInfo;
       }
       
-      // Try to get user info from API only if we don't have stored values
       const token = await getSecureItem('userToken');
       const userId = await getSecureItem('userId');
       
       if (!token) {
         throw new Error('No authentication token found');
       }
-      // Try API call with proper error handling
       try {
-        // Only make the API call if we have a token
         const response = await api.get(`/api/User/${userId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -300,22 +269,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('Raw API response data:', response.data);
         console.log("eljut");
         
-        // Handle response with type assertion
         const userData = response.data as any;
         console.log('API user data:', userData.userName);
         
         const newUserInfo: UserInfo = {
           userName: userData.userName || userData.username || 'Unknown User',
           email: userData.email || userData.emailAddress || 'unknown@example.com',
-          location: userData.location, // Add the location field
+          location: userData.location,
           createdAt: userData.createdAt || userData.memberSince,
         };
         
         setUserInfo(newUserInfo);
-        setUserName(newUserInfo.userName); // Update the context state
-        setemail(newUserInfo.email); // Update the context state
+        setUserName(newUserInfo.userName);
+        setemail(newUserInfo.email);
         
-        // Store the user info for future use
         await storeSecureItem('userName', newUserInfo.userName);
         await storeSecureItem('email', newUserInfo.email);
         if (newUserInfo.location) {
@@ -325,16 +292,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return newUserInfo;
       } catch (apiError) {
         console.error('API error fetching user data:', apiError);
-        throw apiError; // Rethrow to be caught by outer catch
+        throw apiError;
       }
     } catch (error) {
       console.error('Failed to get user info:', error);
       
-      // Last resort fallback
       const fallbackUserInfo = {
         userName: userName || `User-${userId?.substring(0, 5) || 'Unknown'}`,
         email: email || `user${email || 'unknown'}@example.com`,
-        location: await getSecureItem('userLocation') || undefined, // Add this line
+        location: await getSecureItem('userLocation') || undefined,
       };
       
       setUserInfo(fallbackUserInfo);
@@ -346,7 +312,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Update refreshUserInfo to always fetch from API and update all state/storage
   const refreshUserInfo = async (): Promise<UserInfo> => {
     setUserInfo(null);
     const token = await getSecureItem('userToken');
@@ -383,8 +348,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isAuthenticated, 
       isLoading, 
       userId,
-      userName, // Expose userName to components
-      email, // Expose email to components
+      userName,
+      email,
       login, 
       register, 
       logout,
@@ -398,7 +363,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => useContext(AuthContext);
 
-// Export a proper React component as default to satisfy Expo Router
 function AuthContextComponent() {
   return null;
 }

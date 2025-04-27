@@ -43,7 +43,6 @@ const popularSearches = [
   'Dentist', 'Hair Salon', 'Massage', 'Gym Trainer', 'Doctor', 'Spa'
 ];
 
-// Convert backend service to provider format for display
 const serviceToProvider = (service: Service): Provider => {
   const color = getCategoryColor(service.categoryId);
   
@@ -51,9 +50,9 @@ const serviceToProvider = (service: Service): Provider => {
     id: service.serviceId.toString(),
     name: service.serviceName,
     categoryId: service.categoryId,
-    rating: 4.5, // You could add this to your backend model in the future
-    reviews: 0, // Default until you implement reviews in backend
-    distance: "Nearby", // This could be calculated if you add coordinates to your backend
+    rating: 4.5,
+    reviews: 0,
+    distance: "Nearby",
     image: service.imageUrls && service.imageUrls.length > 0 
       ? { uri: service.imageUrls[0] } 
       : require('@/assets/images/adaptive-icon.png'),
@@ -65,7 +64,6 @@ const serviceToProvider = (service: Service): Provider => {
   };
 };
 
-// Get color based on category ID
 const getCategoryColor = (categoryId: number): string => {
   const colors: {[key: number]: string} = {
     1: '#4CAF50', // Health
@@ -121,12 +119,12 @@ function ProviderCard({ provider, onPress, categories }: {
           <Image 
             source={provider.image}
             style={{
-              width: 56, // Almost the full width of container (60px minus 2px border on each side)
-              height: 56, // Almost the full height of container
-              borderRadius: 28, // Half of width/height for perfect circle
+              width: 56,
+              height: 56,
+              borderRadius: 28,
               overflow: 'hidden'
             }}
-            contentFit="cover" // This ensures image fills the space
+            contentFit="cover"
           />
         </View>
         <View style={styles.providerInfo}>
@@ -227,7 +225,6 @@ export default function SearchScreen() {
         setLoadingCategories(true);
         setLoadingServices(true);
         
-        // Load categories and services in parallel
         const [categoriesData, servicesData] = await Promise.all([
           fetchCategories(),
           fetchServices()
@@ -236,7 +233,6 @@ export default function SearchScreen() {
         setCategories(categoriesData);
         setServices(servicesData);
         
-        // Convert services to provider format
         const providersData = servicesData.map(service => serviceToProvider(service));
         setProviders(providersData);
       } catch (err) {
@@ -701,10 +697,10 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     borderWidth: 2,
-    overflow: 'hidden', // This is important to ensure the image doesn't overflow
+    overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'transparent', // Change from rgba(255, 255, 255, 0.1) to transparent
+    backgroundColor: 'transparent',
     marginRight: 12,
   },
   providerInfo: {

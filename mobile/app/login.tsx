@@ -86,23 +86,19 @@ export default function LoginScreen() {
       const result = await login({ userNameOrEmail, password });
       console.log('Login successful, result:', result);
       
-      // Fetch user profile info (including profile picture) immediately after login
       try {
         await refreshUserInfo();
         console.log('User info refreshed successfully');
       } catch (refreshError) {
         console.error('Error refreshing user info:', refreshError);
-        // Continue with navigation even if refresh fails
       }
       
-      // Add a small delay on web platform before navigation
       if (Platform.OS === 'web') {
         await new Promise(resolve => setTimeout(resolve, 300));
       }
       
       console.log('Attempting to navigate to:', '/(tabs)');
       try {
-        // First try replacing the route
         router.replace('/(tabs)');
         console.log('Navigation successful');
       } catch (navError) {

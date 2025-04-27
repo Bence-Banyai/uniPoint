@@ -6,9 +6,7 @@ export interface Category {
   iconUrl: string;
 }
 
-/**
- * Fetches all categories from the backend
- */
+
 export const fetchCategories = async (): Promise<Category[]> => {
   try {
     const response = await api.get('/api/Category');
@@ -20,9 +18,7 @@ export const fetchCategories = async (): Promise<Category[]> => {
   }
 };
 
-/**
- * Fetches a specific category by ID
- */
+
 export const fetchCategoryById = async (categoryId: number): Promise<Category> => {
   try {
     const response = await api.get(`/api/Category/${categoryId}`);
