@@ -132,33 +132,6 @@
                         </div>
                     </form>
 
-                    <!-- Social registration options (visual only) -->
-                    <div class="mt-8">
-                        <div class="relative">
-                            <div class="absolute inset-0 flex items-center">
-                                <div class="w-full border-t border-gray-200"></div>
-                            </div>
-                            <div class="relative flex justify-center text-sm">
-                                <span class="px-2 bg-white text-gray-500">Or register with</span>
-                            </div>
-                        </div>
-
-                        <div class="mt-6 grid grid-cols-3 gap-3">
-                            <button type="button"
-                                class="py-2 px-4 border border-gray-200 rounded-lg flex justify-center items-center hover:bg-gray-50 transition-all">
-                                <Icon name="entypo:google--with-circle" class="h-5 w-5 text-gray-600" />
-                            </button>
-                            <button type="button"
-                                class="py-2 px-4 border border-gray-200 rounded-lg flex justify-center items-center hover:bg-gray-50 transition-all">
-                                <Icon name="entypo:facebook-with-circle" class="h-5 w-5 text-gray-600" />
-                            </button>
-                            <button type="button"
-                                class="py-2 px-4 border border-gray-200 rounded-lg flex justify-center items-center hover:bg-gray-50 transition-all">
-                                <Icon name="entypo:twitter-with-circle" class="h-5 w-5 text-gray-600" />
-                            </button>
-                        </div>
-                    </div>
-
                     <div class="mt-8 text-center">
                         <p class="text-sm text-gray-600">
                             Already have an account?
@@ -214,7 +187,6 @@ const register = async () => {
         success.value = '';
         isLoading.value = true;
 
-        // Validate form (location is now required)
         if (!form.userName || !form.email || !form.password || !form.location) {
             error.value = 'Please fill in all required fields';
             isLoading.value = false;
@@ -232,31 +204,26 @@ const register = async () => {
         if (result.success) {
             success.value = 'Registration successful! You can now log in.';
 
-            // Try to automatically log in the user
             try {
                 await authStore.login({
                     userNameOrEmail: form.userName,
                     password: form.password
                 });
 
-                // Reset form after successful login and redirect
                 form.userName = '';
                 form.email = '';
                 form.password = '';
                 form.location = '';
 
-                // Redirect to profile page
                 router.push('/profile');
             } catch (loginError) {
                 console.error('Auto-login after registration failed:', loginError);
 
-                // Reset form
                 form.userName = '';
                 form.email = '';
                 form.password = '';
                 form.location = '';
 
-                // Redirect to login after a short delay
                 setTimeout(() => {
                     router.push('/login');
                 }, 1500);

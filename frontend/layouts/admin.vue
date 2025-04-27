@@ -59,6 +59,6 @@
 
 <script setup>
 definePageMeta({
-    middleware: ['admin'] // Create this middleware to check for admin role
+    middleware: ['admin']
 });
 </script>

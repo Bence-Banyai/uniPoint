@@ -272,7 +272,7 @@ function editUser(user) {
         id: user.id,
         userName: user.userName,
         email: user.email,
-        password: '', // Don't populate password
+        password: '',
         role: user.role,
         location: user.location || ''
     };
@@ -289,11 +289,9 @@ async function fetchUsers() {
     errorMessage.value = '';
     console.log('Fetching users: start');
     try {
-        // Get the runtime config to check the actual API URL being used
         const config = useRuntimeConfig();
         console.log('Using API base URL:', config.public.apiBaseUrl);
-        
-        // Only use the main endpoint
+
         const response = await adminApi.getAllUsers();
         console.log('Fetched users response:', response);
 
@@ -304,9 +302,8 @@ async function fetchUsers() {
         } else if (response && Array.isArray(response.users)) {
             userList = response.users;
         } else if (response && typeof response === 'object') {
-            // Try to extract users from response object if possible
             console.log('Attempting to extract users from object response');
-            userList = Object.values(response).filter(item => 
+            userList = Object.values(response).filter(item =>
                 item && typeof item === 'object' && 'userName' in item
             );
             if (userList.length === 0) {
@@ -322,10 +319,8 @@ async function fetchUsers() {
         users.value = userList;
         console.log('Processed userList:', userList);
 
-        // Process user roles if needed
         if (users.value.length > 0) {
-            for (const user of users.value) {
-                if (user.role) continue;
+            await Promise.all(users.value.map(async (user) => {
                 if (user.id) {
                     try {
                         const userDetails = await adminApi.getUserById(user.id);
@@ -338,12 +333,11 @@ async function fetchUsers() {
                 } else {
                     user.role = 'User';
                 }
-            }
+            }));
         }
     } catch (error) {
         console.error('Error in fetchUsers:', error);
-        
-        // Add more detailed error logging
+
         if (error.response) {
             console.error('Response error details:', {
                 status: error.response.status,
@@ -351,7 +345,7 @@ async function fetchUsers() {
                 data: error.response.data
             });
         }
-        
+
         if (error.response && error.response.status === 401) {
             errorMessage.value = 'Session expired or not authenticated. Please log in again.';
         } else if (error.message && error.message.includes('CORS')) {
@@ -369,7 +363,6 @@ async function fetchUsers() {
 async function saveUser() {
     formError.value = '';
 
-    // Validate form
     if (!userForm.value.userName || !userForm.value.email ||
         (showAddModal.value && !userForm.value.password)) {
         formError.value = 'Please fill in all required fields';
@@ -402,7 +395,6 @@ async function saveUser() {
             successMessage.value = "User updated successfully!";
         }
 
-        // If successful, refresh user list and close modal
         await fetchUsers();
         closeModals();
 
@@ -429,15 +421,12 @@ async function deleteUser() {
     try {
         await adminApi.deleteUser(userToDelete.value.id);
 
-        // If successful, refresh user list and close modal
         await fetchUsers();
         showDeleteModal.value = false;
         userToDelete.value = null;
 
-        // Show success message
         successMessage.value = "User deleted successfully!";
 
-        // Auto-hide success message after 3 seconds
         setTimeout(() => {
             successMessage.value = '';
         }, 3000);
@@ -455,7 +444,6 @@ async function deleteUser() {
 // Override the existing onMounted to include better error handling
 onMounted(async () => {
     try {
-        // Make sure we're authenticated
         console.log('Admin panel onMounted: checking authentication');
         if (!authStore.isAuthenticated) {
             const result = await authStore.getUserInfo();

@@ -7,11 +7,10 @@ export default function useAdminApi() {
 		// Users
 		async getAllUsers() {
 			try {
-				// Only use the main endpoint, remove fallback to /api/Auth/users
 				return await apiClient.get("/api/User");
 			} catch (error) {
 				console.error("Error fetching users:", error);
-				return []; // Return empty array to avoid breaking the UI
+				return [];
 			}
 		},
 
@@ -22,8 +21,6 @@ export default function useAdminApi() {
 			} catch (error) {
 				console.warn(`Error fetching user ${id}, trying alternative method...`, error);
 
-				// If we can't get user by ID, try to extract role from token
-				// and return a simulated response
 				try {
 					// Get token and parse it
 					const authStore = useAuthStore();
@@ -38,7 +35,6 @@ export default function useAdminApi() {
 					const role =
 						payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || "User";
 
-					// Return a minimally viable user object
 					return {
 						id,
 						userName: payload.unique_name || "User",
@@ -48,7 +44,7 @@ export default function useAdminApi() {
 					};
 				} catch (fallbackError) {
 					console.error("Fallback user extraction failed:", fallbackError);
-					throw error; // Re-throw original error
+					throw error;
 				}
 			}
 		},
@@ -60,7 +56,6 @@ export default function useAdminApi() {
 			role: string;
 			location?: string;
 		}) {
-			// For creating users, we use the Auth/register endpoint
 			return apiClient.post("/api/Auth/register", userData);
 		},
 
@@ -82,7 +77,6 @@ export default function useAdminApi() {
 
 		// Statistics for admin dashboard
 		getDashboardStats() {
-			// Minimal stats implementation
 			return new Promise((resolve) => {
 				resolve({
 					totalUsers: 5,

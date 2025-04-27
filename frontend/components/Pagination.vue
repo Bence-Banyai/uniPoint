@@ -49,7 +49,6 @@ const visiblePages = computed(() => {
         pages.push(1);
 
         if (currentPage > 3) {
-            // Add ellipsis if current page is far enough from the start
             pages.push('...');
         }
 
@@ -62,7 +61,6 @@ const visiblePages = computed(() => {
         }
 
         if (currentPage < totalPages - 2) {
-            // Add ellipsis if current page is far enough from the end
             pages.push('...');
         }
 

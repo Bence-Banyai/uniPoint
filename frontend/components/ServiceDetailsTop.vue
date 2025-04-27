@@ -1,4 +1,6 @@
 <template>
+
+    <!-- placeholder template, no longer used -->
     <div class="container mx-auto px-4 py-8 flex">
         <div class="w-2/3 pr-8">
             <div class="bg-gray-200 h-96 mb-4"></div>

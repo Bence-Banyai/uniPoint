@@ -22,7 +22,6 @@
                 </div>
             </div>
 
-            <!-- Dynamic content based on actual service details -->
             <div class="container mx-auto px-4 py-8 flex">
                 <div class="w-2/3 pr-8">
                     <div class="bg-gray-200 h-96 mb-4 relative">
@@ -63,7 +62,6 @@
                         <Icon name="entypo:location-pin" class="h-5 w-5 text-gray-600 mr-2" />
                         <span class="text-gray-600">{{ service.address }}</span>
                     </div>
-                    <!-- Display provider location instead of phone number if available -->
                     <div v-if="service.provider && service.provider.location" class="flex items-center mb-2">
                         <Icon name="entypo:home" class="h-5 w-5 text-gray-600 mr-2" />
                         <span class="text-gray-600">{{ service.provider.location }}</span>
@@ -72,8 +70,6 @@
                         <Icon name="entypo:mail" class="h-5 w-5 text-gray-600 mr-2" />
                         <span class="text-gray-600">{{ service.provider.email }}</span>
                     </div>
-                    <button class="w-full px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700">Contact
-                        Provider</button>
                 </div>
             </div>
 
@@ -115,12 +111,10 @@ const fetchServiceDetails = async () => {
     }
 };
 
-// Format price
 const formatPrice = (price: number) => {
     return new Intl.NumberFormat('hu-HU', { style: 'currency', currency: 'HUF' }).format(price);
 };
 
-// Fetch data on component mount
 onMounted(() => {
     fetchServiceDetails();
 });

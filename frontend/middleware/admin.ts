@@ -12,7 +12,6 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
 		});
 	}
 
-	// Try to refresh user info if role is missing
 	if (!authStore.user.role) {
 		try {
 			await authStore.getUserInfo();

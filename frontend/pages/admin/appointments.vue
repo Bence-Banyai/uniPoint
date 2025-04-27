@@ -242,7 +242,7 @@ async function createAppointment() {
     }
     isSubmitting.value = true;
     try {
-        // Parse date and time as local time (user's timezone)
+        // Parse date and time as local time
         const [year = 0, month = 1, day = 0] = newAppointment.value.date.split('-').map(Number);
         const [hour = 0, minute = 0] = newAppointment.value.time.split(':').map(Number);
         const localDate = new Date(year, month - 1, day, hour, minute, 0, 0);
@@ -261,7 +261,7 @@ async function createAppointment() {
             return;
         }
 
-        // Format as 'YYYY-MM-DDTHH:mm:00' (local time, no timezone info)
+        // Format
         const pad = (n: number) => n.toString().padStart(2, '0');
         const appointmentDateStr = `${year}-${pad(month)}-${pad(day)}T${pad(hour)}:${pad(minute)}:00`;
 

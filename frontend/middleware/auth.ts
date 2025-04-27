@@ -3,9 +3,8 @@ import { useAuthStore } from "~/stores/auth";
 export default defineNuxtRouteMiddleware((to, from) => {
 	const authStore = useAuthStore();
 
-	// Check if we should refresh user info
 	const refreshUserInfo = () => {
-		// If user is authenticated but missing some user data like location
+		// If user is authenticated but missing some user data
 		if (
 			authStore.isAuthenticated &&
 			(!authStore.user.userName || !authStore.user.email || !authStore.user.location)
@@ -26,7 +25,5 @@ export default defineNuxtRouteMiddleware((to, from) => {
 	if (to.meta.guestOnly && authStore.isAuthenticated) {
 		return navigateTo("/");
 	}
-
-	// Refresh user info if needed
 	refreshUserInfo();
 });

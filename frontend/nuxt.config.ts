@@ -4,10 +4,7 @@ export default defineNuxtConfig({
 
 	runtimeConfig: {
 		public: {
-			// Read from environment variable, fallback for safety (though .env should provide it)
-			apiBaseUrl:
-				process.env.API_BASE_URL ||
-				"https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net",
+			apiBaseUrl: process.env.API_BASE_URL,
 		},
 	},
 
@@ -18,10 +15,7 @@ export default defineNuxtConfig({
 		globalAppMiddleware: {
 			isEnabled: false,
 		},
-		// Use the same environment variable for consistency
-		baseURL:
-			process.env.API_BASE_URL ||
-			"https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net",
+		baseURL: process.env.API_BASE_URL,
 	},
 
 	future: {
@@ -65,11 +59,7 @@ export default defineNuxtConfig({
 	],
 
 	icon: {
-		// Preload these icon sets to avoid runtime CDN fetches and failures
-		collections: [
-			'entypo',
-			'iconoir'
-		]
+		collections: ["entypo", "iconoir"],
 	},
 
 	googleFonts: {
@@ -81,8 +71,7 @@ export default defineNuxtConfig({
 	nitro: {
 		devProxy: {
 			"/api": {
-				// Point the dev proxy to the Azure backend for local testing against deployed backend
-				target: "https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net",
+				target: process.env.API_BASE_URL,
 				changeOrigin: true,
 				prependPath: false,
 			},

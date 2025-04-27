@@ -9,7 +9,7 @@ export default function useAuthApi() {
 		register(userData: {
 			userName: string;
 			email: string;
-			location: string; // Changed from phoneNumber to location
+			location: string;
 			password: string;
 			role: string;
 		}) {
@@ -29,7 +29,6 @@ export default function useAuthApi() {
 		// Get user info
 		async getUserInfo() {
 			try {
-				// Get the user ID from the auth store
 				const authStore = useAuthStore();
 				const userId = authStore.userId;
 
@@ -43,10 +42,8 @@ export default function useAuthApi() {
 				const response = await apiClient.get(`/api/User/${userId}`);
 				console.log("User API response:", response);
 
-				// Check if location is present in the response
 				if (!response.location && response.location !== "") {
 					console.warn("Location not found in API response, checking token fallback");
-					// Try to get location from token as fallback
 					const tokenData = this.parseUserFromToken();
 					if (tokenData && tokenData.location) {
 						response.location = tokenData.location;
@@ -58,7 +55,6 @@ export default function useAuthApi() {
 			} catch (error) {
 				console.error("Failed to get user info:", error);
 
-				// If API call fails, try to extract information from token as fallback
 				return this.parseUserFromToken();
 			}
 		},
