@@ -13,20 +13,20 @@
                         <span
                             class="font-bold text-xl bg-gradient-to-r from-primary-purple to-accent-blue bg-clip-text text-transparent">uniPoint</span>
                     </NuxtLink>
-                    <p class="text-gray-600 max-w-xs">Connecting students and educators on a powerful digital platform
-                        for educational services.</p>
+                    <p class="text-gray-600 max-w-xs">UniPoint allows you schedule your appointments easily for your
+                        favourite services worldwide.</p>
                     <div class="flex space-x-4">
                         <a href="#"
                             class="w-10 h-10 rounded-full bg-purple-glass flex items-center justify-center text-primary-purple hover:bg-primary-purple hover:text-white transition-all duration-300">
-                            <Icon name="entypo:facebook" />
+                            <Icon name="entypo-social:facebook" />
                         </a>
                         <a href="#"
                             class="w-10 h-10 rounded-full bg-purple-glass flex items-center justify-center text-primary-purple hover:bg-primary-purple hover:text-white transition-all duration-300">
-                            <Icon name="entypo:twitter" />
+                            <Icon name="entypo-social:twitter" />
                         </a>
                         <a href="#"
                             class="w-10 h-10 rounded-full bg-purple-glass flex items-center justify-center text-primary-purple hover:bg-primary-purple hover:text-white transition-all duration-300">
-                            <Icon name="entypo:instagram" />
+                            <Icon name="entypo-social:instagram" />
                         </a>
                     </div>
                 </div>
@@ -102,9 +102,7 @@
             <div class="pt-8 mt-8 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center">
                 <p class="text-sm text-gray-600">© 2025 UniPoint. Bányai Bence, Sándor Kevin, Tiszolczi Jácint. All
                     rights reserved.</p>
-                <div class="mt-4 md:mt-0">
-                    <NuxtImg src="/payment-methods.png" alt="Payment Methods" class="h-8" />
-                </div>
+
             </div>
         </div>
     </footer>

@@ -72,8 +72,6 @@
                         <Icon name="entypo:mail" class="h-5 w-5 text-gray-600 mr-2" />
                         <span class="text-gray-600">{{ service.provider.email }}</span>
                     </div>
-                    <button class="w-full px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700">Contact
-                        Provider</button>
                 </div>
             </div>
 

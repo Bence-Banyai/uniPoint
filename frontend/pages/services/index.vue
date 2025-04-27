@@ -10,7 +10,7 @@
             </div>
             <button @click="toggleSortByPopularity" class="px-4 py-2 rounded-md transition-colors"
                 :class="{ 'bg-purple-600 text-white': sortByPopularity, 'bg-gray-200 text-gray-700': !sortByPopularity }">
-                Most Popular
+                Sort by Price
             </button>
         </div>
 
@@ -35,9 +35,12 @@
                             </button>
                         </li>
                         <li v-for="category in categories" :key="category.categoryId">
-                            <button @click="setActiveCategory(category.categoryId)" class="block w-full text-left"
+                            <button @click="setActiveCategory(category.categoryId)"
+                                class=" w-full text-left flex items-center space-x-2"
                                 :class="activeCategory === category.categoryId ? 'text-purple-600 font-medium' : 'text-gray-700 hover:text-purple-600'">
-                                {{ category.name }}
+                                <img v-if="category.iconUrl" :src="category.iconUrl" alt="icon"
+                                    class="w-6 h-6 rounded-full object-cover mr-2" />
+                                <span>{{ category.name }}</span>
                             </button>
                         </li>
                     </ul>

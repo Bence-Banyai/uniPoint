@@ -39,10 +39,6 @@
                                 <p class="text-sm text-gray-500">Location</p>
                                 <p>{{ authStore.user.location || 'Not set' }}</p>
                             </div>
-                            <div>
-                                <p class="text-sm text-gray-500">User ID</p>
-                                <p class="truncate">{{ authStore.userId || 'Not available' }}</p>
-                            </div>
                         </div>
                     </div>
                 </div>

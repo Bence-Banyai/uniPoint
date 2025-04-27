@@ -132,33 +132,6 @@
                         </div>
                     </form>
 
-                    <!-- Social registration options (visual only) -->
-                    <div class="mt-8">
-                        <div class="relative">
-                            <div class="absolute inset-0 flex items-center">
-                                <div class="w-full border-t border-gray-200"></div>
-                            </div>
-                            <div class="relative flex justify-center text-sm">
-                                <span class="px-2 bg-white text-gray-500">Or register with</span>
-                            </div>
-                        </div>
-
-                        <div class="mt-6 grid grid-cols-3 gap-3">
-                            <button type="button"
-                                class="py-2 px-4 border border-gray-200 rounded-lg flex justify-center items-center hover:bg-gray-50 transition-all">
-                                <Icon name="entypo:google--with-circle" class="h-5 w-5 text-gray-600" />
-                            </button>
-                            <button type="button"
-                                class="py-2 px-4 border border-gray-200 rounded-lg flex justify-center items-center hover:bg-gray-50 transition-all">
-                                <Icon name="entypo:facebook-with-circle" class="h-5 w-5 text-gray-600" />
-                            </button>
-                            <button type="button"
-                                class="py-2 px-4 border border-gray-200 rounded-lg flex justify-center items-center hover:bg-gray-50 transition-all">
-                                <Icon name="entypo:twitter-with-circle" class="h-5 w-5 text-gray-600" />
-                            </button>
-                        </div>
-                    </div>
-
                     <div class="mt-8 text-center">
                         <p class="text-sm text-gray-600">
                             Already have an account?

@@ -292,7 +292,7 @@ async function fetchUsers() {
         // Get the runtime config to check the actual API URL being used
         const config = useRuntimeConfig();
         console.log('Using API base URL:', config.public.apiBaseUrl);
-        
+
         // Only use the main endpoint
         const response = await adminApi.getAllUsers();
         console.log('Fetched users response:', response);
@@ -306,7 +306,7 @@ async function fetchUsers() {
         } else if (response && typeof response === 'object') {
             // Try to extract users from response object if possible
             console.log('Attempting to extract users from object response');
-            userList = Object.values(response).filter(item => 
+            userList = Object.values(response).filter(item =>
                 item && typeof item === 'object' && 'userName' in item
             );
             if (userList.length === 0) {
@@ -322,10 +322,9 @@ async function fetchUsers() {
         users.value = userList;
         console.log('Processed userList:', userList);
 
-        // Process user roles if needed
+        // Always fetch and update user roles for every user
         if (users.value.length > 0) {
-            for (const user of users.value) {
-                if (user.role) continue;
+            await Promise.all(users.value.map(async (user) => {
                 if (user.id) {
                     try {
                         const userDetails = await adminApi.getUserById(user.id);
@@ -338,11 +337,11 @@ async function fetchUsers() {
                 } else {
                     user.role = 'User';
                 }
-            }
+            }));
         }
     } catch (error) {
         console.error('Error in fetchUsers:', error);
-        
+
         // Add more detailed error logging
         if (error.response) {
             console.error('Response error details:', {
@@ -351,7 +350,7 @@ async function fetchUsers() {
                 data: error.response.data
             });
         }
-        
+
         if (error.response && error.response.status === 401) {
             errorMessage.value = 'Session expired or not authenticated. Please log in again.';
         } else if (error.message && error.message.includes('CORS')) {

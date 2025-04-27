@@ -8,18 +8,13 @@
 
             <div class="container mx-auto px-4 text-center relative z-10">
                 <h1 class="text-4xl md:text-5xl font-bold mb-6 animate-fade-in">uniPoint.</h1>
-                <p class="text-xl mb-10 max-w-2xl mx-auto text-blue-50">UniPoint brings together students, educators,
-                    and
-                    institutions on a single powerful platform.</p>
+                <p class="text-xl mb-10 max-w-2xl mx-auto text-blue-50">UniPoint allows you schedule your appointments
+                    easily for your favourite services worldwide.</p>
                 <div
                     class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4 animate-slide-up">
                     <NuxtLink to="/services"
                         class="px-6 py-3 bg-white text-primary-purple font-medium rounded-xl hover:bg-purple-50 transition-all duration-300 shadow-blue-glow">
                         Get Started
-                    </NuxtLink>
-                    <NuxtLink to="/about"
-                        class="px-6 py-3 border-2 border-white text-white font-medium rounded-xl backdrop-blur-sm bg-white/10 hover:bg-white hover:bg-opacity-20 transition-all duration-300">
-                        Learn More
                     </NuxtLink>
                 </div>
             </div>
@@ -59,8 +54,8 @@
                             class="w-16 h-16 bg-gradient-to-br from-primary-purple to-light-purple rounded-full flex items-center justify-center mx-auto mb-6 group-hover:shadow-purple-glow transition-all duration-400">
                             <span class="text-white text-xl font-bold">2</span>
                         </div>
-                        <h3 class="text-xl font-semibold mb-2 text-center">Verify Email</h3>
-                        <p class="text-gray-600 text-center">Confirm your email address</p>
+                        <h3 class="text-xl font-semibold mb-2 text-center">Browse Services</h3>
+                        <p class="text-gray-600 text-center">Explore your favourite services</p>
                     </div>
 
                     <div
@@ -69,8 +64,8 @@
                             class="w-16 h-16 bg-gradient-to-br from-primary-purple to-light-purple rounded-full flex items-center justify-center mx-auto mb-6 group-hover:shadow-purple-glow transition-all duration-400">
                             <span class="text-white text-xl font-bold">3</span>
                         </div>
-                        <h3 class="text-xl font-semibold mb-2 text-center">Complete Profile</h3>
-                        <p class="text-gray-600 text-center">Add your preferences</p>
+                        <h3 class="text-xl font-semibold mb-2 text-center">Select your preferred service</h3>
+                        <p class="text-gray-600 text-center">There's one for everyone :3</p>
                     </div>
 
                     <div
@@ -79,8 +74,8 @@
                             class="w-16 h-16 bg-gradient-to-br from-primary-purple to-light-purple rounded-full flex items-center justify-center mx-auto mb-6 group-hover:shadow-purple-glow transition-all duration-400">
                             <span class="text-white text-xl font-bold">4</span>
                         </div>
-                        <h3 class="text-xl font-semibold mb-2 text-center">Browse Services</h3>
-                        <p class="text-gray-600 text-center">Explore available services</p>
+                        <h3 class="text-xl font-semibold mb-2 text-center">Select Date&Time</h3>
+                        <p class="text-gray-600 text-center">Choose from available open appointments</p>
                     </div>
 
                     <div
@@ -118,7 +113,7 @@
                         class="bg-white rounded-2xl shadow-raised overflow-hidden group hover:transform hover:scale-105 transition-all duration-400">
                         <div class="h-48 bg-gradient-purple relative overflow-hidden">
                             <div class="absolute inset-0 bg-purple-glass flex items-center justify-center">
-                                <Icon name="entypo:graduation-cap" class="text-white text-5xl" />
+                                <Icon name="entypo:tools" class="text-white text-5xl" />
                             </div>
                             <div
                                 class="absolute top-3 right-3 bg-accent-pink text-white px-3 py-1 rounded-pill text-sm shadow-pink-glow">
@@ -126,8 +121,8 @@
                             </div>
                         </div>
                         <div class="p-6">
-                            <h3 class="text-xl font-bold mb-2 text-primary-purple">Academic Tutoring</h3>
-                            <p class="text-gray-600 mb-4">Expert tutoring services across all subjects and levels</p>
+                            <h3 class="text-xl font-bold mb-2 text-primary-purple">Car Repair</h3>
+                            <p class="text-gray-600 mb-4">Professional Engineering work</p>
                             <NuxtLink to="/services"
                                 class="text-accent-blue font-medium hover:underline inline-flex items-center">
                                 Explore
@@ -140,7 +135,7 @@
                         class="bg-white rounded-2xl shadow-raised overflow-hidden group hover:transform hover:scale-105 transition-all duration-400">
                         <div class="h-48 bg-gradient-diagonal from-accent-blue to-accent-pink relative overflow-hidden">
                             <div class="absolute inset-0 bg-glass flex items-center justify-center">
-                                <Icon name="entypo:laptop" class="text-white text-5xl" />
+                                <Icon name="entypo:mobile" class="text-white text-5xl" />
                             </div>
                             <div
                                 class="absolute top-3 right-3 bg-accent-blue text-white px-3 py-1 rounded-pill text-sm shadow-blue-glow">
@@ -148,8 +143,8 @@
                             </div>
                         </div>
                         <div class="p-6">
-                            <h3 class="text-xl font-bold mb-2 text-primary-purple">Tech Support</h3>
-                            <p class="text-gray-600 mb-4">Professional IT services and computer troubleshooting</p>
+                            <h3 class="text-xl font-bold mb-2 text-primary-purple">Mobile Support</h3>
+                            <p class="text-gray-600 mb-4">Professional IT services and phone troubleshooting</p>
                             <NuxtLink to="/services"
                                 class="text-accent-blue font-medium hover:underline inline-flex items-center">
                                 Explore
@@ -162,12 +157,12 @@
                         class="bg-white rounded-2xl shadow-raised overflow-hidden group hover:transform hover:scale-105 transition-all duration-400">
                         <div class="h-48 bg-gradient-radial from-light-purple to-dark-purple relative overflow-hidden">
                             <div class="absolute inset-0 bg-glass-dark flex items-center justify-center">
-                                <Icon name="entypo:briefcase" class="text-white text-5xl" />
+                                <Icon name="entypo:scissors" class="text-white text-5xl" />
                             </div>
                         </div>
                         <div class="p-6">
-                            <h3 class="text-xl font-bold mb-2 text-primary-purple">Career Counseling</h3>
-                            <p class="text-gray-600 mb-4">Professional guidance for career development and planning</p>
+                            <h3 class="text-xl font-bold mb-2 text-primary-purple">Male Barbershop</h3>
+                            <p class="text-gray-600 mb-4">Get a haircut at our best stylists!</p>
                             <NuxtLink to="/services"
                                 class="text-accent-blue font-medium hover:underline inline-flex items-center">
                                 Explore

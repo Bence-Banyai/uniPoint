@@ -62,21 +62,6 @@
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center">
-                                <input id="remember-me" type="checkbox"
-                                    class="h-4 w-4 text-primary-purple focus:ring-primary-purple border-gray-300 rounded" />
-                                <label for="remember-me" class="ml-2 block text-sm text-gray-700">
-                                    Remember me
-                                </label>
-                            </div>
-
-                            <NuxtLink to="/forgot-password"
-                                class="text-sm font-medium text-primary-purple hover:text-secondary-purple transition-colors">
-                                Forgot password?
-                            </NuxtLink>
-                        </div>
-
                         <div>
                             <button type="submit" :disabled="isLoading"
                                 class="w-full flex justify-center items-center px-6 py-3 bg-gradient-purple text-white font-medium rounded-xl shadow-soft hover:shadow-purple-glow transition-all duration-300 disabled:opacity-70">
@@ -90,33 +75,6 @@
                             {{ error }}
                         </div>
                     </form>
-
-                    <!-- Social login options (visual only) -->
-                    <div class="mt-8">
-                        <div class="relative">
-                            <div class="absolute inset-0 flex items-center">
-                                <div class="w-full border-t border-gray-200"></div>
-                            </div>
-                            <div class="relative flex justify-center text-sm">
-                                <span class="px-2 bg-white text-gray-500">Or continue with</span>
-                            </div>
-                        </div>
-
-                        <div class="mt-6 grid grid-cols-3 gap-3">
-                            <button type="button"
-                                class="py-2 px-4 border border-gray-200 rounded-lg flex justify-center items-center hover:bg-gray-50 transition-all">
-                                <Icon name="entypo:google--with-circle" class="h-5 w-5 text-gray-600" />
-                            </button>
-                            <button type="button"
-                                class="py-2 px-4 border border-gray-200 rounded-lg flex justify-center items-center hover:bg-gray-50 transition-all">
-                                <Icon name="entypo:facebook-with-circle" class="h-5 w-5 text-gray-600" />
-                            </button>
-                            <button type="button"
-                                class="py-2 px-4 border border-gray-200 rounded-lg flex justify-center items-center hover:bg-gray-50 transition-all">
-                                <Icon name="entypo:twitter-with-circle" class="h-5 w-5 text-gray-600" />
-                            </button>
-                        </div>
-                    </div>
 
                     <div class="mt-8 text-center">
                         <p class="text-sm text-gray-600">
