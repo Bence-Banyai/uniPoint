@@ -6,10 +6,11 @@ using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer; //experimenting
 
 namespace uniPoint_backend.Controllers
 {
-    [Authorize]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] //experimenting
     [Route("api/[controller]")]
     [ApiController]
     public class ReviewController : ControllerBase
