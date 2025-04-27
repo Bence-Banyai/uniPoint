@@ -15,9 +15,8 @@ export interface Service {
 	description: string;
 	address: string;
 	duration: number;
-	openingHours?: number; // (optional, legacy)
-	opensAt?: string; // <-- add this
-	closesAt?: string; // <-- add this
+	opensAt: string; // <-- add
+	closesAt: string; // <-- add
 	imageUrls?: string[];
 	provider?: {
 		userName: string;
