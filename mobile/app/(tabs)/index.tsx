@@ -421,7 +421,7 @@ export default function HomeScreen() {
   const route = useRoute<RouteProp<{ params: HomeScreenParams }, 'params'>>();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
-  const { userName } = useAuth();
+  const { userName, getUserInfo } = useAuth();
   const [isWeb] = useState(Platform.OS === 'web');
   const [categories, setCategories] = useState<CategoryType[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
@@ -429,7 +429,8 @@ export default function HomeScreen() {
   const [loadingServices, setLoadingServices] = useState(true);
   const [nextAppointment, setNextAppointment] = useState<any | null>(null);
   const [loadingNextAppointment, setLoadingNextAppointment] = useState(true);
-  
+  const [profileImage, setProfileImage] = useState(require('@/assets/images/adaptive-icon.png'));
+
   const loadNextAppointment = async () => {
     try {
       setLoadingNextAppointment(true);
@@ -463,22 +464,6 @@ export default function HomeScreen() {
           fetchServices()
         ]);
         setCategories(categoriesData);
-
-        // Fetch all reviews ONCE for all services
-        let allReviews: Review[] = [];
-        try {
-          const response = await fetch('https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net/api/Review');
-          allReviews = await response.json();
-        } catch (err) {
-          console.error('Failed to fetch all reviews:', err);
-        }
-
-        // Calculate average rating for each service
-        const servicesWithAvg = servicesData.map(service => {
-          const reviews = allReviews.filter(r => r.serviceId === service.serviceId);
-          const avgRating = reviews.length > 0 ? (reviews.reduce((sum, r) => sum + (r.score || 0), 0) / reviews.length) : 0;
-          return { ...service, avgRating };
-        });
 
         // Sort by price descending
         const sortedServices = servicesData.sort((a, b) => b.price - a.price);
@@ -692,6 +677,25 @@ export default function HomeScreen() {
     );
   };
 
+  useEffect(() => {
+    const fetchProfileImage = async () => {
+      try {
+        const userInfo = await getUserInfo();
+        let url = userInfo.profilePictureUrl;
+        if (url && typeof url === 'string' && url.trim() !== '') {
+          const sep = url.includes('?') ? '&' : '?';
+          url = url + sep + 't=' + Date.now();
+          setProfileImage({ uri: url });
+        } else {
+          setProfileImage(require('@/assets/images/adaptive-icon.png'));
+        }
+      } catch {
+        setProfileImage(require('@/assets/images/adaptive-icon.png'));
+      }
+    };
+    fetchProfileImage();
+  }, []);
+
   return (
     <LinearGradient
       colors={["#2E0249", "#570A57", "#A91079"]}
@@ -703,12 +707,10 @@ export default function HomeScreen() {
         styles.glowCircle,
         { top: -Dimensions.get("window").height * 0.2, left: -Dimensions.get("window").width * 0.4 },
       ]} />
-      
       <View style={[
         styles.glowCircle2,
         { bottom: -Dimensions.get("window").height * 0.15, right: -Dimensions.get("window").width * 0.3 },
       ]} />
-      
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={[
@@ -723,8 +725,9 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View style={styles.profileContainer}>
             <Image 
-              source={require('@/assets/images/adaptive-icon.png')}
+              source={profileImage}
               style={styles.avatar}
+              contentFit="cover"
             />
             <View>
               <ThemedText 

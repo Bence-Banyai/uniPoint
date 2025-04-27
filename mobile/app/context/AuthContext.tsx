@@ -26,8 +26,8 @@ interface UserInfo {
   userName: string;
   email: string;
   location?: string;
-  address?: string;
   createdAt?: string;
+  profilePictureUrl?: string; // Add this line for profile picture support
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
@@ -154,6 +154,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: extractedEmail,
           location: typedResponse.location || typedResponse.user?.location || '(Location not provided)'
         });
+
+        // Fetch and store profile picture URL immediately after login
+        try {
+          const userInfo = await getUserInfo();
+          if (userInfo.profilePictureUrl) {
+            await storeSecureItem('profilePictureUrl', userInfo.profilePictureUrl);
+          }
+        } catch (e) {
+          console.warn('Could not fetch profile picture after login:', e);
+        }
 
         return response;
       }
@@ -336,39 +346,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Update refreshUserInfo to be more thorough
+  // Update refreshUserInfo to always fetch from API and update all state/storage
   const refreshUserInfo = async (): Promise<UserInfo> => {
-    // Clear cached user info  
     setUserInfo(null);
-    
-    // Get latest directly from storage
-    const storedUserName = await getSecureItem('userName');
-    const storedEmail = await getSecureItem('email');
-    const storedLocation = await getSecureItem('userLocation');
-    console.log('Refreshing user info. Data from storage:', {
-      userName: storedUserName,
-      email: storedEmail, 
-      location: storedLocation
-    });
-    
-    // If we have data in storage, use it
-    if (storedUserName && storedEmail) {
-      const refreshedInfo = {
-        userName: storedUserName,
-        email: storedEmail,
-        location: storedLocation || undefined
+    const token = await getSecureItem('userToken');
+    const userId = await getSecureItem('userId');
+    if (!token || !userId) throw new Error('No authentication token found');
+    try {
+      const response = await api.get(`/api/User/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const userData = response.data as any;
+      const newUserInfo: UserInfo = {
+        userName: userData.userName || userData.username || 'Unknown User',
+        email: userData.email || userData.emailAddress || 'unknown@example.com',
+        location: userData.location,
+        createdAt: userData.createdAt || userData.memberSince,
+        profilePictureUrl: userData.profilePictureUrl,
       };
-      
-      // Update state with refreshed info
-      setUserInfo(refreshedInfo);
-      setUserName(refreshedInfo.userName);
-      setemail(refreshedInfo.email);
-      
-      return refreshedInfo;
+      setUserInfo(newUserInfo);
+      setUserName(newUserInfo.userName);
+      setemail(newUserInfo.email);
+      await storeSecureItem('userName', newUserInfo.userName);
+      await storeSecureItem('email', newUserInfo.email);
+      if (newUserInfo.location) await storeSecureItem('userLocation', newUserInfo.location);
+      if (newUserInfo.profilePictureUrl) await storeSecureItem('profilePictureUrl', newUserInfo.profilePictureUrl);
+      return newUserInfo;
+    } catch (error) {
+      console.error('Failed to refresh user info from API:', error);
+      throw error;
     }
-    
-    // Otherwise, get updated info from API
-    return getUserInfo();
   };
 
   return (
