@@ -109,12 +109,11 @@ type AppointmentProps = {
     status: string;
     category: string;
   };
-  onReschedule: (id: string) => void;
   onCancel: (id: string) => void;
   isPast?: boolean;
 };
 
-function AppointmentCard({ appointment, onReschedule, onCancel, isPast = false }: AppointmentProps) {
+function AppointmentCard({ appointment, onCancel, isPast = false }: AppointmentProps) {
   const getStatusColor = (status: string): string => {
     switch(status) {
       case 'confirmed': return '#4CAF50';
@@ -196,38 +195,6 @@ function AppointmentCard({ appointment, onReschedule, onCancel, isPast = false }
               Cancel
             </ThemedText>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.appointmentButton, styles.rescheduleButton]}
-            activeOpacity={0.7}
-            onPress={() => onReschedule(appointment.id)}
-          >
-            <ThemedText 
-              style={styles.buttonText}
-              darkColor="#31E1F7" 
-              lightColor="#31E1F7"
-            >
-              Reschedule
-            </ThemedText>
-          </TouchableOpacity>
-        </View>
-      )}
-      
-      {isPast && appointment.status === 'completed' && (
-        <View style={styles.appointmentActions}>
-          <TouchableOpacity 
-            style={[styles.appointmentButton, styles.bookAgainButton]}
-            activeOpacity={0.7}
-            onPress={() => onReschedule(appointment.id)}
-          >
-            <ThemedText 
-              style={styles.buttonText}
-              darkColor="#4CAF50" 
-              lightColor="#4CAF50"
-            >
-              Book Again
-            </ThemedText>
-          </TouchableOpacity>
         </View>
       )}
       
@@ -252,7 +219,28 @@ export default function AppointmentsScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const [activeTab, setActiveTab] = useState('upcoming'); 
-  const { userName, email } = useAuth();
+  const { userName, getUserInfo } = useAuth();
+  const [profileImage, setProfileImage] = useState(require('@/assets/images/adaptive-icon.png'));
+
+  useEffect(() => {
+    const fetchProfileImage = async () => {
+      try {
+        const userInfo = await getUserInfo();
+        let url = userInfo.profilePictureUrl;
+        if (url && typeof url === 'string' && url.trim() !== '') {
+          const sep = url.includes('?') ? '&' : '?';
+          url = url + sep + 't=' + Date.now();
+          setProfileImage({ uri: url });
+        } else {
+          setProfileImage(require('@/assets/images/adaptive-icon.png'));
+        }
+      } catch {
+        setProfileImage(require('@/assets/images/adaptive-icon.png'));
+      }
+    };
+    fetchProfileImage();
+  }, []);
+
   const [categories, setCategories] = useState<CategoryType[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -381,12 +369,10 @@ export default function AppointmentsScreen() {
         styles.glowCircle,
         { top: -Dimensions.get("window").height * 0.2, left: -Dimensions.get("window").width * 0.4 },
       ]} />
-      
       <View style={[
         styles.glowCircle2,
         { bottom: -Dimensions.get("window").height * 0.15, right: -Dimensions.get("window").width * 0.3 },
       ]} />
-      
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={[
@@ -400,9 +386,10 @@ export default function AppointmentsScreen() {
       >
         <View style={styles.header}>
           <View style={styles.profileContainer}>
-            <Image 
-              source={require('@/assets/images/adaptive-icon.png')}
+            <ExpoImage // Use ExpoImage for contentFit
+              source={profileImage}
               style={styles.avatar}
+              contentFit="cover"
             />
             <View>
               <ThemedText 
@@ -530,28 +517,18 @@ export default function AppointmentsScreen() {
           ) : hasAppointments ? (
             <View style={styles.appointmentsList}>
               {displayedAppointments.map((appointment) => (
-                <AppointmentCard 
+                <AppointmentCard
                   key={appointment.id}
                   appointment={{
                     id: appointment.id,
-                    title: appointment.service?.serviceName || "Appointment",
-                    provider: appointment.service?.provider?.userName || "Unknown Provider",
-                    time: new Date(appointment.appointmentDate).toLocaleTimeString('en-US', {
-                      hour: 'numeric',
-                      minute: '2-digit',
-                      hour12: true
-                    }),
-                    date: new Date(appointment.appointmentDate).toLocaleDateString('en-US', {
-                      weekday: 'short',
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric'
-                    }),
-                    location: appointment.service?.address || "No address provided",
+                    title: appointment.service?.serviceName || '',
+                    provider: appointment.service?.provider?.userName || '',
+                    time: new Date(appointment.appointmentDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    date: new Date(appointment.appointmentDate).toLocaleDateString(),
+                    location: appointment.service?.address || '',
                     status: getStatusLabel(appointment.status),
-                    category: appointment.service?.category?.name || ""
+                    category: appointment.service?.category?.name || ''
                   }}
-                  onReschedule={(id) => {}}
                   onCancel={() => handleCancel(appointment.id)}
                   isPast={activeTab === 'past'}
                 />
@@ -818,10 +795,6 @@ const styles = StyleSheet.create({
     borderColor: '#F806CC',
     backgroundColor: 'rgba(248, 6, 204, 0.1)',
   },
-  rescheduleButton: {
-    borderColor: '#31E1F7',
-    backgroundColor: 'rgba(49, 225, 247, 0.1)',
-  },
   buttonText: {
     fontSize: responsiveFontSize(12, 11, 14),
     fontWeight: '600',
@@ -879,10 +852,6 @@ const styles = StyleSheet.create({
     fontSize: responsiveFontSize(12, 11, 14),
     fontWeight: '500',
     fontFamily: fontFamilies.text,
-  },
-  bookAgainButton: {
-    borderColor: '#4CAF50',
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
   },
   loadingContainer: {
     alignItems: 'center',

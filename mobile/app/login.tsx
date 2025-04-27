@@ -45,7 +45,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   
-  const { login } = useAuth();
+  const { login, refreshUserInfo } = useAuth();
   
   const isSmallDevice = screenWidth < 380;
   const isLargeDevice = screenWidth >= 768;
@@ -86,6 +86,20 @@ export default function LoginScreen() {
       const result = await login({ userNameOrEmail, password });
       console.log('Login successful, result:', result);
       
+      // Fetch user profile info (including profile picture) immediately after login
+      try {
+        await refreshUserInfo();
+        console.log('User info refreshed successfully');
+      } catch (refreshError) {
+        console.error('Error refreshing user info:', refreshError);
+        // Continue with navigation even if refresh fails
+      }
+      
+      // Add a small delay on web platform before navigation
+      if (Platform.OS === 'web') {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+      
       console.log('Attempting to navigate to:', '/(tabs)');
       try {
         // First try replacing the route
@@ -93,7 +107,6 @@ export default function LoginScreen() {
         console.log('Navigation successful');
       } catch (navError) {
         console.error('Navigation error:', navError);
-                
       }
     } catch (error: any) {
       console.error('Login failed:', error);
@@ -107,7 +120,7 @@ export default function LoginScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [userNameOrEmail, password, login]);
+  }, [userNameOrEmail, password, login, refreshUserInfo]);
 
   return (
     <KeyboardAvoidingView
