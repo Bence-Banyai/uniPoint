@@ -21,6 +21,8 @@ export default function useServicesApi() {
 			description: string;
 			address: string;
 			duration: number;
+			opensAt: string;
+			closesAt: string;
 		}) {
 			return apiClient.post("/api/Service", serviceData);
 		},
@@ -35,6 +37,8 @@ export default function useServicesApi() {
 				description: string;
 				address: string;
 				duration: number;
+				opensAt: string;
+				closesAt: string;
 			}
 		) {
 			return apiClient.put(`/api/Service/${id}`, serviceData);

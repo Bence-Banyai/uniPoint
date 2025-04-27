@@ -19,7 +19,15 @@
                             </div>
                             <div class="flex items-center space-x-2">
                                 <Icon name="entypo:calendar" class="text-purple-600" />
-                                <span>Open: {{ formatOpeningHours(service.openingHours) }}</span>
+                                <span>
+                                    Opening hours:
+                                    <template v-if="service.opensAt && service.closesAt">
+                                        {{ formatTime(service.opensAt) }} - {{ formatTime(service.closesAt) }}
+                                    </template>
+                                    <template v-else>
+                                        N/A
+                                    </template>
+                                </span>
                             </div>
                             <div class="flex items-center space-x-2">
                                 <Icon name="entypo:location-pin" class="text-purple-600" />
@@ -224,10 +232,6 @@ const formatPrice = (price: number) => {
     return new Intl.NumberFormat('hu-HU', { style: 'currency', currency: 'HUF' }).format(price);
 };
 
-const formatOpeningHours = (hours: number | undefined) => {
-    return hours ? `${hours}:00 - 18:00` : 'N/A';
-};
-
 const formatAppointmentTime = (dateTimeString: string) => {
     const date = new Date(dateTimeString);
     return date.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
@@ -237,6 +241,12 @@ const formatReviewDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('hu-HU', { year: 'numeric', month: 'short', day: 'numeric' });
 };
+
+function formatTime(time: string | undefined) {
+    if (!time) return 'N/A';
+    // Accepts "08:00:00" or "08:00"
+    return time.split(':').slice(0, 2).join(':');
+}
 
 const averageScore = computed(() => {
     if (!reviews.value.length) return 0;
