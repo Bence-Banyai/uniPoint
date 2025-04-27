@@ -123,7 +123,7 @@ namespace uniPoint_backend_tests
             _controller.ModelState.AddModelError("Score", "Required");
 
             var result = await _controller.CreateReview(new CreateReviewModel());
-            Assert.IsType<BadRequestResult>(result);
+            Assert.IsType<BadRequestObjectResult>(result); // <-- changed from BadRequestResult
         }
 
         [Fact]
