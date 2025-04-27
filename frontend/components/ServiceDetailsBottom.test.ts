@@ -1,9 +1,54 @@
 import { mount } from "@vue/test-utils";
-import ServiceDetailsBottom from "../ServiceDetailsBottom.vue";
-import { describe, it, expect } from "vitest";
+import ServiceDetailsBottom from "./ServiceDetailsBottom.vue";
+import { describe, it, expect, vi } from "vitest";
+
+vi.mock("#app", () => ({
+	useRuntimeConfig: () => ({
+		public: { apiBaseUrl: "http://localhost" },
+	}),
+}));
+
+vi.mock("vue-router", () => ({
+	useRouter: () => ({
+		push: vi.fn(),
+		currentRoute: { value: { fullPath: "/" } },
+	}),
+}));
+
+vi.mock("../stores/auth", () => ({
+	useAuthStore: () => ({
+		isAuthenticated: false,
+		userId: "1",
+		getUserInfo: vi.fn(),
+	}),
+}));
+
+vi.mock("../composables/useAppointmentsApi", () => ({
+	__esModule: true,
+	default: () => ({
+		getOpen: vi.fn().mockResolvedValue([]),
+		book: vi.fn().mockResolvedValue({ data: { message: "Appointment booked successfully!" } }),
+	}),
+}));
+
+vi.mock("../composables/useReviewsApi", () => ({
+	__esModule: true,
+	default: () => ({
+		getAll: vi.fn().mockResolvedValue([]),
+		create: vi.fn().mockResolvedValue({}),
+	}),
+}));
+
+vi.mock("../services/serviceApi", () => ({
+	serviceApi: {
+		getServicesByCategory: vi.fn().mockResolvedValue([]),
+	},
+}));
 
 const mockService = {
 	serviceId: 1,
+	userId: "1",
+	serviceName: "Test Service",
 	description: "Test service description",
 	duration: 60,
 	price: 10000,
@@ -14,16 +59,14 @@ const mockService = {
 };
 
 describe("ServiceDetailsBottom", () => {
-	it("renders service description and details", () => {
+	it("renders static service details", () => {
 		const wrapper = mount(ServiceDetailsBottom, {
 			props: { service: mockService },
 			global: {
 				stubs: ["Icon"],
-				mocks: {
-					$router: { push: () => {} },
-				},
 			},
 		});
+
 		expect(wrapper.text()).toContain("Test service description");
 		expect(wrapper.text()).toContain("Duration: 60 minutes");
 		expect(wrapper.text()).toContain("Price:");

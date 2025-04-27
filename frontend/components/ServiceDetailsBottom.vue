@@ -180,12 +180,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import type { Service } from '~/services/serviceApi';
-import { serviceApi } from '~/services/serviceApi';
+import type { Service } from '../services/serviceApi';
+import { serviceApi } from '../services/serviceApi';
 import useAppointmentsApi from '../composables/useAppointmentsApi';
 import useReviewsApi from '../composables/useReviewsApi';
 import { useAuthStore } from '../stores/auth';
-import type { Appointment } from '~/models/Appointment';
+import type { Appointment } from '../models/Appointment';
 
 const props = defineProps<{
     service: Service
