@@ -62,15 +62,23 @@ namespace uniPoint_backend.Controllers
         // POST api/<ReviewController>
         [Authorize(Roles = "User,Admin")]
         [HttpPost]
-        public async Task<IActionResult> CreateReview(Review review)
+        public async Task<IActionResult> CreateReview([FromBody] CreateReviewModel model)
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest();
+                return BadRequest(ModelState);
             }
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            review.UserId = userId;
+
+            var review = new Review
+            {
+                UserId = userId,
+                ServiceId = model.ServiceId,
+                Score = model.Score,
+                Description = model.Description,
+                CreatedAt = model.CreatedAt ?? DateTime.UtcNow
+            };
 
             _uniPointContext.Reviews.Add(review);
             await _uniPointContext.SaveChangesAsync();

@@ -103,7 +103,7 @@ namespace uniPoint_backend_tests
         {
             SetUser("user2", "User");
 
-            var newReview = new Review
+            var newReview = new CreateReviewModel
             {
                 Score = 4,
                 Description = "Good!",
@@ -122,7 +122,7 @@ namespace uniPoint_backend_tests
             SetUser("user2", "User");
             _controller.ModelState.AddModelError("Score", "Required");
 
-            var result = await _controller.CreateReview(new Review());
+            var result = await _controller.CreateReview(new CreateReviewModel());
             Assert.IsType<BadRequestResult>(result);
         }
 

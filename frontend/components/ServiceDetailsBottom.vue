@@ -78,8 +78,7 @@
                                 <div class="flex items-center space-x-1">
                                     <button v-for="i in 5" :key="i" type="button" @click="reviewForm.score = i"
                                         :aria-label="`${i} star`">
-                                        <Icon
-                                            :name="i <= reviewForm.score ? 'material-symbols-light:kid-star' : 'material-symbols-light:kid-star-outline'"
+                                        <Icon :name="i <= reviewForm.score ? 'entypo:star' : 'entypo:star-outlined'"
                                             :class="i <= reviewForm.score ? 'text-yellow-400' : 'text-gray-300'"
                                             class="h-6 w-6" />
                                     </button>
@@ -284,18 +283,17 @@ const submitReview = async () => {
     reviewError.value = '';
     reviewSuccess.value = '';
     try {
-        // Call the review API to create a new review
+        // Add createdAt to the payload as a workaround
         const payload = {
             score: reviewForm.value.score,
             description: reviewForm.value.description,
-            serviceId: props.service.serviceId
+            serviceId: props.service.serviceId,
+            createdAt: new Date().toISOString() // <-- Add this line
         };
         await reviewsApi.create(payload);
         reviewSuccess.value = 'Review submitted successfully!';
-        // Optionally reset form
         reviewForm.value.score = 0;
         reviewForm.value.description = '';
-        // Reload reviews after successful submission
         await fetchReviews();
     } catch (error: any) {
         reviewError.value = error?.response?.data?.message || error?.message || 'Failed to submit review.';
