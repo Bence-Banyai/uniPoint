@@ -261,17 +261,27 @@ export default function AppointmentsScreen() {
   const navigation = useNavigation();
 
   const filteredAppointments = useMemo(() => {
-    if (activeTab === 'upcoming') {
-      return appointments.filter(appt => 
-        appt.status === AppointmentStatus.SCHEDULED
-      );
-    } else {
-      return appointments.filter(appt => 
-        appt.status === AppointmentStatus.DONE ||
-        appt.status === AppointmentStatus.CANCELLED_BY_USER ||
-        appt.status === AppointmentStatus.CANCELLED_BY_SERVICE
-      );
-    }
+    const now = new Date();
+    return appointments.map(appt => {
+      if (
+        appt.status === AppointmentStatus.SCHEDULED &&
+        new Date(appt.appointmentDate) < now
+      ) {
+        // If scheduled but date is in the past, treat as done
+        return { ...appt, status: AppointmentStatus.DONE };
+      }
+      return appt;
+    }).filter(appt => {
+      if (activeTab === 'upcoming') {
+        return appt.status === AppointmentStatus.SCHEDULED;
+      } else {
+        return (
+          appt.status === AppointmentStatus.DONE ||
+          appt.status === AppointmentStatus.CANCELLED_BY_USER ||
+          appt.status === AppointmentStatus.CANCELLED_BY_SERVICE
+        );
+      }
+    });
   }, [appointments, activeTab]);
 
   const displayedAppointments = useMemo(() => {

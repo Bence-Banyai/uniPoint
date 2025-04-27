@@ -232,9 +232,13 @@ export default function ProfileScreen() {
         };
         
         userAppointments.forEach((appointment: Appointment) => {
-          if (appointment.status === AppointmentStatus.DONE) {
+          // Treat SCHEDULED appointments in the past as DONE
+          if (
+            (appointment.status === AppointmentStatus.DONE) ||
+            (appointment.status === AppointmentStatus.SCHEDULED && new Date(appointment.appointmentDate) < new Date())
+          ) {
             stats.completed++;
-          } else if (appointment.status === AppointmentStatus.SCHEDULED) {
+          } else if (appointment.status === AppointmentStatus.SCHEDULED && new Date(appointment.appointmentDate) >= new Date()) {
             stats.upcoming++;
           } else if (
             appointment.status === AppointmentStatus.CANCELLED_BY_USER || 

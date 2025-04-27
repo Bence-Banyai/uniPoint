@@ -21,6 +21,7 @@ import { fetchUserAppointments, AppointmentStatus, Appointment } from '../../ser
 import { useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { fetchReviews, Review } from '../../services/reviewsApi';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -435,7 +436,7 @@ export default function HomeScreen() {
       const userAppointments = await fetchUserAppointments();
       
       const scheduledAppointments = userAppointments.filter((appt: Appointment) => 
-        appt.status === AppointmentStatus.SCHEDULED
+        appt.status === AppointmentStatus.SCHEDULED && new Date(appt.appointmentDate) >= new Date()
       );
       
       const sortedAppointments = scheduledAppointments.sort((a: Appointment, b: Appointment) => 
@@ -461,15 +462,29 @@ export default function HomeScreen() {
           fetchCategories(),
           fetchServices()
         ]);
-        
         setCategories(categoriesData);
-        
+
+        // Fetch all reviews ONCE for all services
+        let allReviews: Review[] = [];
+        try {
+          const response = await fetch('https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net/api/Review');
+          allReviews = await response.json();
+        } catch (err) {
+          console.error('Failed to fetch all reviews:', err);
+        }
+
+        // Calculate average rating for each service
+        const servicesWithAvg = servicesData.map(service => {
+          const reviews = allReviews.filter(r => r.serviceId === service.serviceId);
+          const avgRating = reviews.length > 0 ? (reviews.reduce((sum, r) => sum + (r.score || 0), 0) / reviews.length) : 0;
+          return { ...service, avgRating };
+        });
+
+        // Sort by price descending
         const sortedServices = servicesData.sort((a, b) => b.price - a.price);
         setServices(sortedServices.slice(0, 5));
-        
-        // Always reload the next appointment data when the effect runs
+
         await loadNextAppointment();
-        
       } catch (err) {
         console.error('Failed to load data:', err);
       } finally {
@@ -532,8 +547,8 @@ export default function HomeScreen() {
   const handleServicePress = (service: Service) => {
     console.log(`Selected service: ${service.serviceName}`);
     router.push({
-      pathname: '/appointments',
-      params: { serviceId: service.serviceId.toString() }
+      pathname: '/serviceDetails',
+      params: { id: service.serviceId.toString() }
     });
   };
   

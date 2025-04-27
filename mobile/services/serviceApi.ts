@@ -22,6 +22,8 @@ export interface Service {
   };
   openingHours?: number;
   imageUrls?: string[];
+  opensAt?: string;
+  closesAt?: string;
 }
 
 export const fetchServices = async (): Promise<Service[]> => {
