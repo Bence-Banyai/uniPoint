@@ -1,4 +1,4 @@
-% Created 2025-04-24 Thu 19:28
+% Created 2025-04-27 Sun 17:32
 % Intended LaTeX compiler: xelatex
 \documentclass[11pt]{article}
 \usepackage{graphicx}
@@ -47,8 +47,10 @@
 \begin{document}
 
 \maketitle
+\tableofcontents
+
 \section{MYSQL Szerver}
-\label{sec:org71c43ff}
+\label{sec:org5446a91}
 \begin{itemize}
 \item Szolgáltató: Azure Database for MySQL flexible server
 \item Config: Burstable, B1ms, 1 vCores, 2 GiB RAM, 20 storage, 360 IOPS
@@ -64,7 +66,7 @@
 \end{itemize}
 \end{itemize}
 \section{Host}
-\label{sec:org24854f9}
+\label{sec:org14a33b0}
 \begin{itemize}
 \item Szolgáltató: Azure App Service
 \item Link: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net/}
@@ -73,7 +75,7 @@
 \item Image: uniPointbackend20250412181409.azurecr.io/unipoint-backend:latest
 \end{itemize}
 \section{Tárhely}
-\label{sec:org925176c}
+\label{sec:org11c6a2e}
 \begin{itemize}
 \item Itt vannak tárolva a képek, az adatbázisban csak az URL-lek vannak.
 \item Szolgáltató: Azure Blob Storage
@@ -82,7 +84,7 @@
 \item Link: \url{https://tiszolczijacint.blob.core.windows.net/img/}
 \end{itemize}
 \section{CI/CD}
-\label{sec:orga505b8c}
+\label{sec:orge2c26f6}
 \begin{itemize}
 \item Github Actions
 \begin{itemize}
@@ -97,18 +99,21 @@
 \end{itemize}
 \end{itemize}
 \section{Adatbázis felépítése}
-\label{sec:org0903adb}
+\label{sec:orgda17720}
 
 Az adatbázis elkészítését az EntityFramework kezeli, tehát a model osztályokból készíti a táblákat és a kapcsolatokat. Az adatbázis MySQL alapú, ezt a Pomelo.EntityFrameworkCore.MySql NuGet package valósítja meg.
+
+\begin{center}
+\includegraphics[width=.9\linewidth]{uniPoint.png}
+\end{center}
 \subsection{user tábla}
-\label{sec:org6de48fd}
+\label{sec:org85f99be}
 \begin{itemize}
 \item Id: PK, VARCHAR(255), not null, unique
 \item UserName: LONGTEXT, not null, 1-30 hosszú
 \item Email: VARCHAR(255), email validáció
-\item PhoneNumber: LONGTEXT, telefonszám validáció
 \item ProfilePictureUrl: VARCHAR(255), not null, default: \url{https://tiszolczijacint.blob.core.windows.net/img/63cf316b-35a1-432e-92fe-0f2d0b2029c3.jpg}
-\item CreatedAt: DATETIME(6), not null, timestamp validáció, default: létrehozás dátuma UTC
+\item CreatedAt: DATETIME(6), not null, default: létrehozás dátuma UTC
 \item PasswordHash: LONGTEXT, not null, automatikus titkosítás
 \item Location: VARCHAR(255)
 \item IsPushNotificationsEnabled: TINYINT(1), (Entityframework bool)
@@ -129,7 +134,7 @@ IdentityUser által létrehozott, közvetlenül nem használt
 \item TwoFactorEnabled: TINYINT(1), not null
 \end{itemize}
 \subsection{services tábla}
-\label{sec:org67b559f}
+\label{sec:org9693865}
 \begin{itemize}
 \item ServiceId: PK, INT(11), not null, unique
 \item UserId: VARCHAR(255), not null, FK: user.Id, (Szolgáltató Id)
@@ -144,19 +149,19 @@ IdentityUser által létrehozott, közvetlenül nem használt
 \item OpensAt: TIME(6)
 \end{itemize}
 \subsection{categories tábla}
-\label{sec:org92d46fd}
+\label{sec:org1d098e2}
 \begin{itemize}
 \item CategoryId: PK, INT, not null, default: \url{https://tiszolczijacint.blob.core.windows.net/img/63cf316b-35a1-432e-92fe-0f2d0b2029c3.jpg}
 \item Name: VARCHAR(255), not null
 \item IconUrl: LONGTEXT
 \end{itemize}
 \subsection{appointments tábla}
-\label{sec:orgd2020e7}
+\label{sec:orgf2006eb}
 \begin{itemize}
 \item Id:  PK, INT(11), not null, unique
 \item UserId: VARCHAR(255), FK: user.Id, (Foglaló Id)
 \item ServiceId: INT(11), not null, FK: services.ServiceId
-\item appointmentDate: DATETIME(6), not null, timestamp validáció
+\item appointmentDate: DATETIME(6), not null
 \item Status: INT(11), not null
 \begin{itemize}
 \item az EF kezeli, igazából enum
@@ -172,17 +177,17 @@ IdentityUser által létrehozott, közvetlenül nem használt
 \end{itemize}
 \end{itemize}
 \subsection{reviews tábla}
-\label{sec:orgede2ee4}
+\label{sec:orgb641637}
 \begin{itemize}
 \item ReviewId: PK, INT(11), not null, unique
 \item UserId: VARCHAR(255), FK: user.Id, (Értékelő Id)
 \item ServiceId: INT(11), not null, FK: services.ServiceId
 \item Score: INT(11), not null, értéke 1-5
 \item Description: VARHCHAR(2000), not null
-\item CreatedAt: DATETIME(6), not null, timestamp validáció, default: létrehozás dátuma UTC
+\item CreatedAt: DATETIME(6), not null, default: létrehozás dátuma UTC
 \end{itemize}
 \subsection{EntityFramework és IdentityUser által létrehozott táblák}
-\label{sec:org4b132c4}
+\label{sec:org3f04ddd}
 \begin{itemize}
 \item roleclaims
 \begin{itemize}
@@ -231,15 +236,15 @@ IdentityUser által létrehozott, közvetlenül nem használt
 \end{itemize}
 \end{itemize}
 \section{Végpontok}
-\label{sec:org38fdb83}
+\label{sec:org16fa1ac}
 Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.net/swagger/index.html}
 \begin{itemize}
 \item A hitelesítéshez a bejelentkezéskor kapott JWT tokent be kell másolni az Authorize részbe.
 \end{itemize}
 \subsection{Auth}
-\label{sec:org4b2c76f}
+\label{sec:org7f68c98}
 \subsubsection{Register}
-\label{sec:orgf55c268}
+\label{sec:orgeac752b}
 \begin{itemize}
 \item url: /api/Auth/register
 \item POST request:
@@ -270,7 +275,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 }
 \end{minted}
 \subsubsection{Login}
-\label{sec:org7ecbe47}
+\label{sec:orga869092}
 \begin{itemize}
 \item url: /api/Auth/login
 \item POST request:
@@ -298,7 +303,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 }
 \end{minted}
 \subsubsection{Logout}
-\label{sec:org7facf70}
+\label{sec:orga6be9e0}
 \begin{itemize}
 \item url: /api/Auth/logout
 \item POST request
@@ -313,9 +318,9 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 }
 \end{minted}
 \subsection{User}
-\label{sec:org036c3c4}
+\label{sec:org88878da}
 \subsubsection{Get Users}
-\label{sec:org6e07bb7}
+\label{sec:org5515a16}
 \begin{itemize}
 \item url: /api/User
 \item GET request
@@ -341,7 +346,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 ]
 \end{minted}
 \subsubsection{Get User by ID}
-\label{sec:orgd67a1e4}
+\label{sec:org959e21e}
 \begin{itemize}
 \item url: /api/User/\{id\}
 \item GET request (/api/User/5bc50972-53df-456a-8e60-c37222ad103d)
@@ -360,7 +365,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 }
 \end{minted}
 \subsubsection{Update User}
-\label{sec:org95402be}
+\label{sec:org33430ac}
 \begin{itemize}
 \item Role: Current User
 \item url: /api/User/\{id\}
@@ -390,7 +395,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 }
 \end{minted}
 \subsubsection{Change User Profile Picture}
-\label{sec:orgb783069}
+\label{sec:org091bbf7}
 \begin{itemize}
 \item Role: Current User
 \item url: /api/User/\{id\}/upload-profile-picture
@@ -429,7 +434,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 }
 \end{minted}
 \subsubsection{Delete User}
-\label{sec:orgecdcb5a}
+\label{sec:orgb217a9b}
 \begin{itemize}
 \item Role: Current User
 \item url: /api/User/\{id\}
@@ -445,9 +450,9 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 }
 \end{minted}
 \subsection{Service}
-\label{sec:org28e3437}
+\label{sec:org8ad43d0}
 \subsubsection{Get Services}
-\label{sec:org678e920}
+\label{sec:org319163c}
 \begin{itemize}
 \item url: /api/Service
 \item GET request
@@ -513,7 +518,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 ]
 \end{minted}
 \subsubsection{Get Service by ID}
-\label{sec:orga24eab5}
+\label{sec:orgb10d4f2}
 \begin{itemize}
 \item url: /api/Service/\{id\}
 \item GET request (/api/Service/1)
@@ -551,7 +556,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 }
 \end{minted}
 \subsubsection{Post new Service}
-\label{sec:org2a00acb}
+\label{sec:org8bc4306}
 \begin{itemize}
 \item Role: Provider
 \item url: /api/Service
@@ -594,7 +599,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 }
 \end{minted}
 \subsubsection{Update Service}
-\label{sec:orgd0942c1}
+\label{sec:org20a5726}
 \begin{itemize}
 \item Role: Provider of service
 \item url: /api/Service/\{id\}
@@ -637,7 +642,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 }
 \end{minted}
 \subsubsection{Add Images to Service}
-\label{sec:org4358162}
+\label{sec:org7003a1e}
 \begin{itemize}
 \item Role: Provider of service
 \item url: /api/Service/\{id\}/upload-service-picture
@@ -706,7 +711,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 }
 \end{minted}
 \subsubsection{Delete Service}
-\label{sec:orgdbad682}
+\label{sec:org05c8718}
 \begin{itemize}
 \item Role: Provider of service
 \item url: /api/Service/\{id\}
@@ -717,9 +722,9 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 \end{itemize}
 \end{itemize}
 \subsection{Category}
-\label{sec:orge774a1a}
+\label{sec:orga6975f3}
 \subsubsection{Get Categories}
-\label{sec:org4c99edb}
+\label{sec:orgcd33aa4}
 \begin{itemize}
 \item url: /api/Category
 \item GET request
@@ -743,7 +748,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 ]
 \end{minted}
 \subsubsection{Post new Category}
-\label{sec:orgd4359c8}
+\label{sec:org1ff83f7}
 \begin{itemize}
 \item Role: Admin
 \item url: /api/Category
@@ -768,7 +773,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 }
 \end{minted}
 \subsubsection{Get Category by ID}
-\label{sec:org127b22a}
+\label{sec:org5c1e041}
 \begin{itemize}
 \item url: /api/Category/\{id\}
 \item GET request (/api/Category/3)
@@ -785,7 +790,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 }
 \end{minted}
 \subsubsection{Update Category}
-\label{sec:orgeff043f}
+\label{sec:orgb3760d5}
 \begin{itemize}
 \item Role: Admin
 \item url: /api/Category/\{id\}
@@ -804,7 +809,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 \end{itemize}
 \end{itemize}
 \subsubsection{Update Category image}
-\label{sec:org3fb80aa}
+\label{sec:orga81418f}
 \begin{itemize}
 \item Role: Admin
 \item url: /api/Category/\{id\}/upload-categoryicon
@@ -843,7 +848,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 }
 \end{minted}
 \subsubsection{Delete Category}
-\label{sec:orgb9f0278}
+\label{sec:org6366e0a}
 \begin{itemize}
 \item Role: Admin
 \item url: /api/Category/\{id\}
@@ -854,9 +859,9 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 \end{itemize}
 \end{itemize}
 \subsection{Appointment}
-\label{sec:org228c473}
+\label{sec:org83b891d}
 \subsubsection{Get Appointments}
-\label{sec:orgcdbedee}
+\label{sec:orgd01442d}
 \begin{itemize}
 \item url: /api/Appointment
 \item GET request
@@ -909,7 +914,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 ]
 \end{minted}
 \subsubsection{Get Appointment by ID}
-\label{sec:orgec82ec6}
+\label{sec:orge1bc51f}
 \begin{itemize}
 \item url: /api/Category/\{id\}
 \item GET request (/api/Appointment/4)
@@ -956,7 +961,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 }
 \end{minted}
 \subsubsection{Get Open Appointments}
-\label{sec:org16d9d11}
+\label{sec:orgaa135bb}
 \begin{itemize}
 \item url: /api/Appointment/open
 \item GET request
@@ -1001,7 +1006,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 ]
 \end{minted}
 \subsubsection{Get my Appointments}
-\label{sec:orgccf9fa8}
+\label{sec:org03ce3ae}
 \begin{itemize}
 \item url: /api/Appointment/myappointments
 \item GET request
@@ -1051,7 +1056,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 ]
 \end{minted}
 \subsubsection{Post new Appointment}
-\label{sec:org3ae3d31}
+\label{sec:orgf24d946}
 \begin{itemize}
 \item Role: Provider
 \item url: /api/Appointments
@@ -1095,7 +1100,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 }
 \end{minted}
 \subsubsection{Update Appointment}
-\label{sec:org48362f8}
+\label{sec:orgd35ea35}
 \begin{itemize}
 \item Role: Provider of appointment
 \item url: /api/Appointments/\{id\}
@@ -1164,7 +1169,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 }
 \end{minted}
 \subsubsection{Delete Appointment}
-\label{sec:orgeea07b3}
+\label{sec:orgb0b2e28}
 \begin{itemize}
 \item Role: Provider of appointment
 \item url: /api/Appointment/\{id\}
@@ -1180,7 +1185,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 }
 \end{minted}
 \subsubsection{Book Appointment}
-\label{sec:orgca05cd4}
+\label{sec:org2a4fce2}
 \begin{itemize}
 \item Role: User
 \item url: /api/Appointment/book/\{id\}
@@ -1205,7 +1210,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 }
 \end{minted}
 \subsubsection{Cancel Appointment}
-\label{sec:org14925d3}
+\label{sec:org38e62e1}
 \begin{itemize}
 \item Role: User, Provider
 \item url: /api/Appointment/cancel/\{id\}
@@ -1230,9 +1235,9 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 }
 \end{minted}
 \subsection{Review}
-\label{sec:orgb1e8340}
+\label{sec:org9fbe789}
 \subsubsection{Get Reviews}
-\label{sec:org22cb2dd}
+\label{sec:orgc34d4d8}
 \begin{itemize}
 \item url: /api/Review
 \item GET request
@@ -1286,7 +1291,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 ]
 \end{minted}
 \subsubsection{Get Review by ID}
-\label{sec:orge39dc78}
+\label{sec:org73a96c7}
 \begin{itemize}
 \item url: /api/Review/\{id\}
 \item GET request (/api/Review/1)
@@ -1338,7 +1343,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 }
 \end{minted}
 \subsubsection{Post new Review}
-\label{sec:org1edc05c}
+\label{sec:org83d85a7}
 \begin{itemize}
 \item Role: User
 \item url: /api/Review
@@ -1346,7 +1351,6 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 \end{itemize}
 \begin{minted}[fontsize=\small,breaklines=true,breakanywhere=true,style=friendly]{json}
 {
-  "userId": "0e23ad89-24a8-4ed6-ad2b-529fa0063412",
   "serviceId": 1,
   "score": 3,
   "description": "string"
@@ -1392,7 +1396,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 }
 \end{minted}
 \subsubsection{Update Review}
-\label{sec:orgc8f46c9}
+\label{sec:orgd678439}
 \begin{itemize}
 \item Role: User of Review
 \item url: /api/Review/\{id\}
@@ -1426,7 +1430,7 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 }
 \end{minted}
 \subsubsection{Delete Review}
-\label{sec:orge96367c}
+\label{sec:org37f5930}
 \begin{itemize}
 \item Role: User of Review
 \item url: /api/Review/\{id\}
@@ -1435,5 +1439,325 @@ Swagger: \url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewebsites.n
 \begin{itemize}
 \item StatusCode: 200
 \end{itemize}
+\end{itemize}
+\section{Tesztek}
+\label{sec:orge670ecc}
+\subsection{Auth}
+\label{sec:org9c45536}
+\subsubsection{Register\_ReturnsBadRequest\_WhenInvalidModel}
+\label{sec:org4c4d5a0}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a Register metódus BadRequest választ ad, ha érvénytelen a modell (hiányzik az "Email" mező).
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz típus BadRequestObjectResult.
+\end{itemize}
+\subsubsection{Register\_ReturnsBadRequest\_WhenInvalidRole}
+\label{sec:orgaba1ac5}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a Register metódus BadRequest választ ad, ha az érvénytelen szerepkört (nem "User" vagy "Provider") választanak.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz tartalmazza az "Invalid role" üzenetet.
+\end{itemize}
+\subsubsection{Register\_ReturnsBadRequest\_IfEmailExists}
+\label{sec:orge581060}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a Register metódus BadRequest választ ad, ha az email már létezik az adatbázisban.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz tartalmazza az "Email is already in use" üzenetet.
+\end{itemize}
+\subsubsection{Register\_Succeeds}
+\label{sec:org9e882ff}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a Register metódus sikeresen regisztrálja az új felhasználót, ha az email nem létezik és minden adat érvényes.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz tartalmaz egy "Token" üzenetet, jelezve a sikeres regisztrációt.
+\end{itemize}
+\subsubsection{Login\_ReturnsUnauthorized\_WhenUserNotFound}
+\label{sec:org1b176c3}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a Login metódus Unauthorized választ ad, ha a felhasználó nem található.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz tartalmazza az "Invalid username or email" üzenetet.
+\end{itemize}
+\subsubsection{Login\_ReturnsUnauthorized\_WhenPasswordIncorrect}
+\label{sec:org78db620}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a Login metódus Unauthorized választ ad, ha a jelszó hibás.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz UnauthorizedObjectResult típusú, amikor a jelszó helytelen.
+\end{itemize}
+\subsubsection{Login\_Succeeds}
+\label{sec:orgeab1c7d}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a Login metódus sikeres bejelentkezést ad, ha a felhasználó létezik és a jelszó helyes.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz tartalmazza a "Login successful" üzenetet.
+\end{itemize}
+\subsubsection{Logout\_ReturnsSuccess}
+\label{sec:org8e1bb93}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a Logout metódus sikeres kijelentkezést ad.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz tartalmazza a "Logout successful" üzenetet.
+\end{itemize}
+\subsection{User}
+\label{sec:org26eb3b9}
+\subsubsection{UpdateUser\_UpdatesCorrectly\_ForOwner}
+\label{sec:org840da5b}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy az UpdateUser metódus sikeresen frissíti a felhasználó adatait, ha a felhasználó jogosult a módosításra.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a felhasználó neve frissült az "new" értékre.
+\end{itemize}
+\subsubsection{UpdateUser\_ReturnsBadRequest\_OnFailure}
+\label{sec:org54f742b}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy az UpdateUser metódus BadRequest választ ad, ha a frissítés nem sikerül.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz BadRequestObjectResult típusú, ha a frissítés hibás.
+\end{itemize}
+\subsubsection{DeleteUser\_DeletesUser\_WhenAuthorized}
+\label{sec:org5d183ea}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a DeleteUser metódus sikeresen törli a felhasználót, ha a felhasználó jogosult a törlésre.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz tartalmazza a "User deleted successfully." üzenetet.
+\end{itemize}
+\subsubsection{UploadProfilePicture\_ReturnsBadRequest\_WhenFileTooLarge}
+\label{sec:org0c2efc9}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy az UploadProfilePicture metódus BadRequest választ ad, ha a feltöltött fájl túl nagy (20MB).
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz tartalmazza a "File size must be under 15MB." üzenetet.
+\end{itemize}
+\subsubsection{UploadProfilePicture\_ReturnsBadRequest\_WhenUnsupportedExtension}
+\label{sec:org55e32fb}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy az UploadProfilePicture metódus BadRequest választ ad, ha a feltöltött fájl kiterjesztése nem támogatott.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz tartalmazza az "Unsupported filetype" üzenetet.
+\end{itemize}
+\subsection{Service}
+\label{sec:org563012d}
+\subsubsection{GetServices\_ReturnsOkResult\_WithListOfServices}
+\label{sec:org4f51dab}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a GetServices metódus OkObjectResult választ ad, amely egy szolgáltatáslistát tartalmaz.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz OkObjectResult típusú.
+\end{itemize}
+\subsubsection{GetService\_ReturnsNotFound\_WhenServiceDoesNotExist}
+\label{sec:orgcafb360}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a GetService metódus NotFoundResult választ ad, ha a keresett szolgáltatás nem létezik.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz NotFoundResult típusú.
+\end{itemize}
+\subsubsection{CreateService\_ReturnsCreatedAtAction\_WhenValidService}
+\label{sec:org5808683}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a CreateService metódus CreatedAtAction választ ad, ha egy érvényes szolgáltatás kerül létrehozásra.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz CreatedAtActionResult típusú, és a létrehozott szolgáltatás neve "New Service".
+\end{itemize}
+\subsubsection{UpdateService\_ReturnsOkResult\_WhenValidService}
+\label{sec:org7a9a37c}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy az UpdateService metódus OkObjectResult választ ad, ha egy érvényes szolgáltatás frissítése történik.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz OkObjectResult típusú, és a frissített szolgáltatás neve "Updated Service".
+\end{itemize}
+\subsubsection{DeleteService\_ReturnsOkResult\_WhenServiceExists}
+\label{sec:orgceadc58}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a DeleteService metódus OkResult választ ad, ha egy meglévő szolgáltatás törlésre kerül.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz OkResult típusú.
+\end{itemize}
+\subsubsection{UploadServicePicture\_ReturnsBadRequest\_WhenNoFilesProvided}
+\label{sec:org1ad273c}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy az UploadServicePicture metódus BadRequest választ ad, ha nincs fájl megadva a szolgáltatás képfeltöltésekor.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz BadRequestResult típusú.
+\end{itemize}
+\subsection{Category}
+\label{sec:org196e7e4}
+\subsubsection{GetCategories\_ReturnsList}
+\label{sec:org0b1c2bc}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a GetCategories metódus egy kategóriák listáját adja vissza.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz ActionResult típusú, és a kategóriák száma 1.
+\end{itemize}
+\subsubsection{GetCategory\_ReturnsCategory\_WhenExists}
+\label{sec:orgcdf2144}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a GetCategory metódus visszaadja a kategóriát, ha az létezik.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz Category típusú, és a kategória ID-ja 1.
+\end{itemize}
+\subsubsection{GetCategory\_ReturnsNotFound\_WhenNotExists}
+\label{sec:org77a37bf}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a GetCategory metódus NotFoundResult választ ad, ha a keresett kategória nem létezik.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz NotFoundResult típusú.
+\end{itemize}
+\subsubsection{PostCategory\_CreatesCategory}
+\label{sec:org85a1ec2}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a PostCategory metódus sikeresen létrehoz egy kategóriát.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz CreatedAtActionResult típusú, és a létrehozott kategória neve "New Category".
+\end{itemize}
+\subsubsection{PutCategory\_UpdatesCategory\_WhenValid}
+\label{sec:org73a7f74}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a PutCategory metódus sikeresen frissíti a kategóriát, ha érvényes adatokat kap.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz NoContentResult típusú.
+\end{itemize}
+\subsubsection{PutCategory\_ReturnsBadRequest\_IfIdMismatch}
+\label{sec:org03808ab}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a PutCategory metódus BadRequest választ ad, ha az ID nem egyezik.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz BadRequestResult típusú.
+\end{itemize}
+\subsubsection{PutCategory\_ReturnsNotFound\_IfCategoryMissing}
+\label{sec:orgc3471c2}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a PutCategory metódus NotFoundResult választ ad, ha a frissíteni kívánt kategória nem létezik.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz NotFoundResult típusú.
+\end{itemize}
+\subsubsection{DeleteCategory\_RemovesCategory}
+\label{sec:org44697a9}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a DeleteCategory metódus sikeresen törli a kategóriát, ha az létezik.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz NoContentResult típusú, és a törölt kategória valóban nem létezik.
+\end{itemize}
+\subsubsection{DeleteCategory\_ReturnsNotFound\_WhenInvalidId}
+\label{sec:orgbe97aef}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a DeleteCategory metódus NotFoundResult választ ad, ha érvénytelen ID-t kap.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz NotFoundResult típusú.
+\end{itemize}
+\subsubsection{UploadCategoryIcon\_ReturnsBadRequest\_WhenFileIsNull}
+\label{sec:orgcfc27f2}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy az UploadCategoryIcon metódus BadRequest választ ad, ha a fájl null.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz BadRequestResult típusú.
+\end{itemize}
+\subsubsection{UploadCategoryIcon\_ReturnsBadRequest\_WhenInvalidExtension}
+\label{sec:org2c7b68d}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy az UploadCategoryIcon metódus BadRequest választ ad, ha a fájl kiterjesztése nem támogatott.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz BadRequestObjectResult típusú, és a hibaüzenet tartalmazza az "Unsupported filetype" kifejezést.
+\end{itemize}
+\subsubsection{UploadCategoryIcon\_ReturnsBadRequest\_WhenFileTooLarge}
+\label{sec:orgae5d879}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy az UploadCategoryIcon metódus BadRequest választ ad, ha a fájl túl nagy.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz BadRequestObjectResult típusú, és a hibaüzenet tartalmazza az "under 15MB" kifejezést.
+\end{itemize}
+\subsection{Appointment}
+\label{sec:org7048194}
+\subsubsection{GetAppointment\_ReturnsNotFound\_WhenInvalidId}
+\label{sec:orgfe09a36}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a GetAppointment metódus NotFoundResult választ ad, ha érvénytelen az appointment ID.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz NotFoundResult típusú.
+\end{itemize}
+\subsubsection{BookAppointment\_ReturnsOk\_WhenAppointmentIsOpen}
+\label{sec:org77e8af9}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a BookAppointment metódus sikeres válaszot ad, ha az időpont elérhető.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz OkObjectResult típusú, és a válasz tartalmazza az "Appointment booked successfully" üzenetet.
+\end{itemize}
+\subsubsection{BookAppointment\_ReturnsBadRequest\_WhenAppointmentNotOpen}
+\label{sec:org407b4f3}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a BookAppointment metódus BadRequest választ ad, ha az időpont már nem elérhető.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz BadRequestObjectResult típusú, és a hibaüzenet "Appointment is not available for booking.".
+\end{itemize}
+\subsubsection{CancelAppointment\_ReturnsForbid\_IfNotOwner}
+\label{sec:org8412c49}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a CancelAppointment metódus ForbidResult választ ad, ha a felhasználó nem az időpont tulajdonosa.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz ForbidResult típusú.
+\end{itemize}
+\subsubsection{CancelAppointment\_ReturnsOk\_IfUserOwnsAppointment}
+\label{sec:orgfda3acf}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a CancelAppointment metódus OkObjectResult választ ad, ha a felhasználó az időpont tulajdonosa.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz OkObjectResult típusú, és a válasz tartalmazza a "cancelled" üzenetet.
+\end{itemize}
+\subsubsection{CreateAppointment\_ReturnsCreatedAtAction\_WhenValid}
+\label{sec:org7f8a986}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a CreateAppointment metódus CreatedAtActionResult választ ad, ha érvényes adatokat kap.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz CreatedAtActionResult típusú, és a létrehozott appointment státusza OPEN.
+\end{itemize}
+\subsubsection{DeleteAppointment\_ReturnsOk\_WhenProviderOwnsService}
+\label{sec:org6623788}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a DeleteAppointment metódus OkObjectResult választ ad, ha a provider tulajdonában van az adott szolgáltatás.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz OkObjectResult típusú, és a válasz tartalmazza a "deleted" üzenetet.
+\end{itemize}
+\subsection{Review}
+\label{sec:orgd2e9e29}
+\subsubsection{GetReviews\_ReturnsAllReviews}
+\label{sec:orgba21834}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a GetReviews metódus sikeresen visszaadja az összes értékelést.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz OkObjectResult típusú.
+\end{itemize}
+\subsubsection{GetReview\_ReturnsNotFound\_WhenMissing}
+\label{sec:org37813e3}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a GetReview metódus NotFoundResult választ ad, ha nem található a kérdéses értékelés.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz NotFoundResult típusú.
+\end{itemize}
+\subsubsection{CreateReview\_CreatesReview\_WhenValid}
+\label{sec:org9ddb2a8}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a CreateReview metódus sikeresen létrehozza az értékelést, ha a bemeneti adat érvényes.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz CreatedAtActionResult típusú, és a létrehozott értékelés UserId-je megegyezik a "user2"-vel.
+\end{itemize}
+\subsubsection{CreateReview\_ReturnsBadRequest\_WhenModelInvalid}
+\label{sec:org21620e2}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a CreateReview metódus BadRequestObjectResult választ ad, ha az értékelés modell érvénytelen.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz BadRequestObjectResult típusú, és a "Score" mező hiányzó.
+\end{itemize}
+\subsubsection{UpdateReview\_Succeeds\_ForOwner}
+\label{sec:org0031273}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a UpdateReview metódus sikeresen végrehajtódik, ha a felhasználó a tulajdonosa az értékelésnek.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz OkObjectResult típusú, és a frissített értékelés leírása "Updated".
+\end{itemize}
+\subsubsection{UpdateReview\_Succeeds\_ForAdmin}
+\label{sec:orgd06933f}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a UpdateReview metódus sikeresen végrehajtódik, ha az adminisztrátor próbálja frissíteni az értékelést.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz OkObjectResult típusú, és a frissített értékelés leírása "Admin Updated".
+\end{itemize}
+\subsubsection{UpdateReview\_ReturnsForbidden\_IfUserNotOwner}
+\label{sec:orga14aa3f}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a UpdateReview metódus ForbiddenResult választ ad, ha a felhasználó nem az értékelés tulajdonosa.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz ForbidResult típusú.
+\end{itemize}
+\subsubsection{UpdateReview\_ReturnsNotFound\_IfMissing}
+\label{sec:org1118f2b}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a UpdateReview metódus NotFoundResult választ ad, ha az értékelés nem található.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz NotFoundResult típusú.
+\end{itemize}
+\subsubsection{UpdateReview\_ReturnsBadRequest\_IfIdMismatch}
+\label{sec:orgf8593f8}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a UpdateReview metódus BadRequestObjectResult választ ad, ha az ID nem egyezik.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz BadRequestObjectResult típusú, és tartalmazza az "Id doesn't match" üzenetet.
+\end{itemize}
+\subsubsection{DeleteReview\_Succeeds\_ForOwner}
+\label{sec:org4b6477e}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a DeleteReview metódus sikeresen végrehajtódik, ha a felhasználó a tulajdonosa az értékelésnek.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz OkResult típusú.
+\end{itemize}
+\subsubsection{DeleteReview\_Succeeds\_ForAdmin}
+\label{sec:orgad4f672}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a DeleteReview metódus sikeresen végrehajtódik, ha az adminisztrátor törli az értékelést.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz OkResult típusú.
+\end{itemize}
+\subsubsection{DeleteReview\_ReturnsNotFound\_IfMissing}
+\label{sec:org6c028ab}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a DeleteReview metódus NotFoundResult választ ad, ha az értékelés nem található.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz NotFoundResult típusú.
+\end{itemize}
+\subsubsection{DeleteReview\_ReturnsForbidden\_IfUserNotOwner}
+\label{sec:orgf3ec829}
+\begin{itemize}
+\item Leírás: A teszt ellenőrzi, hogy a DeleteReview metódus ForbiddenResult választ ad, ha a felhasználó nem az értékelés tulajdonosa.
+\item Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz ForbidResult típusú.
 \end{itemize}
 \end{document}

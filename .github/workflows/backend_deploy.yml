@@ -59,10 +59,3 @@ jobs:
       with:
         app-name: ${{ secrets.AZURE_APP_NAME }}
         images: ${{ secrets.ACR_NAME }}.azurecr.io/unipoint-backend:latest
-
-# AZURE_CLIENT_ID: f3c3ce74-b6e3-4832-a4a4-9bca4d6f7886
-# AZURE_TENANT_ID: 03789cef-0dbf-4ae9-bd93-cfcf6abae60f
-# AZURE_SUBSCRIPTION_ID: ec2a3399-e799-45db-84d2-3cef09d60387
-# secret:
-#       - value: b6i8Q~jD1FNsQsOThr.U7IQpX_.OlBOCcg.Egbiu
-#       - id: 9a5d2601-c19c-42bd-b75a-75b481691520

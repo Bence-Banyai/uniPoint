@@ -27,7 +27,8 @@
 #+LATEX_HEADER: \setlength{\parskip}{1ex plus 0.5ex minus 0.5ex}
 #+LATEX_HEADER: \setlength{\parindent}{0pt}
 #+PROPERTY: header-args:json :exports code :eval never-export
-#+OPTIONS: toc:nil
+#+OPTIONS: toc:t
+#+OPTIONS: ^:nil
 
 * MYSQL Szerver
 - Szolgáltató: Azure Database for MySQL flexible server
@@ -66,13 +67,14 @@
 
 Az adatbázis elkészítését az EntityFramework kezeli, tehát a model osztályokból készíti a táblákat és a kapcsolatokat. Az adatbázis MySQL alapú, ezt a Pomelo.EntityFrameworkCore.MySql NuGet package valósítja meg.
 
+[[file:uniPoint.png]]
+
 ** user tábla
 - Id: PK, VARCHAR(255), not null, unique
 - UserName: LONGTEXT, not null, 1-30 hosszú
 - Email: VARCHAR(255), email validáció
-- PhoneNumber: LONGTEXT, telefonszám validáció
 - ProfilePictureUrl: VARCHAR(255), not null, default: @@latex:\url{https://tiszolczijacint.blob.core.windows.net/img/63cf316b-35a1-432e-92fe-0f2d0b2029c3.jpg}@@
-- CreatedAt: DATETIME(6), not null, timestamp validáció, default: létrehozás dátuma UTC
+- CreatedAt: DATETIME(6), not null, default: létrehozás dátuma UTC
 - PasswordHash: LONGTEXT, not null, automatikus titkosítás
 - Location: VARCHAR(255)
 - IsPushNotificationsEnabled: TINYINT(1), (Entityframework bool)
@@ -112,7 +114,7 @@ IdentityUser által létrehozott, közvetlenül nem használt
 - Id:  PK, INT(11), not null, unique
 - UserId: VARCHAR(255), FK: user.Id, (Foglaló Id)
 - ServiceId: INT(11), not null, FK: services.ServiceId
-- appointmentDate: DATETIME(6), not null, timestamp validáció
+- appointmentDate: DATETIME(6), not null
 - Status: INT(11), not null
   - az EF kezeli, igazából enum
   - lehetséges értékei:
@@ -129,7 +131,7 @@ IdentityUser által létrehozott, közvetlenül nem használt
 - ServiceId: INT(11), not null, FK: services.ServiceId
 - Score: INT(11), not null, értéke 1-5
 - Description: VARHCHAR(2000), not null
-- CreatedAt: DATETIME(6), not null, timestamp validáció, default: létrehozás dátuma UTC
+- CreatedAt: DATETIME(6), not null, default: létrehozás dátuma UTC
 
 ** EntityFramework és IdentityUser által létrehozott táblák
 - roleclaims
@@ -1089,7 +1091,6 @@ Swagger: @@latex:\url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewe
 - POST request:
 #+begin_src json
 {
-  "userId": "0e23ad89-24a8-4ed6-ad2b-529fa0063412",
   "serviceId": 1,
   "score": 3,
   "description": "string"
@@ -1163,3 +1164,164 @@ Swagger: @@latex:\url{https://unipoint-b6h6h4cubncmafhh.polandcentral-01.azurewe
 - DELETE request (/api/Review/3)
 - Response:
   - StatusCode: 200
+
+* Tesztek
+** Auth
+*** Register_ReturnsBadRequest_WhenInvalidModel
+- Leírás: A teszt ellenőrzi, hogy a Register metódus BadRequest választ ad, ha érvénytelen a modell (hiányzik az "Email" mező).
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz típus BadRequestObjectResult.
+*** Register_ReturnsBadRequest_WhenInvalidRole
+- Leírás: A teszt ellenőrzi, hogy a Register metódus BadRequest választ ad, ha az érvénytelen szerepkört (nem "User" vagy "Provider") választanak.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz tartalmazza az "Invalid role" üzenetet.
+*** Register_ReturnsBadRequest_IfEmailExists
+- Leírás: A teszt ellenőrzi, hogy a Register metódus BadRequest választ ad, ha az email már létezik az adatbázisban.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz tartalmazza az "Email is already in use" üzenetet.
+*** Register_Succeeds
+- Leírás: A teszt ellenőrzi, hogy a Register metódus sikeresen regisztrálja az új felhasználót, ha az email nem létezik és minden adat érvényes.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz tartalmaz egy "Token" üzenetet, jelezve a sikeres regisztrációt.
+*** Login_ReturnsUnauthorized_WhenUserNotFound
+- Leírás: A teszt ellenőrzi, hogy a Login metódus Unauthorized választ ad, ha a felhasználó nem található.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz tartalmazza az "Invalid username or email" üzenetet.
+*** Login_ReturnsUnauthorized_WhenPasswordIncorrect
+- Leírás: A teszt ellenőrzi, hogy a Login metódus Unauthorized választ ad, ha a jelszó hibás.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz UnauthorizedObjectResult típusú, amikor a jelszó helytelen.
+*** Login_Succeeds
+- Leírás: A teszt ellenőrzi, hogy a Login metódus sikeres bejelentkezést ad, ha a felhasználó létezik és a jelszó helyes.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz tartalmazza a "Login successful" üzenetet.
+*** Logout_ReturnsSuccess
+- Leírás: A teszt ellenőrzi, hogy a Logout metódus sikeres kijelentkezést ad.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz tartalmazza a "Logout successful" üzenetet.
+** User
+*** UpdateUser_UpdatesCorrectly_ForOwner
+- Leírás: A teszt ellenőrzi, hogy az UpdateUser metódus sikeresen frissíti a felhasználó adatait, ha a felhasználó jogosult a módosításra.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a felhasználó neve frissült az "new" értékre.
+*** UpdateUser_ReturnsBadRequest_OnFailure
+- Leírás: A teszt ellenőrzi, hogy az UpdateUser metódus BadRequest választ ad, ha a frissítés nem sikerül.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz BadRequestObjectResult típusú, ha a frissítés hibás.
+*** DeleteUser_DeletesUser_WhenAuthorized
+- Leírás: A teszt ellenőrzi, hogy a DeleteUser metódus sikeresen törli a felhasználót, ha a felhasználó jogosult a törlésre.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz tartalmazza a "User deleted successfully." üzenetet.
+*** UploadProfilePicture_ReturnsBadRequest_WhenFileTooLarge
+- Leírás: A teszt ellenőrzi, hogy az UploadProfilePicture metódus BadRequest választ ad, ha a feltöltött fájl túl nagy (20MB).
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz tartalmazza a "File size must be under 15MB." üzenetet.
+*** UploadProfilePicture_ReturnsBadRequest_WhenUnsupportedExtension
+- Leírás: A teszt ellenőrzi, hogy az UploadProfilePicture metódus BadRequest választ ad, ha a feltöltött fájl kiterjesztése nem támogatott.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz tartalmazza az "Unsupported filetype" üzenetet.
+** Service
+*** GetServices_ReturnsOkResult_WithListOfServices
+- Leírás: A teszt ellenőrzi, hogy a GetServices metódus OkObjectResult választ ad, amely egy szolgáltatáslistát tartalmaz.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz OkObjectResult típusú.
+*** GetService_ReturnsNotFound_WhenServiceDoesNotExist
+- Leírás: A teszt ellenőrzi, hogy a GetService metódus NotFoundResult választ ad, ha a keresett szolgáltatás nem létezik.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz NotFoundResult típusú.
+*** CreateService_ReturnsCreatedAtAction_WhenValidService
+- Leírás: A teszt ellenőrzi, hogy a CreateService metódus CreatedAtAction választ ad, ha egy érvényes szolgáltatás kerül létrehozásra.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz CreatedAtActionResult típusú, és a létrehozott szolgáltatás neve "New Service".
+*** UpdateService_ReturnsOkResult_WhenValidService
+- Leírás: A teszt ellenőrzi, hogy az UpdateService metódus OkObjectResult választ ad, ha egy érvényes szolgáltatás frissítése történik.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz OkObjectResult típusú, és a frissített szolgáltatás neve "Updated Service".
+*** DeleteService_ReturnsOkResult_WhenServiceExists
+- Leírás: A teszt ellenőrzi, hogy a DeleteService metódus OkResult választ ad, ha egy meglévő szolgáltatás törlésre kerül.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz OkResult típusú.
+*** UploadServicePicture_ReturnsBadRequest_WhenNoFilesProvided
+- Leírás: A teszt ellenőrzi, hogy az UploadServicePicture metódus BadRequest választ ad, ha nincs fájl megadva a szolgáltatás képfeltöltésekor.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz BadRequestResult típusú.
+** Category
+*** GetCategories_ReturnsList
+- Leírás: A teszt ellenőrzi, hogy a GetCategories metódus egy kategóriák listáját adja vissza.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz ActionResult típusú, és a kategóriák száma 1.
+*** GetCategory_ReturnsCategory_WhenExists
+- Leírás: A teszt ellenőrzi, hogy a GetCategory metódus visszaadja a kategóriát, ha az létezik.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz Category típusú, és a kategória ID-ja 1.
+*** GetCategory_ReturnsNotFound_WhenNotExists
+- Leírás: A teszt ellenőrzi, hogy a GetCategory metódus NotFoundResult választ ad, ha a keresett kategória nem létezik.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz NotFoundResult típusú.
+*** PostCategory_CreatesCategory
+- Leírás: A teszt ellenőrzi, hogy a PostCategory metódus sikeresen létrehoz egy kategóriát.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz CreatedAtActionResult típusú, és a létrehozott kategória neve "New Category".
+*** PutCategory_UpdatesCategory_WhenValid
+- Leírás: A teszt ellenőrzi, hogy a PutCategory metódus sikeresen frissíti a kategóriát, ha érvényes adatokat kap.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz NoContentResult típusú.
+*** PutCategory_ReturnsBadRequest_IfIdMismatch
+- Leírás: A teszt ellenőrzi, hogy a PutCategory metódus BadRequest választ ad, ha az ID nem egyezik.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz BadRequestResult típusú.
+*** PutCategory_ReturnsNotFound_IfCategoryMissing
+- Leírás: A teszt ellenőrzi, hogy a PutCategory metódus NotFoundResult választ ad, ha a frissíteni kívánt kategória nem létezik.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz NotFoundResult típusú.
+*** DeleteCategory_RemovesCategory
+- Leírás: A teszt ellenőrzi, hogy a DeleteCategory metódus sikeresen törli a kategóriát, ha az létezik.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz NoContentResult típusú, és a törölt kategória valóban nem létezik.
+*** DeleteCategory_ReturnsNotFound_WhenInvalidId
+- Leírás: A teszt ellenőrzi, hogy a DeleteCategory metódus NotFoundResult választ ad, ha érvénytelen ID-t kap.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz NotFoundResult típusú.
+*** UploadCategoryIcon_ReturnsBadRequest_WhenFileIsNull
+- Leírás: A teszt ellenőrzi, hogy az UploadCategoryIcon metódus BadRequest választ ad, ha a fájl null.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz BadRequestResult típusú.
+*** UploadCategoryIcon_ReturnsBadRequest_WhenInvalidExtension
+- Leírás: A teszt ellenőrzi, hogy az UploadCategoryIcon metódus BadRequest választ ad, ha a fájl kiterjesztése nem támogatott.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz BadRequestObjectResult típusú, és a hibaüzenet tartalmazza az "Unsupported filetype" kifejezést.
+*** UploadCategoryIcon_ReturnsBadRequest_WhenFileTooLarge
+- Leírás: A teszt ellenőrzi, hogy az UploadCategoryIcon metódus BadRequest választ ad, ha a fájl túl nagy.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz BadRequestObjectResult típusú, és a hibaüzenet tartalmazza az "under 15MB" kifejezést.
+** Appointment
+*** GetAppointment_ReturnsNotFound_WhenInvalidId
+- Leírás: A teszt ellenőrzi, hogy a GetAppointment metódus NotFoundResult választ ad, ha érvénytelen az appointment ID.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz NotFoundResult típusú.
+*** BookAppointment_ReturnsOk_WhenAppointmentIsOpen
+- Leírás: A teszt ellenőrzi, hogy a BookAppointment metódus sikeres válaszot ad, ha az időpont elérhető.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz OkObjectResult típusú, és a válasz tartalmazza az "Appointment booked successfully" üzenetet.
+*** BookAppointment_ReturnsBadRequest_WhenAppointmentNotOpen
+- Leírás: A teszt ellenőrzi, hogy a BookAppointment metódus BadRequest választ ad, ha az időpont már nem elérhető.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz BadRequestObjectResult típusú, és a hibaüzenet "Appointment is not available for booking.".
+*** CancelAppointment_ReturnsForbid_IfNotOwner
+- Leírás: A teszt ellenőrzi, hogy a CancelAppointment metódus ForbidResult választ ad, ha a felhasználó nem az időpont tulajdonosa.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz ForbidResult típusú.
+*** CancelAppointment_ReturnsOk_IfUserOwnsAppointment
+- Leírás: A teszt ellenőrzi, hogy a CancelAppointment metódus OkObjectResult választ ad, ha a felhasználó az időpont tulajdonosa.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz OkObjectResult típusú, és a válasz tartalmazza a "cancelled" üzenetet.
+*** CreateAppointment_ReturnsCreatedAtAction_WhenValid
+- Leírás: A teszt ellenőrzi, hogy a CreateAppointment metódus CreatedAtActionResult választ ad, ha érvényes adatokat kap.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz CreatedAtActionResult típusú, és a létrehozott appointment státusza OPEN.
+*** DeleteAppointment_ReturnsOk_WhenProviderOwnsService
+- Leírás: A teszt ellenőrzi, hogy a DeleteAppointment metódus OkObjectResult választ ad, ha a provider tulajdonában van az adott szolgáltatás.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz OkObjectResult típusú, és a válasz tartalmazza a "deleted" üzenetet.
+** Review
+*** GetReviews_ReturnsAllReviews
+- Leírás: A teszt ellenőrzi, hogy a GetReviews metódus sikeresen visszaadja az összes értékelést.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz OkObjectResult típusú.
+*** GetReview_ReturnsNotFound_WhenMissing
+- Leírás: A teszt ellenőrzi, hogy a GetReview metódus NotFoundResult választ ad, ha nem található a kérdéses értékelés.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz NotFoundResult típusú.
+*** CreateReview_CreatesReview_WhenValid
+- Leírás: A teszt ellenőrzi, hogy a CreateReview metódus sikeresen létrehozza az értékelést, ha a bemeneti adat érvényes.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz CreatedAtActionResult típusú, és a létrehozott értékelés UserId-je megegyezik a "user2"-vel.
+*** CreateReview_ReturnsBadRequest_WhenModelInvalid
+- Leírás: A teszt ellenőrzi, hogy a CreateReview metódus BadRequestObjectResult választ ad, ha az értékelés modell érvénytelen.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz BadRequestObjectResult típusú, és a "Score" mező hiányzó.
+*** UpdateReview_Succeeds_ForOwner
+- Leírás: A teszt ellenőrzi, hogy a UpdateReview metódus sikeresen végrehajtódik, ha a felhasználó a tulajdonosa az értékelésnek.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz OkObjectResult típusú, és a frissített értékelés leírása "Updated".
+*** UpdateReview_Succeeds_ForAdmin
+- Leírás: A teszt ellenőrzi, hogy a UpdateReview metódus sikeresen végrehajtódik, ha az adminisztrátor próbálja frissíteni az értékelést.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz OkObjectResult típusú, és a frissített értékelés leírása "Admin Updated".
+*** UpdateReview_ReturnsForbidden_IfUserNotOwner
+- Leírás: A teszt ellenőrzi, hogy a UpdateReview metódus ForbiddenResult választ ad, ha a felhasználó nem az értékelés tulajdonosa.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz ForbidResult típusú.
+*** UpdateReview_ReturnsNotFound_IfMissing
+- Leírás: A teszt ellenőrzi, hogy a UpdateReview metódus NotFoundResult választ ad, ha az értékelés nem található.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz NotFoundResult típusú.
+*** UpdateReview_ReturnsBadRequest_IfIdMismatch
+- Leírás: A teszt ellenőrzi, hogy a UpdateReview metódus BadRequestObjectResult választ ad, ha az ID nem egyezik.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz BadRequestObjectResult típusú, és tartalmazza az "Id doesn't match" üzenetet.
+*** DeleteReview_Succeeds_ForOwner
+- Leírás: A teszt ellenőrzi, hogy a DeleteReview metódus sikeresen végrehajtódik, ha a felhasználó a tulajdonosa az értékelésnek.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz OkResult típusú.
+*** DeleteReview_Succeeds_ForAdmin
+- Leírás: A teszt ellenőrzi, hogy a DeleteReview metódus sikeresen végrehajtódik, ha az adminisztrátor törli az értékelést.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz OkResult típusú.
+*** DeleteReview_ReturnsNotFound_IfMissing
+- Leírás: A teszt ellenőrzi, hogy a DeleteReview metódus NotFoundResult választ ad, ha az értékelés nem található.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz NotFoundResult típusú.
+*** DeleteReview_ReturnsForbidden_IfUserNotOwner
+- Leírás: A teszt ellenőrzi, hogy a DeleteReview metódus ForbiddenResult választ ad, ha a felhasználó nem az értékelés tulajdonosa.
+- Eredmény: A teszt sikeresen ellenőrzi, hogy a válasz ForbidResult típusú.
