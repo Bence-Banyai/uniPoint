@@ -29,7 +29,6 @@ export default function RootLayout() {
   useEffect(() => {
     const checkSecureStore = async () => {
       if (Platform.OS === 'web') {
-        // SecureStore not available on web, make sure fallbacks are used
         console.log('Running on web platform - using localStorage fallbacks');
       }
     };
@@ -47,7 +46,6 @@ export default function RootLayout() {
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="serviceDetails" options={{ headerShown: false }} />
-          {/* Add other non-tab routes here */}
         </Stack>
         <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
       </ThemeProvider>

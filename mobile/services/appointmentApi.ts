@@ -18,7 +18,6 @@ export interface Appointment {
     serviceId: number;
     serviceName: string;
     price: number;
-    // other service fields
   };
 }
 
@@ -66,7 +65,6 @@ export const cancelAppointment = async (appointmentId: number) => {
 
 export const fetchAppointments = async () => {
   try {
-    // Get all open appointments
     const response = await api.get('/api/Appointment/open');
     return response.data;
   } catch (error) {
@@ -77,7 +75,6 @@ export const fetchAppointments = async () => {
 
 export const fetchUserAppointments = async () => {
   try {
-    // Get the current user's appointments
     const response = await api.get('/api/Appointment/myappointments');
     return response.data;
   } catch (error) {
@@ -88,7 +85,6 @@ export const fetchUserAppointments = async () => {
 
 export const rescheduleAppointment = async (appointmentId: number, newDate: string) => {
   try {
-    // Use the new reschedule endpoint that was added to the backend
     const response = await api.put(`/api/Appointment/reschedule/${appointmentId}`, {
       newDate: newDate
     });

@@ -28,7 +28,7 @@ const MAPPING = {
   'exclamationmark.triangle.fill': 'warning',
   'calendar.badge.exclamationmark': 'event-busy',
   'star.fill': 'star',
-  'text.bubble': 'chat', // Change to a valid Material icon
+  'text.bubble': 'chat',
 };
 
 export type SFSymbols6_0 = 

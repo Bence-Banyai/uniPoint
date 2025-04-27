@@ -20,12 +20,9 @@ interface ReviewSubmission {
   description: string;
 }
 
-// Helper function to get auth token from storage that checks all possible storage keys
 const getAuthToken = async (): Promise<string | null> => {
   try {
-    // For web
     if (typeof localStorage !== 'undefined') {
-      // Try all possible token keys
       const tokenKeys = ['authToken', 'userToken', 'token'];
       for (const key of tokenKeys) {
         const token = localStorage.getItem(key);
@@ -36,9 +33,7 @@ const getAuthToken = async (): Promise<string | null> => {
       }
     }
     
-    // For native platforms
     if (AsyncStorage && typeof AsyncStorage.getItem === 'function') {
-      // Try all possible token keys
       const tokenKeys = ['authToken', 'userToken', 'token'];
       for (const key of tokenKeys) {
         const token = await AsyncStorage.getItem(key);
@@ -58,12 +53,9 @@ const getAuthToken = async (): Promise<string | null> => {
 
 export const fetchReviews = async (serviceId: number): Promise<Review[]> => {
   try {
-    // Fetch all reviews WITHOUT requiring authentication (public endpoint)
     const response = await api.get<Review[]>('/api/Review');
-    // Then filter by serviceId
     return response.data.filter(review => review.serviceId === serviceId);
   } catch (error: any) {
-    // Handle 401/403 errors gracefully for GET requests
     if (error.response && (error.response.status === 401 || error.response.status === 403)) {
       console.log('Note: Authentication required for reviews - guest users will see empty reviews list');
       return [];
@@ -75,19 +67,16 @@ export const fetchReviews = async (serviceId: number): Promise<Review[]> => {
 
 export const submitReview = async (review: ReviewSubmission): Promise<Review> => {
   try {
-    // Check if auth token exists
     const token = await getAuthToken();
     if (!token) {
       throw new Error("You must be logged in to submit a review.");
     }
-    // Add authorization header with Bearer token
     const config = {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     };
-    // Only send the required fields (serviceId, score, description)
     const payload = {
       serviceId: review.serviceId,
       score: review.score,

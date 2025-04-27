@@ -9,7 +9,7 @@ import {
   Text,
   ActivityIndicator
 } from 'react-native';
-import { Image } from 'expo-image';  // Replace the React Native Image import
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -51,7 +51,7 @@ const featuredBanners: BannerItem[] = [
     image: require('@/assets/images/adaptive-icon.png'),
     colors: ['#F806CC', '#8E05C2'] as [string, string],
     route: '/appointments' as const,
-    categoryId: 2 // Beauty category
+    categoryId: 2
   },
   {
     id: 'banner2',
@@ -61,7 +61,7 @@ const featuredBanners: BannerItem[] = [
     image: require('@/assets/images/adaptive-icon.png'),
     colors: ['#31E1F7', '#2979FF'] as [string, string],
     route: '/appointments' as const,
-    categoryId: 2 // Beauty category
+    categoryId: 2
   },
   {
     id: 'banner3',
@@ -71,7 +71,7 @@ const featuredBanners: BannerItem[] = [
     image: require('@/assets/images/adaptive-icon.png'),
     colors: ['#4CAF50', '#8BC34A'] as [string, string],
     route: '/appointments' as const,
-    categoryId: 1 // Health category
+    categoryId: 1
   },
 ];
 
@@ -125,7 +125,7 @@ interface BannerItem {
   image: any;
   colors: [string, string];
   route: '/appointments' | '/profile' | '/' | '/login' | '/register';
-  categoryId?: number; // Add this field to link banners to categories
+  categoryId?: number;
 }
 
 interface BannerCarouselProps {
@@ -160,12 +160,10 @@ interface ServiceCardProps {
   onPress: () => void;
 }
 
-// Define the type for route params
 interface HomeScreenParams {
   refresh?: number | string;
 }
 
-// Helper function to get gradient colors based on category ID
 const getCategoryGradient = (categoryId: number): [string, string] => {
   const gradients: {[key: number]: [string, string]} = {
     1: ['#4CAF50', '#8BC34A'],   // Health
@@ -181,7 +179,6 @@ const getCategoryGradient = (categoryId: number): [string, string] => {
   return gradients[categoryId] || ['#AE00FF', '#F806CC'];
 };
 
-// Add this function after getCategoryGradient
 const getCategoryColor = (categoryId: number): string => {
   const colors: {[key: number]: string} = {
     1: '#4CAF50', // Health
@@ -201,7 +198,7 @@ function BannerCarousel({ data, onBannerPress }: BannerCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList<BannerItem>>(null);
   const screenWidth = Dimensions.get('window').width;
-  const bannerWidth = screenWidth - 40; // Account for padding
+  const bannerWidth = screenWidth - 40;
   const [isAutoScrolling, setIsAutoScrolling] = useState(true);
   
   useEffect(() => {
@@ -238,14 +235,14 @@ function BannerCarousel({ data, onBannerPress }: BannerCarouselProps) {
   });
   
   const handleBannerPress = (item: BannerItem) => {
-    onBannerPress(item); // This was missing - now it will call the parent handler
+    onBannerPress(item);
   };
   
   const renderBanner = ({ item }: { item: BannerItem }) => (
     <TouchableOpacity 
       style={[styles.bannerContainer, { width: bannerWidth }]}
       activeOpacity={0.8}
-      onPress={() => handleBannerPress(item)} // Call local handler which calls parent
+      onPress={() => handleBannerPress(item)}
     >
       <LinearGradient
         colors={item.colors}
@@ -377,9 +374,9 @@ function ServiceCard({ service, onPress }: { service: Service; onPress: () => vo
           <Image 
             source={{ uri: service.imageUrls[0] }}
             style={{
-              width: 66, // Increase from 40 to better fill the 70px container
-              height: 66, // Increase from 40 to better fill the 70px container
-              borderRadius: 33, // Half of width/height for perfect circle
+              width: 66,
+              height: 66,
+              borderRadius: 33,
               overflow: 'hidden'
             }}
             contentFit="cover"
@@ -465,7 +462,6 @@ export default function HomeScreen() {
         ]);
         setCategories(categoriesData);
 
-        // Sort by price descending
         const sortedServices = servicesData.sort((a, b) => b.price - a.price);
         setServices(sortedServices.slice(0, 5));
 
@@ -479,18 +475,15 @@ export default function HomeScreen() {
     };
 
     loadData();
-  }, [route.params]); // Use route.params directly without drilling into it
+  }, [route.params]);
 
   useFocusEffect(
     useCallback(() => {
-      // Check if we should refresh when tab becomes focused
       const checkRefreshFlag = async () => {
         try {
           const shouldRefresh = await AsyncStorage.getItem('shouldRefreshHomeScreen');
           if (shouldRefresh === 'true') {
-            // Clear the flag
             await AsyncStorage.setItem('shouldRefreshHomeScreen', 'false');
-            // Refresh the appointment data
             loadNextAppointment();
           }
         } catch (error) {
@@ -501,7 +494,6 @@ export default function HomeScreen() {
       checkRefreshFlag();
       
       return () => {
-        // Cleanup if needed
       };
     }, [])
   );
@@ -807,9 +799,9 @@ export default function HomeScreen() {
                       <Image 
                         source={{ uri: category.iconUrl }}
                         style={{
-                          width: 60, // Increase from 32 to better fill the 64px container
-                          height: 60, // Increase from 32 to better fill the 64px container
-                          borderRadius: 30, // Half of width/height
+                          width: 60,
+                          height: 60,
+                          borderRadius: 30,
                           overflow: 'hidden'
                         }}
                         contentFit="cover"
@@ -1027,7 +1019,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   categoryButton: {
-    width: '31%',  // Slightly wider to better fit on the screen
+    width: '31%',
     alignItems: 'center',
     marginBottom: 16,
   },
@@ -1055,8 +1047,8 @@ const styles = StyleSheet.create({
     fontSize: responsiveFontSize(12, 11, 14),
     fontFamily: fontFamilies.text,
     textAlign: 'center',
-    width: '100%',  // This ensures text alignment works properly
-    paddingHorizontal: 2,  // Adds some padding for longer text
+    width: '100%',
+    paddingHorizontal: 2,
   },
   iconContainer: {
     justifyContent: 'center',
